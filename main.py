@@ -1,15 +1,15 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 
-from bot.config import BOT_TOKEN, API_BASE_URL
-from bot.handlers.start import router as start_router
+from bot.config import BOT_TOKEN
+from bot.handlers import router
 
 
 async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    dp.include_router(start_router)
+    dp.include_router(router)
 
     print("Бот запущено!")
 
