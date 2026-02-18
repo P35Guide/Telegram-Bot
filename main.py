@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher
 
 from bot.config import BOT_TOKEN
 from bot.handlers import router
+from bot.utils.logger import logger
 
 
 async def main():
@@ -11,7 +12,7 @@ async def main():
 
     dp.include_router(router)
 
-    print("Бот запущено!")
+    logger.info("Бот запущено!")
 
     await dp.start_polling(bot)
 
