@@ -2,10 +2,48 @@ user_settings = {}
 
 
 def get_user_settings(user_id):
-    return user_settings.get(
-        user_id,
-        {"language": "ua", "radius": 1000, "coordinates": None}
-    )
+    defaults = {
+        "language": "ua",
+        "radius": 1000,
+        "coordinates": None,
+        "includedTypes": [],
+        "excludedTypes": [],
+        "maxResultCount": 20,
+        "rankPreference": "POPULARITY"
+    }
+    settings = user_settings.get(user_id, defaults)
+    for key, value in defaults.items():
+        if key not in settings:
+            settings[key] = value
+    return settings
+
+
+def update_included_types(user_id, types):
+    settings = get_user_settings(user_id)
+    settings["includedTypes"] = types
+    user_settings[user_id] = settings
+    return settings
+
+
+def update_excluded_types(user_id, types):
+    settings = get_user_settings(user_id)
+    settings["excludedTypes"] = types
+    user_settings[user_id] = settings
+    return settings
+
+
+def update_max_result_count(user_id, count):
+    settings = get_user_settings(user_id)
+    settings["maxResultCount"] = count
+    user_settings[user_id] = settings
+    return settings
+
+
+def update_rank_preference(user_id, preference):
+    settings = get_user_settings(user_id)
+    settings["rankPreference"] = preference
+    user_settings[user_id] = settings
+    return settings
 
 
 def save_coordinates(user_id, latitude, longitude):

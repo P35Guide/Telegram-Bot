@@ -10,8 +10,16 @@ def actions_keyboard():
             [KeyboardButton(text="🔍 Знайти місця поруч")],
             [
                 KeyboardButton(text="🌐 Мова"),
-                KeyboardButton(text="📏 Радіус")
+                KeyboardButton(text="📏 Радіус"),
             ],
+            [
+                KeyboardButton(text="✅ Включити типи"),
+                KeyboardButton(text="❌ Виключити типи"),
+            ],
+            [
+                KeyboardButton(text="🔢 Кількість"),
+                KeyboardButton(text="⭐ Сортування"),
+            ]
         ],
         resize_keyboard=True
     )
@@ -36,13 +44,15 @@ def places_keyboard(places):
     for place in places:
         place_id = place.get("id") or place.get("Id")
         if place_id:
-            name = place.get("displayName") or place.get("DisplayName") or place.get("name") or place.get("Name")
+            name = place.get("displayName") or place.get(
+                "DisplayName") or place.get("name") or place.get("Name")
+
             builder.button(
                 text=name,
                 callback_data=f"place_view:{place_id}"
             )
-    
-    builder.adjust(1)
+
+    builder.adjust(2)
     return builder.as_markup()
 
 
@@ -54,8 +64,8 @@ def place_details_keyboard(place_url=None, google_maps_url=None):
 
     if place_url:
         builder.button(text="🌍 Сайт", url=place_url)
-    
+
     if google_maps_url:
         builder.button(text="📍 Карта", url=google_maps_url)
-    
+
     return builder.as_markup()

@@ -2,7 +2,7 @@ import aiohttp
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from bot.keyboards import places_keyboard, place_details_keyboard
-from bot.services.api_client import get_places, get_place_details
+from bot.services.api_client import get_photos, get_places, get_place_details
 from bot.services.settings import get_user_settings
 from bot.utils.formatter import format_place_text
 from bot.utils.logger import logger
@@ -12,7 +12,8 @@ router = Router()
 
 @router.message(F.text == "🔍 Знайти місця поруч")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
-    logger.info(f"Користувач {message.from_user.id} шукає місця поруч")
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) шукає місця поруч")
 
     loading_msg = await message.answer(
         "🔍 <b>Пошук місць поруч...</b>\n\n"
@@ -72,11 +73,12 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
     """
     place_id = callback.data.split(":")[1]
     logger.info(
-        f"Користувач {callback.from_user.id} переглядає місце {place_id}")
+        f"Користувач {callback.from_user.username}({callback.from_user.id}) переглядає місце {place_id}")
 
     await callback.answer()
 
     place = await get_place_details(place_id, session)
+    # photos = await get_photos(place_id, session)
 
     if not place:
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
@@ -86,6 +88,11 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
         place.get("websiteUri"),
         place.get("googleMapsUri")
     )
+
+    # надсилаємо фото
+    # if photos:
+    #     for photo in photos:
+    #         await callback.message.answer_photo(photo)
 
     await callback.message.answer(
         format_place_text(place),

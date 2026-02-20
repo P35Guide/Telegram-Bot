@@ -7,12 +7,23 @@ from bot.utils.logger import logger
 
 router = Router()
 
+
 def settings_text(user_id: int) -> str:
     s = get_user_settings(user_id)
+
+    included = ", ".join(s.get("includedTypes", [])) if s.get(
+        "includedTypes") else "Всі"
+    excluded = ", ".join(s.get("excludedTypes", [])) if s.get(
+        "excludedTypes") else "Немає"
+
     return (
         f"⚙️ <b>Налаштування:</b>\n"
-        f"├ 🌐 Мова: <code>{s['language']}</code>\n"
-        f"└ 📏 Радіус: <code>{s['radius']} м</code>"
+        f"├ 🌐 Мова: <code>{s.get('language', 'ua')}</code>\n"
+        f"├ 📏 Радіус: <code>{s.get('radius', 1000)} м</code>\n"
+        f"├ ✅ Включити: <code>{included}</code>\n"
+        f"├ ❌ Виключити: <code>{excluded}</code>\n"
+        f"├ 🔢 Максимальна кількість: <code>{s.get('maxResultCount', 20)}</code>\n"
+        f"└ ⭐ Сортування: <code>{s.get('rankPreference', 'POPULARITY')}</code>"
     )
 
 
@@ -40,7 +51,8 @@ async def send_main_menu(message: Message):
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    logger.info(f"Користувач {message.from_user.id} запустив бота")
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) запустив бота")
     await send_main_menu(message)
 
 
@@ -49,6 +61,6 @@ async def handle_location(message: Message):
     latitude = message.location.latitude
     longitude = message.location.longitude
     logger.info(
-        f"Користувач {message.from_user.id} надіслав локацію: {latitude}, {longitude}")
+        f"Користувач {message.from_user.username}({message.from_user.id}) надіслав локацію: {latitude}, {longitude}")
     save_coordinates(message.from_user.id, latitude, longitude)
     await send_main_menu(message)
