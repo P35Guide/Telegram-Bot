@@ -17,7 +17,7 @@ async def language_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) хоче змінити мову")
     await state.set_state(BotState.selecting_language)
     await message.answer(
-        "✏️ Введіть мову пошуку:",
+        "✏️ Введіть мову пошуку (у форматі: uk, en, pl, ...):",
         reply_markup=cancel_keyboard()
     )
 
@@ -28,7 +28,7 @@ async def radius_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) хоче змінити радіус")
     await state.set_state(BotState.selecting_radius)
     await message.answer(
-        "✏️ Введіть радіус пошуку в метрах:",
+        "✏️ Введіть радіус пошуку в метрах (1-5000):",
         reply_markup=cancel_keyboard()
     )
 
@@ -47,7 +47,7 @@ async def included_types_handler(message: Message, state: FSMContext):
 async def excluded_types_handler(message: Message, state: FSMContext):
     await state.set_state(BotState.selecting_excluded_types)
     await message.answer(
-        "✏️ Введіть типи місць, які треба виключити, через кому:\n"
+        "✏️ Введіть типи місць, які треба виключити, через кому (наприклад: restaurant, cafe):\n"
         "Або надішліть 'clear' щоб очистити.",
         reply_markup=cancel_keyboard()
     )
@@ -98,6 +98,9 @@ async def set_radius_handler(message: Message, state: FSMContext):
     radius = message.text.strip()
     if not radius.isdigit():
         await message.answer("⚠️ Будь ласка, введіть число.")
+        return
+    if not (1 <= int(radius) <= 5000):
+        await message.answer("⚠️ Будь ласка, введіть число від 1 до 5000.")
         return
 
     logger.info(

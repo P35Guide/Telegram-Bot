@@ -1,3 +1,7 @@
+from math import log
+
+from bot.config import PHOTO_MAX_HEIGHT
+from bot.config import PHOTO_MAX_WIDTH
 import aiohttp
 from bot.config import API_BASE_URL
 from bot.utils.logger import logger
@@ -25,12 +29,13 @@ async def get_places(settings, session: aiohttp.ClientSession):
         return None
 
 
-async def get_place_details(place_id, session: aiohttp.ClientSession):
+async def get_place_details(place_id, session: aiohttp.ClientSession, language_code: str = "uk"):
     """
     Отримує деталі місця за його ID.
     """
     try:
-        async with session.get(f"{API_BASE_URL}/api/place/google-maps-details/{place_id}", ssl=False) as response:
+        url = f"{API_BASE_URL}/api/place/google-maps-details/{place_id}?lang={language_code}"
+        async with session.get(url, ssl=False) as response:
             if response.status == 200:
                 data = await response.json()
                 return data
@@ -45,11 +50,18 @@ async def get_photos(place_id, session: aiohttp.ClientSession):
     """
     Отримує фото місця за його ID.
     """
+    data_to_post = {
+        "placeId": place_id,
+        "maxHeight": PHOTO_MAX_HEIGHT,
+        "maxWidth": PHOTO_MAX_WIDTH
+    }
     try:
-        async with session.get(f"{API_BASE_URL}/api/place/google-maps-photo/{place_id}", ssl=False) as response:
+        async with session.post(f"{API_BASE_URL}/api/place/google-maps-photo", json=data_to_post, ssl=False) as response:
             if response.status == 200:
-                data = await response.json()
-                return data
+                photos = await response.json()
+                logger.info(
+                    f"Отримано {len(photos)} фото для місця {place_id}")
+                return photos
             else:
                 return None
     except Exception as e:
@@ -69,12 +81,14 @@ def generate_request_object(settings):
     excluded_types = settings.get("excludedTypes", [])
     max_result_count = int(settings.get("maxResultCount", 20))
     rank_preference = settings.get("rankPreference", "POPULARITY")
+    language = settings.get("language", "uk")
 
     return {
         "includedTypes": included_types,
         "excludedTypes": excluded_types,
         "maxResultCount": max_result_count,
         "rankPreference": rank_preference,
+        "languageCode": language,
         "locationRestriction": {
             "circle": {
                 "center": {

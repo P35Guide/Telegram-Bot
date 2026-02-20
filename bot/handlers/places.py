@@ -1,6 +1,6 @@
 import aiohttp
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from bot.keyboards import places_keyboard, place_details_keyboard
 from bot.services.api_client import get_photos, get_places, get_place_details
 from bot.services.settings import get_user_settings
@@ -77,8 +77,11 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
 
     await callback.answer()
 
-    place = await get_place_details(place_id, session)
-    # photos = await get_photos(place_id, session)
+    settings = get_user_settings(callback.from_user.id)
+    language = settings.get("language", "uk")
+
+    place = await get_place_details(place_id, session, language)
+    photos = await get_photos(place_id, session)
 
     if not place:
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
@@ -90,9 +93,14 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
     )
 
     # надсилаємо фото
-    # if photos:
-    #     for photo in photos:
-    #         await callback.message.answer_photo(photo)
+    if photos:
+        try:
+            media_group = [InputMediaPhoto(media=photo)
+                           for photo in photos[:10]]
+            if media_group:
+                await callback.message.answer_media_group(media_group)
+        except Exception as e:
+            logger.error(f"Failed to send photos for place {place_id}: {e}")
 
     await callback.message.answer(
         format_place_text(place),

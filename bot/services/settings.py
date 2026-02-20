@@ -3,7 +3,7 @@ user_settings = {}
 
 def get_user_settings(user_id):
     defaults = {
-        "language": "ua",
+        "language": "uk",
         "radius": 1000,
         "coordinates": None,
         "includedTypes": [],

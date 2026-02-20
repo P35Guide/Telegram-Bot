@@ -18,7 +18,7 @@ def settings_text(user_id: int) -> str:
 
     return (
         f"⚙️ <b>Налаштування:</b>\n"
-        f"├ 🌐 Мова: <code>{s.get('language', 'ua')}</code>\n"
+        f"├ 🌐 Мова: <code>{s.get('language', 'uk')}</code>\n"
         f"├ 📏 Радіус: <code>{s.get('radius', 1000)} м</code>\n"
         f"├ ✅ Включити: <code>{included}</code>\n"
         f"├ ❌ Виключити: <code>{excluded}</code>\n"
