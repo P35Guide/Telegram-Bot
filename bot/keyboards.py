@@ -34,10 +34,11 @@ def places_keyboard(places):
     builder = InlineKeyboardBuilder()
 
     for place in places:
-        place_id = place.get("Id")
+        place_id = place.get("id") or place.get("Id")
         if place_id:
+            name = place.get("displayName") or place.get("DisplayName") or place.get("name") or place.get("Name")
             builder.button(
-                text=place["Name"],
+                text=name,
                 callback_data=f"place_view:{place_id}"
             )
     

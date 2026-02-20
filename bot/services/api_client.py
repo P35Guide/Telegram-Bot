@@ -1,102 +1,66 @@
 import aiohttp
-import json
-import asyncio
 from bot.config import API_BASE_URL
+from bot.utils.logger import logger
+import json
 
 
-async def get_places(settings):
+async def get_places(settings, session: aiohttp.ClientSession):
     """
-    імітування запиту в апі, поки апі ще не реалізовано
+    Отримує список місць у заданому радіусі від користувача.
     """
-    # Імітація затримки
-    await asyncio.sleep(1)
-
-    coordinates = settings.get("coordinates")
-    radius = settings.get("radius", 1000)
-
-    if not coordinates:
+    if not settings.get("coordinates"):
         return None
 
-    # Тут був би реальний запит:
-    # params = {
-    #     "latitude": coordinates["latitude"],
-    #     "longitude": coordinates["longitude"],
-    #     "radius": radius,
-    # }
+    data_to_post = generate_request_object(settings)
 
     try:
-        data = json.loads(example_json_response)
-        return data
-    except json.JSONDecodeError:
+        async with session.post(f"{API_BASE_URL}/api/place/google-maps-search-nearby", json=data_to_post, ssl=False) as response:
+            if response.status == 200:
+                data = await response.json()
+                logger.info(
+                    f"API Response: {json.dumps(data, ensure_ascii=False, indent=2)}")
+                return data
+            else:
+                return None
+    except Exception as e:
+        logger.error(f"API Request Error: {e}")
         return None
 
 
-async def get_place_details(place_id):
+async def get_place_details(place_id, session: aiohttp.ClientSession):
     """
-    імітування запиту в апі, поки апі ще не реалізовано
+    Отримує деталі місця за його ID.
     """
-    # Імітація затримки
-    await asyncio.sleep(0.2)
-
     try:
-        data = json.loads(example_json_response)
-        return next((p for p in data.get("Places", []) if p.get("Id") == place_id), None)
-    except json.JSONDecodeError:
+        async with session.get(f"{API_BASE_URL}/api/place/google-maps-details/{place_id}", ssl=False) as response:
+            if response.status == 200:
+                data = await response.json()
+                logger.info(f"API Response: {data}")
+                return data
+            else:
+                return None
+    except Exception as e:
+        logger.error(f"API Request Error: {e}")
         return None
 
 
-example_json_response = '''
-	{
-  "Places": [
-    {
-      "Id": "001",
-      "Name": "Кав'ярня Aroma",
-      "DisplayName": "Aroma Espresso Bar",
-      "PrimaryType": "cafe",
-      "Latitude": 50.4501,
-      "Longitude": 30.5234,
-      "Rating": 4.5,
-      "UserRatingCount": 120,
-      "ShortFormattedAddress": "вул. Хрещатик, 22, Київ",
-      "PhoneNumber": "+380441234567",
-      "WebsiteUri": "https://aroma.ua",
-      "GoogleMapsUri": "https://maps.google.com/?q=50.4501,30.5234",
-      "PriceLevel": "PRICE_LEVEL_INEXPENSIVE",
-      "OpenNow": true,
-      "WeekdayDescriptions": [
-        "Пн-Пт: 08:00–22:00",
-        "Сб-Нд: 09:00–21:00"
-      ],
-      "EditorialSummary": "Популярна кав'ярня у центрі Києва.",
-      "GenerativeSummary": "Aroma Espresso Bar — це затишне місце для зустрічей та смачної кави."
-    },
-    {
-      "Id": "002",
-      "Name": "Піцерія Napoli",
-      "DisplayName": null,
-      "PrimaryType": "restaurant",
-      "Latitude": 50.4547,
-      "Longitude": 30.5238,
-      "Rating": 4.2,
-      "UserRatingCount": 85,
-      "ShortFormattedAddress": "вул. Саксаганського, 10, Київ",
-      "PhoneNumber": null,
-      "WebsiteUri": null,
-      "GoogleMapsUri": "https://maps.google.com/?q=50.4547,30.5238",
-      "PriceLevel": "PRICE_LEVEL_INEXPENSIVE",
-      "OpenNow": false,
-      "WeekdayDescriptions": [
-					"понеділок: 11:30–14:30, 17:00–22:00",
-					"вівторок: 11:30–14:30, 17:00–22:00",
-					"середа: 11:30–14:30, 17:00–22:00",
-					"четвер: 11:30–14:30, 17:00–22:00",
-					"пʼятниця: 11:30–14:30, 17:00–22:00",
-					"субота: 17:00–22:00",
-					"неділя: 17:00–22:00"
-				],
-      "EditorialSummary": null,
-      "GenerativeSummary": null
+def generate_request_object(settings):
+    """
+    Генерує об'єкт запиту на основі налаштувань користувача.
+    """
+    coords = settings.get("coordinates", {})
+    latitude = float(coords.get("latitude", 0))
+    longitude = float(coords.get("longitude", 0))
+    radius = int(settings.get("radius", 1000))
+
+    return {
+        "locationRestriction": {
+            "circle": {
+                "center": {
+                    "latitude": latitude,
+                    "longitude": longitude
+                },
+                "radius": radius
+            }
+        }
     }
-  ]
-}
-'''

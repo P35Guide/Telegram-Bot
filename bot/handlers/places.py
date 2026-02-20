@@ -1,3 +1,4 @@
+import aiohttp
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from bot.keyboards import places_keyboard, place_details_keyboard
@@ -8,8 +9,9 @@ from bot.utils.logger import logger
 
 router = Router()
 
+
 @router.message(F.text == "🔍 Знайти місця поруч")
-async def find_places_handler(message: Message):
+async def find_places_handler(message: Message, session: aiohttp.ClientSession):
     logger.info(f"Користувач {message.from_user.id} шукає місця поруч")
 
     loading_msg = await message.answer(
@@ -29,16 +31,16 @@ async def find_places_handler(message: Message):
         return
 
     try:
-        data = await get_places(settings)
+        data = await get_places(settings, session)
 
-        if not data or "Places" not in data:
+        if not data or "places" not in data:
             await loading_msg.edit_text(
                 "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
                 parse_mode="HTML"
             )
             return
 
-        places = data["Places"]
+        places = data["places"]
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
@@ -63,7 +65,7 @@ async def find_places_handler(message: Message):
 
 
 @router.callback_query(F.data.startswith("place_view:"))
-async def place_details_handler(callback: CallbackQuery):
+async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession):
     """
     Обробляє натискання на кнопку місця зі списку.
     Отримує деталі місця та надсилає їх окремим повідомленням.
@@ -74,14 +76,17 @@ async def place_details_handler(callback: CallbackQuery):
 
     await callback.answer()
 
-    place = await get_place_details(place_id)
+    place = await get_place_details(place_id, session)
 
     if not place:
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
         return
 
-    kb = place_details_keyboard(place.get("WebsiteUri"), place.get("GoogleMapsUri"))
-    
+    kb = place_details_keyboard(
+        place.get("websiteUri"),
+        place.get("googleMapsUri")
+    )
+
     await callback.message.answer(
         format_place_text(place),
         parse_mode="HTML",
@@ -90,8 +95,8 @@ async def place_details_handler(callback: CallbackQuery):
     )
 
     # надсилаємо мапу
-    if place.get("Latitude") and place.get("Longitude"):
+    if place.get("latitude") and place.get("longitude"):
         await callback.message.answer_location(
-            latitude=place["Latitude"],
-            longitude=place["Longitude"]
+            latitude=place["latitude"],
+            longitude=place["longitude"]
         )

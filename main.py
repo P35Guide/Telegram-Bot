@@ -1,4 +1,5 @@
 import asyncio
+import aiohttp
 from aiogram import Bot, Dispatcher
 
 from bot.config import BOT_TOKEN
@@ -16,7 +17,8 @@ async def main():
 
     logger.info("Бот запущено!")
 
-    await dp.start_polling(bot)
+    async with aiohttp.ClientSession() as session:
+        await dp.start_polling(bot, session=session)
 
 if __name__ == "__main__":
     asyncio.run(main())
