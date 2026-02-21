@@ -1,3 +1,11 @@
+def location_choice_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📍 Передати мою геолокацію", request_location=True)],
+            [KeyboardButton(text="🌐 Ввести координати вручну")]
+        ],
+        resize_keyboard=True
+    )
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -5,8 +13,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def actions_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Надіслати геолокацію",
-                            request_location=True)],
+            [KeyboardButton(text="📍 Надіслати геолокацію")],
             [KeyboardButton(text="🔍 Знайти місця поруч")],
             [
                 KeyboardButton(text="🌐 Мова"),

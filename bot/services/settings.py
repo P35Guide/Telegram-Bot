@@ -1,3 +1,5 @@
+def update_coordinates(user_id, latitude, longitude):
+    return save_coordinates(user_id, latitude, longitude)
 user_settings = {}
 
 
