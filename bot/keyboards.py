@@ -1,3 +1,6 @@
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 def location_choice_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -6,9 +9,6 @@ def location_choice_keyboard():
         ],
         resize_keyboard=True
     )
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 
 def actions_keyboard():
     keyboard = ReplyKeyboardMarkup(
