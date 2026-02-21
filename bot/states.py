@@ -7,3 +7,4 @@ class BotState(StatesGroup):
     selecting_included_types = State()
     selecting_excluded_types = State()
     selecting_max_result_count = State()
+    browsing_places = State()
