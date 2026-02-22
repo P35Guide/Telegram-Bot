@@ -7,7 +7,7 @@ def actions_keyboard():
         keyboard=[
             [KeyboardButton(text="📍 Надіслати геолокацію",
                             request_location=True)],
-            [KeyboardButton(text="🔍 Знайти місця поруч")],
+            [KeyboardButton(text="🚀 Пошук маршрутів")],
             [
                 KeyboardButton(text="🌐 Мова"),
                 KeyboardButton(text="📏 Радіус"),
@@ -20,6 +20,17 @@ def actions_keyboard():
                 KeyboardButton(text="🔢 Кількість"),
                 KeyboardButton(text="⭐ Сортування"),
             ]
+        ],
+        resize_keyboard=True
+    )
+    return keyboard
+
+
+def search_keyboard():
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
+            [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True
     )
@@ -69,3 +80,15 @@ def place_details_keyboard(place_url=None, google_maps_url=None):
         builder.button(text="📍 Карта", url=google_maps_url)
 
     return builder.as_markup()
+
+
+def place_navigation_keyboard():
+    Keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="⬅️ Назад"), KeyboardButton(text="➡️ Далі")],
+            [KeyboardButton(text="🛑 Стоп")],
+        ],
+        resize_keyboard=True
+    )
+
+    return Keyboard
