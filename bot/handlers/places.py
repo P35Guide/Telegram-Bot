@@ -125,6 +125,15 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
         disable_web_page_preview=True
     )
 
+    # Якщо координати вже встановлені (тобто геолокація надіслана), повертаємо головне меню
+    if settings.get("coordinates"):
+        from bot.keyboards import actions_keyboard
+        await callback.message.answer(
+            "✅ Геолокацію отримано! Ви повернулися до головного меню.",
+            reply_markup=actions_keyboard()
+        )
+        return
+
     # надсилаємо мапу
     if place.get("latitude") and place.get("longitude"):
         await callback.message.answer_location(

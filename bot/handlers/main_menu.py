@@ -85,7 +85,11 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         f"Користувач {message.from_user.username}({message.from_user.id}) надіслав локацію: {latitude}, {longitude}")
     save_coordinates(message.from_user.id, latitude, longitude)
     await state.clear()
-    await find_places_handler(message, session)
+    from bot.keyboards import actions_keyboard
+    await message.answer(
+        "✅ Геолокацію отримано! Ви повернулися до головного меню.",
+        reply_markup=actions_keyboard()
+    )
 
 # Обробник вибору ручного введення координат у головному меню
 from bot.states import BotState
