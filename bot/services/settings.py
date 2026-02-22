@@ -9,7 +9,8 @@ def get_user_settings(user_id):
         "includedTypes": [],
         "excludedTypes": [],
         "maxResultCount": 20,
-        "rankPreference": "POPULARITY"
+        "rankPreference": "POPULARITY",
+        "openNow": False
     }
     settings = user_settings.get(user_id, defaults)
     for key, value in defaults.items():
@@ -45,6 +46,11 @@ def update_rank_preference(user_id, preference):
     user_settings[user_id] = settings
     return settings
 
+def update_open_now(user_id,open_now):
+    settings = get_user_settings(user_id)
+    settings["openNow"] = open_now
+    user_settings[user_id] = settings
+    return settings
 
 def save_coordinates(user_id, latitude, longitude):
     settings = get_user_settings(user_id)

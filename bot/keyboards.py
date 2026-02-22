@@ -15,10 +15,15 @@ def actions_keyboard():
             [
                 KeyboardButton(text="✅ Включити типи"),
                 KeyboardButton(text="❌ Виключити типи"),
+                
             ],
             [
                 KeyboardButton(text="🔢 Кількість"),
                 KeyboardButton(text="⭐ Сортування"),
+               
+            ],
+            [
+                KeyboardButton(text="⏰ Відкрите зараз")
             ]
         ],
         resize_keyboard=True

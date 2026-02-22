@@ -17,6 +17,13 @@ from bot.utils.logger import logger
 router = Router()
 
 
+def filter_open_now(places, open_now):
+    if not open_now:
+        return places
+    return [p for p in places if (p.get("openNow") is True or p.get("OpenNow") is True)]
+
+
+
 @router.message(F.text == "🎲 Випадкове місце")
 async def random_place_handler(message: Message, session: aiohttp.ClientSession):
     logger.info(
@@ -49,10 +56,11 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession)
             )
             return
         places = data["places"]
+        places = filter_open_now(places, settings.get("openNow"))
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
-                "Спробуйте збільшити радіус пошуку.",
+                "Спробуйте збільшити радіус пошуку або вимкніть фільтр 'Відкрито зараз'.",
                 parse_mode="HTML"
             )
             return
@@ -112,10 +120,11 @@ async def perform_search(message: Message, session: aiohttp.ClientSession):
             return loading_msg, None
 
         places = data["places"]
+        places = filter_open_now(places, settings.get("openNow"))
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
-                "Спробуйте збільшити радіус пошуку.",
+                "Спробуйте збільшити радіус пошуку або вимкніть фільтр 'Відкрито зараз'.",
                 parse_mode="HTML"
             )
             return loading_msg, None

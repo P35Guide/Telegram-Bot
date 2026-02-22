@@ -15,6 +15,7 @@ def settings_text(user_id: int) -> str:
         "includedTypes") else "Всі"
     excluded = ", ".join(s.get("excludedTypes", [])) if s.get(
         "excludedTypes") else "Немає"
+    open_now = "Так" if s.get("openNow") else "Ні"
 
     return (
         f"⚙️ <b>Налаштування:</b>\n"
@@ -22,6 +23,7 @@ def settings_text(user_id: int) -> str:
         f"├ 📏 Радіус: <code>{s.get('radius', 1000)} м</code>\n"
         f"├ ✅ Включити: <code>{included}</code>\n"
         f"├ ❌ Виключити: <code>{excluded}</code>\n"
+        f"├ ⏰ Відкрите зараз: <code>{open_now}</code>\n"
         f"├ 🔢 Максимальна кількість: <code>{s.get('maxResultCount', 20)}</code>\n"
         f"└ ⭐ Сортування: <code>{s.get('rankPreference', 'POPULARITY')}</code>"
     )
