@@ -3,7 +3,8 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from bot.keyboards import actions_keyboard, cancel_keyboard
 from aiogram.filters import StateFilter
-from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings
+from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, update_open_now, get_user_settings
+from bot.services import settings as settings_service
 from bot.states import BotState
 from bot.utils.logger import logger
 from bot.handlers.main_menu import send_main_menu
@@ -20,6 +21,7 @@ async def language_handler(message: Message, state: FSMContext):
         "✏️ Введіть мову пошуку (у форматі: uk, en, pl, ...):",
         reply_markup=cancel_keyboard()
     )
+
 
 
 @router.message(F.text == "📏 Радіус")
@@ -51,6 +53,7 @@ async def excluded_types_handler(message: Message, state: FSMContext):
         "Або надішліть 'clear' щоб очистити.",
         reply_markup=cancel_keyboard()
     )
+    
 
 
 @router.message(F.text == "🔢 Кількість")
@@ -72,6 +75,18 @@ async def rank_preference_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
+    await send_main_menu(message)
+    
+@router.message(F.text == "⏰ Відкрите зараз")
+async def open_now_handler(message: Message):
+    current_settings = get_user_settings(message.from_user.id)
+    current_open_now = current_settings.get("openNow", False)
+
+    new_open_now = not current_open_now
+    settings_service.update_open_now(message.from_user.id, new_open_now)
+
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
     await send_main_menu(message)
 
 
