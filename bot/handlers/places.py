@@ -4,6 +4,7 @@ from ssl import SSLContext
 from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import search_keyboard
 import aiohttp
+import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
@@ -15,6 +16,59 @@ from bot.utils.logger import logger
 
 router = Router()
 
+
+@router.message(F.text == "🎲 Випадкове місце")
+async def random_place_handler(message: Message, session: aiohttp.ClientSession):
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) шукає випадкове місце")
+    
+   
+    await message.answer_dice(emoji="🎲")
+    
+    loading_msg = await message.answer(
+        "⏳ <b>Крутимо рулетку...</b>\n"
+        "Зачекайте, виконується запит до API...",
+        parse_mode="HTML"
+    )
+    
+    settings = get_user_settings(message.from_user.id)
+    
+    if not settings.get("coordinates"):
+        await loading_msg.edit_text(
+            "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
+            "Будь ласка, натисніть кнопку '📍 Надіслати геолокацію', щоб ми знали де шукати.",
+            parse_mode="HTML"
+        )
+        return
+    try:
+        data = await get_places(settings, session)
+        if not data or "places" not in data:
+            await loading_msg.edit_text(
+                "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
+                parse_mode="HTML"
+            )
+            return
+        places = data["places"]
+        if not places:
+            await loading_msg.edit_text(
+                "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
+                "Спробуйте збільшити радіус пошуку.",
+                parse_mode="HTML"
+            )
+            return
+        random_place = random.choice(places)
+        await loading_msg.edit_text(
+            f"🎲 <b>Випадкове місце:</b>\n"
+            "Оберіть місце, щоб відкрити його на карті:",
+            parse_mode="HTML",
+            reply_markup=places_keyboard([random_place])
+        )
+    except Exception as e:
+        logger.error(f"Error in random_place_handler: {e}")
+        await loading_msg.edit_text(
+            "❌ <b>Сталася помилка при обробці запиту.</b>",
+            parse_mode="HTML"
+        )
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message, state: FSMContext):
@@ -150,7 +204,7 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         "<b>Оберіть варіант пошуку:</b>\n"
         "🚀 <b>Місця</b> - зручно оцінити місця\n"
         "🔍 <b>Список</b> - переглянути список знайдених місць.\n"
-        "🎲 <b>Рандом</b> - випадково вибрати місце",
+        "🎲 <b>Випадкове місце</b> - випадково вибрати місце",
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )

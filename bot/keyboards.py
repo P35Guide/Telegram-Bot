@@ -30,6 +30,7 @@ def search_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
+            [KeyboardButton(text="🎲 Випадкове місце")],
             [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True
