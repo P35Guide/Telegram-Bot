@@ -42,8 +42,8 @@ def settings_text(user_id: int) -> str:
         f"⚙️ <b>Налаштування:</b>\n"
         f"├ 🌐 Мова: <code>{s.get('language', 'uk')}</code>\n"
         f"├ 📏 Радіус: <code>{s.get('radius', 1000)} м</code>\n"
-        f"├ ✅ Включити: <code>{included}</code>\n"
-        f"├ ❌ Виключити: <code>{excluded}</code>\n"
+        f"├ 🍴 Вибрати категорії: <code>{included}</code>\n"
+        f"├ 🧹 Скинути категорії: <code>{excluded}</code>\n"
         f"├ ⏰ Відкрите зараз: <code>{open_now}</code>\n"
         f"├ 🔢 Максимальна кількість: <code>{s.get('maxResultCount', 20)}</code>\n"
         f"└ ⭐ Сортування: <code>{s.get('rankPreference', 'POPULARITY')}</code>"

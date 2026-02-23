@@ -35,7 +35,7 @@ async def radius_handler(message: Message, state: FSMContext):
     )
 
 
-@router.message(F.text == "✅ Включити типи")
+@router.message(F.text == "🍴 Вибрати категорії")
 async def included_types_handler(message: Message, state: FSMContext):
     await state.set_state(BotState.selecting_included_types)
     await message.answer(
@@ -45,7 +45,7 @@ async def included_types_handler(message: Message, state: FSMContext):
     )
 
 
-@router.message(F.text == "❌ Виключити типи")
+@router.message(F.text == "🧹 Скинути категорії")
 async def excluded_types_handler(message: Message, state: FSMContext):
     await state.set_state(BotState.selecting_excluded_types)
     await message.answer(
