@@ -20,8 +20,8 @@ def actions_keyboard():
                 KeyboardButton(text="📏 Радіус"),
             ],
             [
-                KeyboardButton(text="✅ Включити типи"),
-                KeyboardButton(text="❌ Виключити типи"),
+                KeyboardButton(text="🍴 Вибрати категорії"),
+                KeyboardButton(text="🧹 Скинути категорії"),
                 
             ],
             [

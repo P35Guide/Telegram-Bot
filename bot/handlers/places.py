@@ -114,7 +114,7 @@ async def cancel_handler(message: Message, state: FSMContext):
     await send_main_menu(message)
 
 
-async def perform_search(message: Message, session: aiohttp.ClientSession):
+async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True):
     """
     Логіка пошуку місць поруч.
     Повертає (loading_msg, places) кортеж.
@@ -159,28 +159,31 @@ async def perform_search(message: Message, session: aiohttp.ClientSession):
             )
             return loading_msg, None
 
-        kb = places_keyboard(places)
-        # Якщо клавіатура порожня (немає жодної кнопки) — fallback: просто текстовий список
-        if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
-            preview = []
-            for idx, place in enumerate(places[:10], 1):
-                name = place.get('displayName') or place.get('name') or 'Без назви'
-                address = place.get('shortFormattedAddress') or ''
-                rating = place.get('rating')
-                rating_str = f" | ⭐ {rating}" if rating else ""
-                preview.append(f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
-            text = "\n\n".join(preview)
-            await loading_msg.edit_text(
-                f"✅ <b>Знайдено {len(places)} місць:</b>\n\n{text}",
-                parse_mode="HTML"
-            )
-        else:
-            await loading_msg.edit_text(
-                f"✅ <b>Знайдено {len(places)} місць:</b>\n"
-                "Оберіть місце, щоб відкрити його на карті:",
-                parse_mode="HTML",
-                reply_markup=kb
-            )
+        if show_list:
+            kb = places_keyboard(places)
+            # Якщо клавіатура порожня (немає жодної кнопки) — fallback: просто текстовий список
+            if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
+                preview = []
+                for idx, place in enumerate(places[:10], 1):
+                    name = place.get('displayName') or place.get('name') or 'Без назви'
+                    address = place.get('shortFormattedAddress') or ''
+                    rating = place.get('rating')
+                    rating_str = f" | ⭐ {rating}" if rating else ""
+                    preview.append(f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
+                text = "\n\n".join(preview)
+                await loading_msg.edit_text(
+                    f"✅ <b>Знайдено {len(places)} місць:</b>\n\n{text}",
+                    parse_mode="HTML"
+                )
+            else:
+                await loading_msg.edit_text(
+                    f"✅ <b>Знайдено {len(places)} місць:</b>\n"
+                    "Оберіть місце, щоб відкрити його на карті:",
+                    parse_mode="HTML",
+                    reply_markup=kb
+                )
+
+        return loading_msg, places
 
     except Exception as e:
         logger.error(f"Error in perform_search: {e}")
@@ -311,7 +314,7 @@ async def show_place_card(message: Message, state: FSMContext, session: aiohttp.
 
 @router.message(F.text == "🚀 Місця")
 async def search_places_handler(message: Message, session: aiohttp.ClientSession, state: FSMContext):
-    loading_msg, places = await perform_search(message, session)
+    loading_msg, places = await perform_search(message, session, show_list=False)
 
     if not places:
         return
