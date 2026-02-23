@@ -1,3 +1,33 @@
+# Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
+
+from aiogram import Router, F
+from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+router = Router()
+from bot.keyboards import location_choice_keyboard
+@router.message(F.text == "📍 Надіслати геолокацію")
+async def choose_location_method(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "Оберіть спосіб передачі координат:",
+        reply_markup=location_choice_keyboard()
+    )
+
+# Обробник вибору способу передачі локації
+from bot.states import BotState
+@router.message(F.text == "🌐 Ввести координати вручну")
+async def ask_for_coordinates(message: Message, state: FSMContext):
+    await state.set_state(BotState.entering_coordinates)
+    await message.answer(
+        "Введіть координати у форматі:\n"
+        "49.2328, 28.4810\n"
+        "Ex.: Latitude: 40.829503 | Longitude: -74.118126\n"
+        "Наприклад: 50.4501, 30.5234\n"
+        "\nPlease enter coordinates in format:\n"
+        "49.2328, 28.4810\n"
+        "Example: 40.829503, -74.118126",
+        reply_markup=location_choice_keyboard()
+    )
 from bot.keyboards import place_navigation_keyboard
 from bot.states import BotState
 from ssl import SSLContext

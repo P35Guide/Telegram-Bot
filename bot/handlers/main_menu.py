@@ -1,3 +1,4 @@
+
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart
@@ -8,6 +9,24 @@ from bot.services.settings import save_coordinates, get_user_settings
 from bot.utils.logger import logger
 
 router = Router()
+
+# Обробник кнопки '📍 Передати координати' у головному меню
+@router.message(F.text == "📍 Передати координати")
+async def show_location_choice_menu(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "Оберіть спосіб передачі координат:",
+        reply_markup=location_choice_keyboard()
+    )
+    
+# Обробник кнопки '📍 Надіслати геолокацію' у головному меню
+@router.message(F.text == "📍 Надіслати геолокацію")
+async def show_location_choice_menu(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        "Оберіть спосіб передачі координат:",
+        reply_markup=location_choice_keyboard()
+    )
 
 
 def settings_text(user_id: int) -> str:
@@ -41,8 +60,21 @@ async def send_main_menu(message: Message):
             f"├ Широта: <tg-spoiler>{coords['latitude']}</tg-spoiler>\n"
             f"└ Довгота: <tg-spoiler>{coords['longitude']}</tg-spoiler>"
         )
+        await message.answer(
+            f"👋 <b>P35Guide</b>\n\n"
+            f"{settings_text(message.from_user.id)}\n\n"
+            f"{location_line}",
+            parse_mode="HTML",
+            reply_markup=actions_keyboard()
+        )
     else:
-        location_line = "📍 Натисни кнопку, щоб поділитися координатами:"
+        await message.answer(
+            f"👋 <b>P35Guide</b>\n\n"
+            f"{settings_text(message.from_user.id)}\n\n"
+            "Оберіть спосіб передачі координат:",
+            parse_mode="HTML",
+            reply_markup=location_choice_keyboard()
+        )
 
     # Якщо координати не задані — показати вибір способу передачі локації, інакше — стандартне меню
     if coords:

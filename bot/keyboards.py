@@ -13,8 +13,7 @@ def location_choice_keyboard():
 def actions_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Надіслати геолокацію",
-                            request_location=True)],
+                [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
             [
                 KeyboardButton(text="🌐 Мова"),
