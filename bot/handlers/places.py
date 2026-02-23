@@ -129,7 +129,28 @@ async def perform_search(message: Message, session: aiohttp.ClientSession):
             )
             return loading_msg, None
 
-        return loading_msg, places
+        kb = places_keyboard(places)
+        # Якщо клавіатура порожня (немає жодної кнопки) — fallback: просто текстовий список
+        if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
+            preview = []
+            for idx, place in enumerate(places[:10], 1):
+                name = place.get('displayName') or place.get('name') or 'Без назви'
+                address = place.get('shortFormattedAddress') or ''
+                rating = place.get('rating')
+                rating_str = f" | ⭐ {rating}" if rating else ""
+                preview.append(f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
+            text = "\n\n".join(preview)
+            await loading_msg.edit_text(
+                f"✅ <b>Знайдено {len(places)} місць:</b>\n\n{text}",
+                parse_mode="HTML"
+            )
+        else:
+            await loading_msg.edit_text(
+                f"✅ <b>Знайдено {len(places)} місць:</b>\n"
+                "Оберіть місце, щоб відкрити його на карті:",
+                parse_mode="HTML",
+                reply_markup=kb
+            )
 
     except Exception as e:
         logger.error(f"Error in perform_search: {e}")
@@ -323,3 +344,46 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
 
     if not success:
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
+        return
+
+    kb = place_details_keyboard(
+        place.get("websiteUri"),
+        place.get("googleMapsUri")
+    )
+
+    # надсилаємо фото
+    if photos:
+        try:
+            media_group = [InputMediaPhoto(media=photo)
+                           for photo in photos[:10]]
+            if media_group:
+                await callback.message.answer_media_group(media_group)
+        except Exception as e:
+            logger.error(f"Failed to send photos for place {place_id}: {e}")
+
+    await callback.message.answer(
+        format_place_text(place),
+        parse_mode="HTML",
+        reply_markup=kb,
+        disable_web_page_preview=True
+    )
+
+    # Якщо координати вже встановлені (тобто геолокація надіслана), повертаємо головне меню
+    if settings.get("coordinates"):
+        from bot.keyboards import actions_keyboard
+        await callback.message.answer(
+            "✅ Геолокацію отримано! Ви повернулися до головного меню.",
+            reply_markup=actions_keyboard()
+        )
+        return
+
+    # надсилаємо мапу
+    if place.get("latitude") and place.get("longitude"):
+        await callback.message.answer_location(
+            latitude=place["latitude"],
+            longitude=place["longitude"]
+        )
+
+
+
+

@@ -13,16 +13,28 @@ async def get_places(settings, session: aiohttp.ClientSession):
     Отримує список місць у заданому радіусі від користувача.
     """
     if not settings.get("coordinates"):
+        logger.warning(f"Спроба пошуку місць без координат користувача! settings: {settings}")
         return None
 
     data_to_post = generate_request_object(settings)
+    logger.info(f"[DEBUG] data_to_post: {data_to_post}")
+    url = f"{API_BASE_URL}/api/place/google-maps-search-nearby"
+    logger.info(f"[API] POST {url}\nPayload: {json.dumps(data_to_post, ensure_ascii=False)}")
 
     try:
-        async with session.post(f"{API_BASE_URL}/api/place/google-maps-search-nearby", json=data_to_post, ssl=False) as response:
+        async with session.post(url, json=data_to_post, ssl=False) as response:
+            logger.info(f"[API] Status: {response.status}")
+            text = await response.text()
+            logger.info(f"[API] Response: {text}")
             if response.status == 200:
-                data = await response.json()
+                try:
+                    data = json.loads(text)
+                except Exception as e:
+                    logger.error(f"[API] JSON decode error: {e}")
+                    return None
                 return data
             else:
+                logger.warning(f"[API] Non-200 response: {response.status}, text: {text}")
                 return None
     except Exception as e:
         logger.error(f"API Request Error: {e}")
@@ -83,7 +95,7 @@ def generate_request_object(settings):
     rank_preference = settings.get("rankPreference", "POPULARITY")
     language = settings.get("language", "uk")
 
-    return {
+    req = {
         "includedTypes": included_types,
         "excludedTypes": excluded_types,
         "maxResultCount": max_result_count,
@@ -99,3 +111,5 @@ def generate_request_object(settings):
             }
         }
     }
+    logger.info(f"[DEBUG] generate_request_object: {req}")
+    return req
