@@ -48,6 +48,8 @@ def format_place_text(p: dict) -> str:
     website = f"🌐 <a href='{p.get('websiteUri')}'>Офіційний сайт</a>" if p.get(
         'websiteUri') else None
 
+   
+
     # Опис
     description = None
     summary = p.get('editorialSummary') or p.get('generativeSummary')
