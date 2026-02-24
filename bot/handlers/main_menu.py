@@ -4,6 +4,7 @@ from aiogram.filters import CommandStart
 from bot.keyboards import actions_keyboard
 from bot.services.settings import save_coordinates, get_user_settings
 from bot.utils.logger import logger
+from aiogram.fsm.state import default_state
 
 router = Router()
 
@@ -56,7 +57,7 @@ async def cmd_start(message: Message):
     await send_main_menu(message)
 
 
-@router.message(F.location)
+@router.message(F.location, default_state)
 async def handle_location(message: Message):
     latitude = message.location.latitude
     longitude = message.location.longitude
