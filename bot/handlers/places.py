@@ -71,10 +71,12 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession)
     settings = get_user_settings(message.from_user.id)
     
     if not settings.get("coordinates"):
-        await loading_msg.edit_text(
+        await loading_msg.delete()
+        await message.answer(
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
-            "Будь ласка, натисніть кнопку '📍 Надіслати геолокацію', щоб ми знали де шукати.",
-            parse_mode="HTML"
+            "Будь ласка, надішліть геолокацію або введіть координати:",
+            parse_mode="HTML",
+            reply_markup=location_choice_keyboard()
         )
         return
     try:
@@ -132,12 +134,14 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
     settings = get_user_settings(message.from_user.id)
 
     if not settings.get("coordinates"):
-        await loading_msg.edit_text(
+        await loading_msg.delete()
+        await message.answer(
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
-            "Будь ласка, натисніть кнопку '📍 Надіслати геолокацію', щоб ми знали де шукати.",
-            parse_mode="HTML"
+            "Будь ласка, надішліть геолокацію або введіть координати:",
+            parse_mode="HTML",
+            reply_markup=location_choice_keyboard()
         )
-        return loading_msg, None
+        return None, None
 
     try:
         data = await get_places(settings, session)
