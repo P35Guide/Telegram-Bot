@@ -27,3 +27,16 @@ bot/services/__pycache__/settings.cpython-313.pyc
 bot/utils/__pycache__/__init__.cpython-313.pyc
 bot/utils/__pycache__/formatter.cpython-313.pyc
 bot/utils/__pycache__/logger.cpython-313.pyc
+bot/handlers/__pycache__/main_menu.cpython-313.pyc
+bot/handlers/__pycache__/places.cpython-313.pyc
+bot/handlers/__pycache__/settings.cpython-313.pyc
+bot/services/__pycache__/__init__.cpython-313.pyc
+bot/services/__pycache__/api_client.cpython-313.pyc
+bot/services/__pycache__/settings.cpython-313.pyc
+bot/utils/__pycache__/__init__.cpython-313.pyc
+bot/utils/__pycache__/formatter.cpython-313.pyc
+bot/utils/__pycache__/logger.cpython-313.pyc
+bot/__pycache__/__init__.cpython-313.pyc
+bot/__pycache__/config.cpython-313.pyc
+bot/__pycache__/keyboards.cpython-313.pyc
+bot/__pycache__/states.cpython-313.pyc

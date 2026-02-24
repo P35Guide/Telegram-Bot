@@ -58,23 +58,30 @@ async def handle_city_name(message: Message, state: FSMContext, session: aiohttp
         from bot.keyboards import actions_keyboard
         await message.answer("Ви повернулися до головного меню.", reply_markup=actions_keyboard())
     else:
-        await message.answer(f"Не вдалося знайти координати для міста '{city_name}'. Спробуйте ще раз або перевірте написання.")
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        retry_kb = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Спробувати ще раз")]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        await message.answer(
+            f"❗️ Не вдалося знайти координати для міста '{city_name}'. Спробуйте ще раз.",
+            reply_markup=retry_kb
+        )
 
-# Обробник вибору способу передачі локації
-from bot.states import BotState
-@router.message(F.text == "🌐 Ввести координати вручну")
-async def ask_for_coordinates(message: Message, state: FSMContext):
-    await state.set_state(BotState.entering_coordinates)
-    await message.answer(
-        "Введіть координати у форматі:\n"
-        "49.2328, 28.4810\n"
-        "Ex.: Latitude: 40.829503 | Longitude: -74.118126\n"
-        "Наприклад: 50.4501, 30.5234\n"
-        "\nPlease enter coordinates in format:\n"
-        "49.2328, 28.4810\n"
-        "Example: 40.829503, -74.118126",
-        reply_markup=choose_location_type_keyboard()
-    )
+# Команда /coordinates для отримання координат користувача
+from aiogram.filters import Command
+@router.message(Command("coordinates"))
+async def show_user_coordinates(message: Message):
+    from bot.services.settings import get_user_settings
+    coords = get_user_settings(message.from_user.id).get("coordinates")
+    if coords:
+        await message.answer(
+            f"Ваші координати:\nШирота: {coords['latitude']}\nДовгота: {coords['longitude']}"
+        )
+    else:
+        await message.answer("Координати не встановлено. Спочатку оберіть місто або надішліть свою геолокацію.")
+
 
 def filter_open_now(places, open_now):
     if not open_now:

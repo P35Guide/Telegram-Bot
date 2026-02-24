@@ -1,4 +1,3 @@
-
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart, StateFilter
@@ -8,8 +7,13 @@ from bot.keyboards import actions_keyboard, choose_location_type_keyboard
 from bot.services.settings import save_coordinates, get_user_settings
 from bot.utils.logger import logger
 from bot.states import BotState
+from aiogram.filters import Command
 
 router = Router()
+
+@router.message(Command("menu"))
+async def cmd_menu(message: Message):
+    await send_main_menu(message)
 
 @router.message(F.text.in_(["📍 Передати координати", "📍 Надіслати геолокацію"]))
 async def show_location_choice_menu(message: Message, state: FSMContext):
@@ -46,20 +50,13 @@ async def send_main_menu(message: Message):
     coords = s.get("coordinates")
 
     if coords:
-        location_line = (
-            f"📍 <b>Координати:</b>\n"
-            f"├ Широта: <tg-spoiler>{coords['latitude']}</tg-spoiler>\n"
-            f"└ Довгота: <tg-spoiler>{coords['longitude']}</tg-spoiler>"
-        )
         reply_kb = actions_keyboard()
     else:
-        location_line = "Оберіть спосіб передачі координат:"
         reply_kb = choose_location_type_keyboard()
 
     await message.answer(
         f"👋 <b>P35Guide</b>\n\n"
-        f"{settings_text(message.from_user.id)}\n\n"
-        f"{location_line}",
+        f"{settings_text(message.from_user.id)}",
         parse_mode="HTML",
         reply_markup=reply_kb
     )
@@ -99,7 +96,7 @@ async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
         "Введіть назву міста (наприклад: Львів, Київ, Одеса)"
     )
 
-# Обробник введення координат у головному меню
+# Обробник пошуку міста після введення назви
 
 @router.message(StateFilter(BotState.entering_coordinates))
 async def handle_city_input_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
@@ -111,7 +108,7 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         save_coordinates(message.from_user.id, coords["latitude"], coords["longitude"])
         await state.clear()
         await message.answer(
-            f"✅ Отримано координати для міста '{text}', широта: {coords['latitude']}\nдовгота: {coords['longitude']}\nТепер ви можете шукати місця поруч!"
+            f"✅ Місто '{text}' знайдено!\nТепер ви можете шукати місця поруч!"
         )
         await send_main_menu(message)
     else:
