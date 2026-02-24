@@ -1,6 +1,6 @@
 # Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
 
-from bot.services.settings import add_favorite_place, is_favorite_place, remove_favorite_place, toggle_favorite_place
+from bot.services.settings import add_favorite_place, get_favorite_places, is_favorite_place, remove_favorite_place
 from bot.utils.logger import logger
 from bot.utils.formatter import format_place_text
 from bot.services.settings import get_user_settings
@@ -18,7 +18,11 @@ from bot.keyboards import location_choice_keyboard
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+
 router = Router()
+
+# Кеш назв місць: {place_id: name}. Заповнюється при показі картки місця.
+_place_name_cache: dict[str, str] = {}
 
 
 @router.message(F.text == "📍 Надіслати геолокацію")
@@ -117,6 +121,36 @@ async def cancel_handler(message: Message, state: FSMContext):
     await send_main_menu(message)
 
 
+async def show_places_list(loading_msg, places, title: str = "Знайдено {count} місць"):
+    """
+    Оновлює повідомлення списком місць: клавіатура з назвами або текстовий fallback.
+    title — рядок з плейсхолдером {count}.
+    """
+    count = len(places)
+    heading = title.format(count=count)
+    kb = places_keyboard(places)
+    if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
+        preview = []
+        for idx, place in enumerate(places[:10], 1):
+            name = place.get("displayName") or place.get("name") or "Без назви"
+            address = place.get("shortFormattedAddress") or ""
+            rating = place.get("rating")
+            rating_str = f" | ⭐ {rating}" if rating else ""
+            preview.append(
+                f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
+        text = "\n\n".join(preview)
+        await loading_msg.edit_text(
+            f"✅ <b>{heading}:</b>\n\n{text}",
+            parse_mode="HTML"
+        )
+    else:
+        await loading_msg.edit_text(
+            f"✅ <b>{heading}:</b>\nОберіть місце, щоб відкрити його на карті:",
+            parse_mode="HTML",
+            reply_markup=kb
+        )
+
+
 async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True):
     """
     Логіка пошуку місць поруч.
@@ -165,30 +199,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return loading_msg, None
 
         if show_list:
-            kb = places_keyboard(places)
-            # Якщо клавіатура порожня (немає жодної кнопки) — fallback: просто текстовий список
-            if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
-                preview = []
-                for idx, place in enumerate(places[:10], 1):
-                    name = place.get('displayName') or place.get(
-                        'name') or 'Без назви'
-                    address = place.get('shortFormattedAddress') or ''
-                    rating = place.get('rating')
-                    rating_str = f" | ⭐ {rating}" if rating else ""
-                    preview.append(
-                        f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
-                text = "\n\n".join(preview)
-                await loading_msg.edit_text(
-                    f"✅ <b>Знайдено {len(places)} місць:</b>\n\n{text}",
-                    parse_mode="HTML"
-                )
-            else:
-                await loading_msg.edit_text(
-                    f"✅ <b>Знайдено {len(places)} місць:</b>\n"
-                    "Оберіть місце, щоб відкрити його на карті:",
-                    parse_mode="HTML",
-                    reply_markup=kb
-                )
+            await show_places_list(loading_msg, places)
 
         return loading_msg, places
 
@@ -201,11 +212,18 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         return loading_msg, None
 
 
-async def send_place_info(message: Message, session: aiohttp.ClientSession, place_id: str, language: str):
+async def send_place_info(
+    message: Message,
+    session: aiohttp.ClientSession,
+    place_id: str,
+    language: str,
+    user_id: int | None = None,
+):
     """
     Отримує деталі місця за його ID та відправляє їх користувачу.
-    Повертає True, якщо успішно, False у разі помилки.
     """
+    uid = user_id if user_id is not None else (
+        message.from_user.id if message.from_user else None)
     try:
         place = await get_place_details(place_id, session, language)
         if not place:
@@ -213,7 +231,6 @@ async def send_place_info(message: Message, session: aiohttp.ClientSession, plac
 
         photos = await get_photos(place_id, session)
 
-        # Send photos
         if photos:
             try:
                 media_group = [InputMediaPhoto(media=photo)
@@ -224,15 +241,17 @@ async def send_place_info(message: Message, session: aiohttp.ClientSession, plac
                 logger.error(
                     f"Failed to send photos for place {place_id}: {e}")
 
-        # Send text info
-        favorite_callback = f"fav_toggle:{place_id}" if place_id else None
+        _place_name_cache[place_id] = place.get(
+            "displayName") or place.get("name") or "Без назви"
 
+        favorite_callback = f"fav_toggle:{place_id}" if place_id else None
         text = format_place_text(place)
+        is_fav = is_favorite_place(uid, place_id) if uid else False
         kb = place_details_keyboard(
             place.get("websiteUri"),
             place.get("googleMapsUri"),
             favorite_callback,
-            is_favorite_place(message.from_user.id, place_id)
+            is_fav,
         )
 
         await message.answer(
@@ -277,6 +296,23 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
+
+
+@router.message(F.text == "🌟 Улюблені")
+async def favorite_places_handler(message: Message, session: aiohttp.ClientSession):
+    """Показує список улюблених. Назви зберігаються разом з id — API не викликається."""
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) переглядає улюблені місця")
+
+    favorites = get_favorite_places(message.from_user.id)
+    if not favorites:
+        await message.answer("🌟 Улюблених місць поки немає.")
+        return
+
+    # Формат для places_keyboard: [{id, displayName}]
+    places = [{"id": p["id"], "displayName": p["name"]} for p in favorites]
+    loading_msg = await message.answer("🌟 Улюблені місця...", parse_mode="HTML")
+    await show_places_list(loading_msg, places, "Улюблені місця ({count})")
 
 
 async def show_place_card(message: Message, state: FSMContext, session: aiohttp.ClientSession):
@@ -379,7 +415,9 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
     settings = get_user_settings(callback.from_user.id)
     language = settings.get("language", "uk")
 
-    success = await send_place_info(callback.message, session, place_id, language)
+    success = await send_place_info(
+        callback.message, session, place_id, language, user_id=callback.from_user.id
+    )
 
     if not success:
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
@@ -387,11 +425,16 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
 
 
 @router.callback_query(F.data.startswith("fav_toggle:"))
-async def add_to_favorites_handler(callback: CallbackQuery):
-    """Обробляє натискання «Додати/Вилучити з улюблених»."""
+async def fav_toggle_handler(callback: CallbackQuery):
+    """Додає або вилучає місце з улюблених. Назва береться з кешу — без API-запиту."""
     place_id = callback.data.split(":", 1)[1]
-    was_favorite = is_favorite_place(callback.from_user.id, place_id)
-    toggle_favorite_place(callback.from_user.id, place_id)
-    await callback.answer(
-        "❌ Вилучено з улюблених" if was_favorite else "✅ Додано до улюблених"
-    )
+    user_id = callback.from_user.id
+
+    if is_favorite_place(user_id, place_id):
+        remove_favorite_place(user_id, place_id)
+        await callback.answer("❌ Вилучено з улюблених")
+        return
+
+    name = _place_name_cache.get(place_id, "Без назви")
+    add_favorite_place(user_id, place_id, name)
+    await callback.answer("✅ Додано до улюблених")

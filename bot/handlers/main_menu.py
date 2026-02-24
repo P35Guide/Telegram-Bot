@@ -1,4 +1,6 @@
 
+from aiogram.filters import StateFilter
+from bot.states import BotState
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart
@@ -11,6 +13,8 @@ from bot.utils.logger import logger
 router = Router()
 
 # Обробник кнопки '📍 Передати координати' у головному меню
+
+
 @router.message(F.text == "📍 Передати координати")
 async def show_location_choice_menu(message: Message, state: FSMContext):
     await state.clear()
@@ -18,8 +22,10 @@ async def show_location_choice_menu(message: Message, state: FSMContext):
         "Оберіть спосіб передачі координат:",
         reply_markup=location_choice_keyboard()
     )
-    
+
 # Обробник кнопки '📍 Надіслати геолокацію' у головному меню
+
+
 @router.message(F.text == "📍 Надіслати геолокацію")
 async def show_location_choice_menu(message: Message, state: FSMContext):
     await state.clear()
@@ -97,8 +103,6 @@ async def cmd_start(message: Message):
     await send_main_menu(message)
 
 
-
-
 # Розгалуження: після натискання 'Передати мою геолокацію' або 'Ввести координати вручну' у головному меню
 
 # Зміна логіки: кнопка '📍 Надіслати геолокацію' відкриває меню вибору способу передачі координат
@@ -110,7 +114,8 @@ async def show_location_choice_menu(message: Message, state: FSMContext):
     )
 
 # Обробник надсилання геолокації після підтвердження
-from bot.handlers.places import find_places_handler
+
+
 @router.message(F.location)
 async def handle_location_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     latitude = message.location.latitude
@@ -126,11 +131,10 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     )
 
 # Обробник вибору ручного введення координат у головному меню
-from bot.states import BotState
-from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
 
 # Обробник вибору ручного введення координат у головному меню
+
+
 @router.message(F.text == "🌐 Ввести координати вручну")
 async def ask_for_coordinates_main_menu(message: Message, state: FSMContext):
     await state.set_state(BotState.entering_coordinates)
@@ -141,6 +145,8 @@ async def ask_for_coordinates_main_menu(message: Message, state: FSMContext):
 # Обробник введення координат у головному меню
 
 # Обробник введення координат у головному меню
+
+
 @router.message(StateFilter(BotState.entering_coordinates))
 async def handle_coordinates_input_main_menu(message: Message, state: FSMContext):
     import re

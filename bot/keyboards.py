@@ -32,9 +32,7 @@ def actions_keyboard():
                 KeyboardButton(text="⭐ Сортування"),
 
             ],
-            [
-                KeyboardButton(text="⏰ Відкрите зараз")
-            ]
+            [KeyboardButton(text="⏰ Відкрите зараз")]
         ],
         resize_keyboard=True
     )
@@ -45,7 +43,7 @@ def search_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
-            [KeyboardButton(text="🎲 Випадкове місце")],
+            [KeyboardButton(text="🎲 Випадкове місце"), KeyboardButton(text="🌟 Улюблені")],
             [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True

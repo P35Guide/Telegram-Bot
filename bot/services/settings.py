@@ -60,32 +60,51 @@ def update_open_now(user_id, open_now):
     return settings
 
 
-def add_favorite_place(user_id, place_id):
+def _normalize_favorite(item):
+    """Повертає завжди dict {id, name}. Для зворотної сумісності зі старими даними (str)."""
+    if isinstance(item, dict) and "id" in item:
+        return {"id": item["id"], "name": item.get("name") or "Без назви"}
+    if isinstance(item, str):
+        return {"id": item, "name": "Без назви"}
+    return None
+
+
+def _ensure_favorites_format(settings):
+    """Приводить favoritePlaces до списку dict {id, name}. Викликати при читанні."""
+    raw = settings.get("favoritePlaces") or []
+    normalized = []
+    for p in raw:
+        n = _normalize_favorite(p)
+        if n and n["id"]:
+            normalized.append(n)
+    settings["favoritePlaces"] = normalized
+
+
+def get_favorite_places(user_id):
+    """Повертає список улюблених: [{"id": str, "name": str}, ...]."""
     settings = get_user_settings(user_id)
-    if place_id not in settings["favoritePlaces"]:
-        settings["favoritePlaces"].append(place_id)
-    return settings
+    _ensure_favorites_format(settings)
+    return settings["favoritePlaces"]
 
 
-def remove_favorite_place(user_id, place_id):
+def add_favorite_place(user_id, place_id: str, name: str):
+    """Додає місце в улюблені. name зберігається для показу без API."""
+    favs = get_favorite_places(user_id)
+    if any(p["id"] == place_id for p in favs):
+        return
+    favs.append({"id": place_id, "name": name})
+    get_user_settings(user_id)["favoritePlaces"] = favs
+
+
+def remove_favorite_place(user_id, place_id: str):
     settings = get_user_settings(user_id)
-    if place_id in settings["favoritePlaces"]:
-        settings["favoritePlaces"].remove(place_id)
-    return settings
+    _ensure_favorites_format(settings)
+    settings["favoritePlaces"] = [p for p in settings["favoritePlaces"] if p["id"] != place_id]
 
 
-def toggle_favorite_place(user_id, place_id):
-    settings = get_user_settings(user_id)
-    if place_id in settings["favoritePlaces"]:
-        remove_favorite_place(user_id, place_id)
-    else:
-        add_favorite_place(user_id, place_id)
-    return settings
-
-
-def is_favorite_place(user_id, place_id):
-    settings = get_user_settings(user_id)
-    return place_id in settings["favoritePlaces"]
+def is_favorite_place(user_id, place_id: str) -> bool:
+    favs = get_favorite_places(user_id)
+    return any(p["id"] == place_id for p in favs)
 
 
 def save_coordinates(user_id, latitude, longitude):
