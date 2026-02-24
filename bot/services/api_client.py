@@ -7,7 +7,23 @@ from bot.config import API_BASE_URL
 from bot.utils.logger import logger
 import json
 
-
+# Отримати координати міста через API
+async def get_city_coordinates(city_name: str, session: aiohttp.ClientSession, language_code: str = "uk"):
+    """
+    Отримує координати міста за назвою через бекенд.
+    """
+    url = f"{API_BASE_URL}/api/place/city-coordinates?query={city_name}&languageCode={language_code}"
+    try:
+        async with session.get(url, ssl=False) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data  # {"latitude": ..., "longitude": ...}
+            else:
+                return None
+    except Exception as e:
+        logger.error(f"API Request Error (city-coordinates): {e}")
+        return None
+    
 async def get_places(settings, session: aiohttp.ClientSession):
     """
     Отримує список місць у заданому радіусі від користувача.
