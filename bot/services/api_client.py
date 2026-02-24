@@ -92,7 +92,7 @@ async def get_all_custom_places(session:aiohttp.ClientSession):
         async with session.get(f"https://localhost:7124/api/custom/getAllPlaces",ssl=False) as resposns:
             if resposns.status == 200:
                 logger.info("custom places gotten")
-                return resposns.json()
+                return await resposns.json()
             else:
                 return None
     except Exception as e:
@@ -103,7 +103,7 @@ async def get_custom_place_by_id(id:int,session:aiohttp.ClientSession):
         async with session.get(f"https://localhost:7124/api/custom/getPlaceById?Id={id}",ssl=False) as resposns:
             if resposns.status == 200:
                 logger.info("custom places gotten")
-                return resposns.json()
+                return await resposns.json()
             else:
                 return None
     except Exception as e:

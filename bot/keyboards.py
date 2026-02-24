@@ -70,7 +70,7 @@ def custom_places_keyboard(places):
         place_id = place.get("id") or place.get("Id")
         if place_id:
             name = place.get("displayName") or place.get(
-                "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
+                "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace") or place.get("nameOfPlace")
 
             builder.button(
                 text=name,

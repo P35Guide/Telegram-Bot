@@ -5,7 +5,7 @@ from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import places_keyboard, place_details_keyboard,custom_places_keyboard
 from bot.services.api_client import get_photos, get_places, get_place_details,add_custom_place,get_all_custom_places,get_custom_place_by_id
 from bot.services.settings import get_user_settings
-from bot.utils.formatter import format_place_text
+from bot.utils.formatter import format_place_text,format_custom_place_text
 from aiogram.fsm.context import FSMContext
 from bot.utils.logger import logger
 from bot.model.place import Place
@@ -109,8 +109,6 @@ async def get_custom_places(message:Message,session:aiohttp.ClientSession):
             "Оберіть місце, щоб відкрити його на карті:",
             reply_markup=custom_places_keyboard(places)
         )
-        
-        
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
@@ -183,7 +181,17 @@ async def custom_place_details_handler(callback:CallbackQuery,session:aiohttp.Cl
         f"Користувач {callback.from_user.username}({callback.from_user.id}) переглядає місце {place_id}")
     await callback.answer()
 
-    place = get_custom_place_by_id(place_id,session)
+    place = await get_custom_place_by_id(int(place_id),session)
+
+    if(place == None):
+        await callback.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
+        return
+    
+    await callback.message.answer(
+        format_custom_place_text(place),
+        parse_mode="HTML",
+        disable_web_page_preview=True
+    )
 
 
 
