@@ -1,24 +1,28 @@
 def update_coordinates(user_id, latitude, longitude):
     return save_coordinates(user_id, latitude, longitude)
+
+
 user_settings = {}
+
+DEFAULTS = {
+    "language": "uk",
+    "radius": 1000,
+    "coordinates": None,
+    "includedTypes": [],
+    "excludedTypes": [],
+    "maxResultCount": 20,
+    "rankPreference": "POPULARITY",
+    "openNow": False,
+    "favoritePlaces": [],
+}
 
 
 def get_user_settings(user_id):
-    defaults = {
-        "language": "uk",
-        "radius": 1000,
-        "coordinates": None,
-        "includedTypes": [],
-        "excludedTypes": [],
-        "maxResultCount": 20,
-        "rankPreference": "POPULARITY",
-        "openNow": False
-    }
-    settings = user_settings.get(user_id, defaults)
-    for key, value in defaults.items():
-        if key not in settings:
-            settings[key] = value
-    return settings
+    if user_id not in user_settings:
+        user_settings[user_id] = {
+            k: list(v) if isinstance(v, list) else v for k, v in DEFAULTS.items()
+        }
+    return user_settings[user_id]
 
 
 def update_included_types(user_id, types):
@@ -48,11 +52,41 @@ def update_rank_preference(user_id, preference):
     user_settings[user_id] = settings
     return settings
 
-def update_open_now(user_id,open_now):
+
+def update_open_now(user_id, open_now):
     settings = get_user_settings(user_id)
     settings["openNow"] = open_now
     user_settings[user_id] = settings
     return settings
+
+
+def add_favorite_place(user_id, place_id):
+    settings = get_user_settings(user_id)
+    if place_id not in settings["favoritePlaces"]:
+        settings["favoritePlaces"].append(place_id)
+    return settings
+
+
+def remove_favorite_place(user_id, place_id):
+    settings = get_user_settings(user_id)
+    if place_id in settings["favoritePlaces"]:
+        settings["favoritePlaces"].remove(place_id)
+    return settings
+
+
+def toggle_favorite_place(user_id, place_id):
+    settings = get_user_settings(user_id)
+    if place_id in settings["favoritePlaces"]:
+        remove_favorite_place(user_id, place_id)
+    else:
+        add_favorite_place(user_id, place_id)
+    return settings
+
+
+def is_favorite_place(user_id, place_id):
+    settings = get_user_settings(user_id)
+    return place_id in settings["favoritePlaces"]
+
 
 def save_coordinates(user_id, latitude, longitude):
     settings = get_user_settings(user_id)

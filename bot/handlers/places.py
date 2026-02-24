@@ -1,10 +1,26 @@
 # Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
 
+from bot.services.settings import add_favorite_place, is_favorite_place, remove_favorite_place, toggle_favorite_place
+from bot.utils.logger import logger
+from bot.utils.formatter import format_place_text
+from bot.services.settings import get_user_settings
+from bot.services.api_client import get_photos, get_places, get_place_details
+from bot.keyboards import places_keyboard, place_details_keyboard
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+import random
+import aiohttp
+from bot.keyboards import search_keyboard
+from bot.handlers.main_menu import send_main_menu
+from ssl import SSLContext
+from bot.keyboards import place_navigation_keyboard
+from bot.states import BotState
+from bot.keyboards import location_choice_keyboard
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 router = Router()
-from bot.keyboards import location_choice_keyboard
+
+
 @router.message(F.text == "📍 Надіслати геолокацію")
 async def choose_location_method(message: Message, state: FSMContext):
     await state.clear()
@@ -14,7 +30,8 @@ async def choose_location_method(message: Message, state: FSMContext):
     )
 
 # Обробник вибору способу передачі локації
-from bot.states import BotState
+
+
 @router.message(F.text == "🌐 Ввести координати вручну")
 async def ask_for_coordinates(message: Message, state: FSMContext):
     await state.set_state(BotState.entering_coordinates)
@@ -28,21 +45,6 @@ async def ask_for_coordinates(message: Message, state: FSMContext):
         "Example: 40.829503, -74.118126",
         reply_markup=location_choice_keyboard()
     )
-from bot.keyboards import place_navigation_keyboard
-from bot.states import BotState
-from ssl import SSLContext
-from bot.handlers.main_menu import send_main_menu
-from bot.keyboards import search_keyboard
-import aiohttp
-import random
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
-from aiogram.fsm.context import FSMContext
-from bot.keyboards import places_keyboard, place_details_keyboard
-from bot.services.api_client import get_photos, get_places, get_place_details
-from bot.services.settings import get_user_settings
-from bot.utils.formatter import format_place_text
-from bot.utils.logger import logger
 
 router = Router()
 
@@ -53,23 +55,21 @@ def filter_open_now(places, open_now):
     return [p for p in places if (p.get("openNow") is True or p.get("OpenNow") is True)]
 
 
-
 @router.message(F.text == "🎲 Випадкове місце")
 async def random_place_handler(message: Message, session: aiohttp.ClientSession):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) шукає випадкове місце")
-    
-   
+
     await message.answer_dice(emoji="🎲")
-    
+
     loading_msg = await message.answer(
         "⏳ <b>Крутимо рулетку...</b>\n"
         "Зачекайте, виконується запит до API...",
         parse_mode="HTML"
     )
-    
+
     settings = get_user_settings(message.from_user.id)
-    
+
     if not settings.get("coordinates"):
         await loading_msg.delete()
         await message.answer(
@@ -109,6 +109,7 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession)
             "❌ <b>Сталася помилка при обробці запиту.</b>",
             parse_mode="HTML"
         )
+
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message, state: FSMContext):
@@ -169,11 +170,13 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
                 preview = []
                 for idx, place in enumerate(places[:10], 1):
-                    name = place.get('displayName') or place.get('name') or 'Без назви'
+                    name = place.get('displayName') or place.get(
+                        'name') or 'Без назви'
                     address = place.get('shortFormattedAddress') or ''
                     rating = place.get('rating')
                     rating_str = f" | ⭐ {rating}" if rating else ""
-                    preview.append(f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
+                    preview.append(
+                        f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
                 text = "\n\n".join(preview)
                 await loading_msg.edit_text(
                     f"✅ <b>Знайдено {len(places)} місць:</b>\n\n{text}",
@@ -209,21 +212,27 @@ async def send_place_info(message: Message, session: aiohttp.ClientSession, plac
             return False
 
         photos = await get_photos(place_id, session)
-        
+
         # Send photos
         if photos:
             try:
-                media_group = [InputMediaPhoto(media=photo) for photo in photos[:10]]
+                media_group = [InputMediaPhoto(media=photo)
+                               for photo in photos[:10]]
                 if media_group:
                     await message.answer_media_group(media_group)
             except Exception as e:
-                logger.error(f"Failed to send photos for place {place_id}: {e}")
+                logger.error(
+                    f"Failed to send photos for place {place_id}: {e}")
 
         # Send text info
+        favorite_callback = f"fav_toggle:{place_id}" if place_id else None
+
         text = format_place_text(place)
         kb = place_details_keyboard(
             place.get("websiteUri"),
-            place.get("googleMapsUri")
+            place.get("googleMapsUri"),
+            favorite_callback,
+            is_favorite_place(message.from_user.id, place_id)
         )
 
         await message.answer(
@@ -239,7 +248,7 @@ async def send_place_info(message: Message, session: aiohttp.ClientSession, plac
                 latitude=place["latitude"],
                 longitude=place["longitude"]
             )
-            
+
         return True
 
     except Exception as e:
@@ -250,16 +259,9 @@ async def send_place_info(message: Message, session: aiohttp.ClientSession, plac
 @router.message(F.text == "🔍 Список")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
     loading_msg, places = await perform_search(message, session)
-    
+
     if not places:
         return
-
-    await loading_msg.edit_text(
-        f"✅ <b>Знайдено {len(places)} місць:</b>\n"
-        "Оберіть місце, щоб відкрити його на карті:",
-        parse_mode="HTML",
-        reply_markup=places_keyboard(places)
-    )
 
 
 @router.message(F.text == "🚀 Пошук маршрутів")
@@ -303,10 +305,10 @@ async def show_place_card(message: Message, state: FSMContext, session: aiohttp.
     loading_msg = await message.answer("⏳ Завантаження інформації...")
 
     success = await send_place_info(message, session, place_id, language)
-    
+
     if not success:
-         await loading_msg.edit_text("⚠️ Не вдалося отримати деталі місця.")
-         return
+        await loading_msg.edit_text("⚠️ Не вдалося отримати деталі місця.")
+        return
 
     await loading_msg.delete()
     await message.answer(
@@ -325,9 +327,9 @@ async def search_places_handler(message: Message, session: aiohttp.ClientSession
 
     await state.set_state(BotState.browsing_places)
     await state.update_data(places=places, current_index=0)
-    
+
     await loading_msg.delete()
-    
+
     await show_place_card(message, state, session)
 
 
@@ -383,44 +385,13 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
         await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
         return
 
-    kb = place_details_keyboard(
-        place.get("websiteUri"),
-        place.get("googleMapsUri")
+
+@router.callback_query(F.data.startswith("fav_toggle:"))
+async def add_to_favorites_handler(callback: CallbackQuery):
+    """Обробляє натискання «Додати/Вилучити з улюблених»."""
+    place_id = callback.data.split(":", 1)[1]
+    was_favorite = is_favorite_place(callback.from_user.id, place_id)
+    toggle_favorite_place(callback.from_user.id, place_id)
+    await callback.answer(
+        "❌ Вилучено з улюблених" if was_favorite else "✅ Додано до улюблених"
     )
-
-    # надсилаємо фото
-    if photos:
-        try:
-            media_group = [InputMediaPhoto(media=photo)
-                           for photo in photos[:10]]
-            if media_group:
-                await callback.message.answer_media_group(media_group)
-        except Exception as e:
-            logger.error(f"Failed to send photos for place {place_id}: {e}")
-
-    await callback.message.answer(
-        format_place_text(place),
-        parse_mode="HTML",
-        reply_markup=kb,
-        disable_web_page_preview=True
-    )
-
-    # Якщо координати вже встановлені (тобто геолокація надіслана), повертаємо головне меню
-    if settings.get("coordinates"):
-        from bot.keyboards import actions_keyboard
-        await callback.message.answer(
-            "✅ Геолокацію отримано! Ви повернулися до головного меню.",
-            reply_markup=actions_keyboard()
-        )
-        return
-
-    # надсилаємо мапу
-    if place.get("latitude") and place.get("longitude"):
-        await callback.message.answer_location(
-            latitude=place["latitude"],
-            longitude=place["longitude"]
-        )
-
-
-
-

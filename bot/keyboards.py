@@ -1,19 +1,22 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+
 def location_choice_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Передати мою геолокацію", request_location=True)],
+            [KeyboardButton(text="📍 Передати мою геолокацію",
+                            request_location=True)],
             [KeyboardButton(text="🌐 Ввести координати вручну")]
         ],
         resize_keyboard=True
     )
 
+
 def actions_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-                [KeyboardButton(text="📍 Передати координати")],
+            [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
             [
                 KeyboardButton(text="🌐 Мова"),
@@ -22,12 +25,12 @@ def actions_keyboard():
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
                 KeyboardButton(text="🧹 Скинути категорії"),
-                
+
             ],
             [
                 KeyboardButton(text="🔢 Кількість"),
                 KeyboardButton(text="⭐ Сортування"),
-               
+
             ],
             [
                 KeyboardButton(text="⏰ Відкрите зараз")
@@ -80,7 +83,7 @@ def places_keyboard(places):
     return builder.as_markup()
 
 
-def place_details_keyboard(place_url=None, google_maps_url=None):
+def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callback=None, is_favorite=False):
     """
     Генерує клавіатуру для детального перегляду місця.
     """
@@ -91,6 +94,10 @@ def place_details_keyboard(place_url=None, google_maps_url=None):
 
     if google_maps_url:
         builder.button(text="📍 Карта", url=google_maps_url)
+
+    if favorite_callback:
+        builder.button(text="🌟 Додати до улюблених" if not is_favorite else "🌟 Вилучити з улюблених",
+                       callback_data=favorite_callback)
 
     return builder.as_markup()
 
