@@ -91,6 +91,7 @@ async def add_photo(message:Message,state:FSMContext,session: aiohttp.ClientSess
         await message.answer("We got error")
         await send_main_menu(message)
 
+
 @router.message(F.text == "🧾 Дістати місця користувачів")
 async def get_custom_places(message:Message,session:aiohttp.ClientSession):
     alert = await message.answer("🔍 <b>Пошук місць створених користувачами...</b>\n\n"
@@ -112,9 +113,6 @@ async def get_custom_places(message:Message,session:aiohttp.ClientSession):
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
-
-    
-
 
 @router.message(F.text == "🔍 Знайти місця поруч")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
@@ -170,6 +168,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
             parse_mode="HTML"
         )
 
+
 @router.callback_query(F.data.startswith("custom_place_view:"))
 async def custom_place_details_handler(callback:CallbackQuery,session:aiohttp.ClientSession):
     """
@@ -192,8 +191,6 @@ async def custom_place_details_handler(callback:CallbackQuery,session:aiohttp.Cl
         parse_mode="HTML",
         disable_web_page_preview=True
     )
-
-
 
 @router.callback_query(F.data.startswith("place_view:"))
 async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession):

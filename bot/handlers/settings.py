@@ -74,6 +74,10 @@ async def rank_preference_handler(message: Message):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
     await send_main_menu(message)
 
+@router.message(F.text == "📡 Сортування отриманого")
+async def included_exluded_types_reference_handler(message:Message):
+    ########################
+    return
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
                             BotState.selecting_included_types, BotState.selecting_excluded_types,
