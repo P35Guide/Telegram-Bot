@@ -19,14 +19,6 @@ async def show_location_choice_menu(message: Message, state: FSMContext):
         reply_markup=location_choice_keyboard()
     )
     
-# Обробник кнопки '📍 Надіслати геолокацію' у головному меню
-@router.message(F.text == "📍 Надіслати геолокацію")
-async def show_location_choice_menu(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        "Оберіть спосіб передачі координат:",
-        reply_markup=location_choice_keyboard()
-    )
 
 
 def settings_text(user_id: int) -> str:
@@ -76,18 +68,6 @@ async def send_main_menu(message: Message):
             reply_markup=location_choice_keyboard()
         )
 
-    # Якщо координати не задані — показати вибір способу передачі локації, інакше — стандартне меню
-    if coords:
-        reply_kb = actions_keyboard()
-    else:
-        reply_kb = location_choice_keyboard()
-    await message.answer(
-        f"👋 <b>P35Guide</b>\n\n"
-        f"{settings_text(message.from_user.id)}\n\n"
-        f"{location_line}",
-        parse_mode="HTML",
-        reply_markup=reply_kb
-    )
 
 
 @router.message(CommandStart())
@@ -98,16 +78,6 @@ async def cmd_start(message: Message):
 
 
 
-
-# Розгалуження: після натискання 'Передати мою геолокацію' або 'Ввести координати вручну' у головному меню
-
-# Зміна логіки: кнопка '📍 Надіслати геолокацію' відкриває меню вибору способу передачі координат
-@router.message(F.text == "📍 Надіслати геолокацію")
-async def show_location_choice_menu(message: Message, state: FSMContext):
-    await message.answer(
-        "Оберіть спосіб передачі координат:",
-        reply_markup=location_choice_keyboard()
-    )
 
 # Обробник надсилання геолокації після підтвердження
 from bot.handlers.places import find_places_handler
