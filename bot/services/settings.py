@@ -1,5 +1,9 @@
 user_settings = {}
 
+def save_user_settings(user_id, settings):
+    user_settings[user_id] = settings
+    return settings
+
 def get_user_settings(user_id):
     defaults = {
         "language": "uk",
@@ -100,9 +104,6 @@ def save_coordinates(user_id, latitude, longitude):
     }
     user_settings[user_id] = settings
     return settings
-
-def update_coordinates(user_id, latitude, longitude):
-    return save_coordinates(user_id, latitude, longitude)
 
 def get_coordinates(user_id):
     settings = get_user_settings(user_id)

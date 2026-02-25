@@ -10,3 +10,6 @@ class BotState(StatesGroup):
     waiting_for_category = State()
     entering_coordinates = State()
     browsing_places = State()
+    choosing_location_type = State()
+    entering_city_name = State()
+    waiting_for_location = State()
