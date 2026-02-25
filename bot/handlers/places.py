@@ -91,10 +91,39 @@ async def random_choice_back_handler(message: Message, state: FSMContext):
     await message.answer("Повернулися до пошуку.", reply_markup=search_keyboard())
 
 
-# Заглушка: випадкове з улюблених (реалізація пізніше)
+# Випадкове місце з улюблених
 @router.message(F.text == "❤️ Випадкове з улюблених", StateFilter(BotState.choosing_random_type))
-async def random_from_favorites_placeholder(message: Message):
-    await message.answer("Скоро буде доступно.", reply_markup=random_choice_keyboard())
+async def random_from_favorites_handler(
+    message: Message, state: FSMContext, session: aiohttp.ClientSession
+):
+    await state.clear()
+    user_id = message.from_user.id
+    favorites = get_favorite_places(user_id)
+
+    if not favorites:
+        await message.answer(
+            "🌟 Улюблених місць поки немає.\nДодайте місця через пошук.",
+            reply_markup=search_keyboard(),
+        )
+        return
+
+    await message.answer_dice(emoji="🎲")
+
+    loading_msg = await message.answer(
+        "⏳ <b>Крутимо рулетку...</b>\n"
+        "Зачекайте, виконується запит до API...",
+        parse_mode="HTML",
+    )
+
+    chosen = random.choice(favorites)
+    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
+
+    await loading_msg.edit_text(
+        "🎲 <b>Випадкове місце з улюблених:</b>\n"
+        "Оберіть місце, щоб відкрити його на карті:",
+        parse_mode="HTML",
+        reply_markup=places_keyboard(place_for_kb),
+    )
 
 
 # Реалізація випадкового місця (після вибору в меню)
