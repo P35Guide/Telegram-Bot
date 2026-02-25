@@ -1,6 +1,6 @@
 import aiohttp
 from aiogram import Router, F
-from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup
+from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
 from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import places_keyboard, place_details_keyboard,custom_places_keyboard
 from bot.services.api_client import get_photos, get_places, get_place_details,add_custom_place,get_all_custom_places,get_custom_place_by_id
@@ -10,6 +10,8 @@ from aiogram.fsm.context import FSMContext
 from bot.utils.logger import logger
 from bot.model.place import Place
 from bot.states import AddPlace
+from aiogram import Bot
+import base64
 
 
 
@@ -60,27 +62,47 @@ async def add_adress(message:Message,state:FSMContext):
 
     if(saved == info):
         logger.info("adress local saved")
-        await message.answer("[Адреса збережена]\nНадай фото місцевості")
+        await message.answer("[Адреса збережена]\nНадай 5 фото місцевості")
         await state.set_state(AddPlace.wait_for_foto)
     else:
         await message.answer("[помилка в збережені]")
         send_main_menu()
-@router.message(AddPlace.wait_for_foto,(F.photo | F.document))
-async def add_photo(message:Message,state:FSMContext,session: aiohttp.ClientSession):
-    info_photo = message.photo
-    info_doc = message.document
-
+@router.message(AddPlace.wait_for_foto,F.photo)
+async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.ClientSession):
     data = await state.get_data()
+    photos_ids = data.get("photos",[])
 
+    photos_ids.append(message.photo[-1].file_id)
+
+    await state.update_data(photos = photos_ids)
+
+    number_photo = len(photos_ids)
+
+    if(number_photo<5):
+        return
+
+    encoded_phtos = []
+
+    for photo_id in photos_ids:
+        file = await bot.get_file(photo_id)
+
+        photo_buffer = await bot.download_file(file.file_path)
+
+        photo_byts = photo_buffer.read()
+        base64photo = base64.b64encode(photo_byts).decode("utf-8")
+        encoded_phtos.append(base64photo)
+    
     place = Place()
+
     place.NameOfPlace =  data.get("title")
     place.Description =  data.get("discription")
     place.Address =  data.get("adress")
-    
-    if(info_photo!=None):
-        place.PhotoUrl = "photo"
-    else :
-        place.PhotoUrl = "photo"
+
+    place.Photo1 = encoded_phtos[0]
+    place.Photo2 = encoded_phtos[1]
+    place.Photo3 = encoded_phtos[2]
+    place.Photo4 = encoded_phtos[3]
+    place.Photo5 = encoded_phtos[4]
 
     result = await add_custom_place(place,session)
 
@@ -90,6 +112,7 @@ async def add_photo(message:Message,state:FSMContext,session: aiohttp.ClientSess
     else:
         await message.answer("We got error")
         await send_main_menu(message)
+
 
 
 @router.message(F.text == "🧾 Дістати місця користувачів")
@@ -191,6 +214,16 @@ async def custom_place_details_handler(callback:CallbackQuery,session:aiohttp.Cl
         parse_mode="HTML",
         disable_web_page_preview=True
     )
+
+    media_group = []
+    phtos = [place.get("photo1"),place.get("photo2"),place.get("photo3"),place.get("photo4"),place.get("photo5")]
+
+    for i,photos_base64 in enumerate(phtos):
+        if(photos_base64 != None):
+            photo_bytes = base64.b64decode(photos_base64)
+            file = BufferedInputFile(photo_bytes,filename = f"photo{i}.jpg")
+            media_group.append(InputMediaPhoto(media=file,caption=place.get("nameOfPlace") if i==0 else ""))
+    await callback.message.answer_media_group(media=media_group)
 
 @router.callback_query(F.data.startswith("place_view:"))
 async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession):

@@ -75,7 +75,11 @@ async def add_custom_place(place:Place,session: aiohttp.ClientSession):
         "nameOfPlace": f"{place.NameOfPlace}",
         "address": f"{place.Address}",
         "description": f"{place.Description}",
-        "photoUrl": f"{place.PhotoUrl}"
+        "photo1": f"{place.Photo1}",
+        "photo2": f"{place.Photo2}",
+        "photo3": f"{place.Photo3}",
+        "photo4": f"{place.Photo4}",
+        "photo5": f"{place.Photo5}"
     }
     try:
         async with session.post(f"https://localhost:7124/api/custom/addPlace",json=data_to_post,ssl=False)as response:
