@@ -1,19 +1,21 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import CommandStart, StateFilter, Command
 from aiogram.fsm.context import FSMContext
 import aiohttp
+
 from bot.keyboards import actions_keyboard, choose_location_type_keyboard
 from bot.services.settings import save_coordinates, get_user_settings
 from bot.utils.logger import logger
 from bot.states import BotState
-from aiogram.filters import Command
 
 router = Router()
+
 
 @router.message(Command("menu"))
 async def cmd_menu(message: Message):
     await send_main_menu(message)
+
 
 @router.message(F.text.in_(["📍 Передати координати", "📍 Надіслати геолокацію"]))
 async def show_location_choice_menu(message: Message, state: FSMContext):
@@ -90,15 +92,13 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         reply_markup=actions_keyboard()
     )
 
-# Обробник вибору міста у головному меню
+
 @router.message(F.text == "🏙️ Знайти потрібне місто")
 async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
     await state.set_state(BotState.entering_coordinates)
     await message.answer(
         "Введіть назву міста (наприклад: Львів, Київ, Одеса)"
     )
-
-# Обробник пошуку міста після введення назви
 
 @router.message(StateFilter(BotState.entering_coordinates))
 async def handle_city_input_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
