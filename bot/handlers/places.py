@@ -1,33 +1,3 @@
-# Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
-
-from aiogram import Router, F
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
-router = Router()
-from bot.keyboards import location_choice_keyboard
-@router.message(F.text == "📍 Надіслати геолокацію")
-async def choose_location_method(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        "Оберіть спосіб передачі координат:",
-        reply_markup=location_choice_keyboard()
-    )
-
-# Обробник вибору способу передачі локації
-from bot.states import BotState
-@router.message(F.text == "🌐 Ввести координати вручну")
-async def ask_for_coordinates(message: Message, state: FSMContext):
-    await state.set_state(BotState.entering_coordinates)
-    await message.answer(
-        "Введіть координати у форматі:\n"
-        "49.2328, 28.4810\n"
-        "Ex.: Latitude: 40.829503 | Longitude: -74.118126\n"
-        "Наприклад: 50.4501, 30.5234\n"
-        "\nPlease enter coordinates in format:\n"
-        "49.2328, 28.4810\n"
-        "Example: 40.829503, -74.118126",
-        reply_markup=location_choice_keyboard()
-    )
 from bot.keyboards import place_navigation_keyboard
 from bot.states import BotState
 from ssl import SSLContext
@@ -38,13 +8,79 @@ import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import places_keyboard, place_details_keyboard
+from bot.keyboards import places_keyboard, place_details_keyboard, choose_location_type_keyboard
 from bot.services.api_client import get_photos, get_places, get_place_details
 from bot.services.settings import get_user_settings
 from bot.utils.formatter import format_place_text
 from bot.utils.logger import logger
 
 router = Router()
+
+# Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
+@router.message(F.text == "📍 Надіслати геолокацію")
+async def choose_location_method(message: Message, state: FSMContext):
+    await state.clear()
+    await state.set_state(BotState.choosing_location_type)
+    await message.answer(
+        "Оберіть спосіб передачі координат:",
+        reply_markup=choose_location_type_keyboard()
+    )
+
+# Обробка вибору типу локації
+@router.message(BotState.choosing_location_type)
+async def handle_location_type_choice(message: Message, state: FSMContext):
+    if message.text == "📍 Передати мою локацію":
+        await message.answer("Будь ласка, надішліть свою геолокацію через кнопку нижче.")
+        # Далі користувач надсилає локацію, стандартний хендлер обробить це
+    elif message.text == "🏙️ Знайти потрібне місто":
+        await state.set_state(BotState.entering_city_name)
+        await message.answer("Введіть назву міста, для якого потрібно знайти координати:")
+    else:
+        await message.answer("Будь ласка, оберіть один із варіантів.", reply_markup=choose_location_type_keyboard())
+
+# Обробка введення міста та отримання координат через API
+from bot.services.api_client import get_city_coordinates
+from bot.services.settings import get_user_settings, save_user_settings
+@router.message(BotState.entering_city_name)
+async def handle_city_name(message: Message, state: FSMContext, session: aiohttp.ClientSession):
+    city_name = message.text.strip()
+    await message.answer(f"Шукаю координати для міста: {city_name} ...")
+    coords = await get_city_coordinates(city_name, session)
+    if coords and coords.get("latitude") and coords.get("longitude"):
+        user_settings = get_user_settings(message.from_user.id)
+        user_settings["coordinates"] = {
+            "latitude": coords["latitude"],
+            "longitude": coords["longitude"]
+        }
+        save_user_settings(message.from_user.id, user_settings)
+        await state.clear()
+        await message.answer(f"Координати міста {city_name} встановлено! Ви можете шукати місця.")
+        from bot.keyboards import actions_keyboard
+        await message.answer("Ви повернулися до головного меню.", reply_markup=actions_keyboard())
+    else:
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        retry_kb = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="Спробувати ще раз")]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        await message.answer(
+            f"❗️ Не вдалося знайти координати для міста '{city_name}'. Спробуйте ще раз.",
+            reply_markup=retry_kb
+        )
+
+# Команда /coordinates для отримання координат користувача
+from aiogram.filters import Command
+@router.message(Command("coordinates"))
+async def show_user_coordinates(message: Message):
+    from bot.services.settings import get_user_settings
+    coords = get_user_settings(message.from_user.id).get("coordinates")
+    if coords:
+        await message.answer(
+            f"Ваші координати:\nШирота: {coords['latitude']}\nДовгота: {coords['longitude']}"
+        )
+    else:
+        await message.answer("Координати не встановлено. Спочатку оберіть місто або надішліть свою геолокацію.")
 
 
 def filter_open_now(places, open_now):
@@ -76,7 +112,7 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession)
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
             "Будь ласка, надішліть геолокацію або введіть координати:",
             parse_mode="HTML",
-            reply_markup=location_choice_keyboard()
+            reply_markup=choose_location_type_keyboard()
         )
         return
     try:
@@ -137,9 +173,9 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         await loading_msg.delete()
         await message.answer(
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
-            "Будь ласка, надішліть геолокацію або введіть координати:",
+            "Оберіть спосіб передачі координат:",
             parse_mode="HTML",
-            reply_markup=location_choice_keyboard()
+            reply_markup=choose_location_type_keyboard()
         )
         return None, None
 
