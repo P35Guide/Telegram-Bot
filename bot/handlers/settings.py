@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from bot.keyboards import actions_keyboard, cancel_keyboard
 from aiogram.filters import StateFilter
@@ -37,23 +38,81 @@ async def radius_handler(message: Message, state: FSMContext):
 
 @router.message(F.text == "🍴 Вибрати категорії")
 async def included_types_handler(message: Message, state: FSMContext):
-    await state.set_state(BotState.selecting_included_types)
-    await message.answer(
-        "✏️ Введіть типи місць для пошуку через кому (наприклад: restaurant, cafe):\n"
-        "Або надішліть 'clear' щоб очистити.",
-        reply_markup=cancel_keyboard()
-    )
+    builder = InlineKeyboardBuilder()
+    
+    popular_types = [
+        ("🍕 Ресторан",  "restaurant"),
+        ("☕ Кав'ярня", "cafe"),
+        ("🍺 Бар", "bar"),
+        ("🍔 Фастфуд", "fast_food_restaurant"),
+        ("💊 Аптека", "pharmacy"),
+        ("🛒 Магазин", "store")
+         
+        
+        
+    ]
+    
+    for label,code in popular_types:
+        builder.button(
+            text=label,
+            callback_data=f"add_included_type:{code}"
+        )
+    
+    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
+    
+    builder.adjust(2)
+    
+    current_settings = get_user_settings(message.from_user.id)
+    included = current_settings.get("includedTypes", [])
+    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
 
-
-@router.message(F.text == "🧹 Скинути категорії")
-async def excluded_types_handler(message: Message, state: FSMContext):
-    await state.set_state(BotState.selecting_excluded_types)
     await message.answer(
-        "✏️ Введіть типи місць, які треба виключити, через кому (наприклад: restaurant, cafe):\n"
-        "Або надішліть 'clear' щоб очистити.",
-        reply_markup=cancel_keyboard()
+        "🔎 <b>Оберіть популярну категорію</b> зі списку нижче:\n\n"
+        f"{current_line}"
+        "✍️ <b>Або просто напишіть</b> свій варіант (наприклад: шаурма, кінотеатр, парк).",
+        parse_mode="HTML",
+        reply_markup=builder.as_markup()
     )
     
+    await state.set_state(BotState.waiting_for_category)
+
+   
+@router.callback_query(F.data.startswith("add_included_type:"))    
+async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
+    type_code = callback.data.split(":")[1]
+    settings_service.add_included_type(callback.from_user.id, type_code)
+    await callback.answer("✅ Категорію додано!")
+    await state.clear()
+    await send_main_menu(callback.message, user_id=callback.from_user.id)
+
+@router.message(BotState.waiting_for_category)
+async def add_custom_category_handler(message: Message, state: FSMContext):
+    user_text = (message.text or "").strip()
+
+    if len(user_text) < 3:
+        await message.answer("⚠️ Занадто коротка назва. Спробуйте ще раз або оберіть кнопку.")
+        return
+
+    settings_service.add_included_type(message.from_user.id, user_text)
+    await message.answer(f"✅ Прийнято! Шукаю нестандартну категорію: **{user_text}**")
+    await state.clear()
+    await send_main_menu(message)
+
+@router.callback_query(F.data == "cancel_included_types")
+async def clear_included_types_callback(callback: CallbackQuery, state: FSMContext):
+    settings_service.clear_included_types(callback.from_user.id)
+    await callback.answer("✅ Категорії скинуто!")
+    await state.clear()
+    await send_main_menu(callback.message, user_id=callback.from_user.id)
+
+@router.message(F.text == "🧹 Скинути категорії", BotState.waiting_for_category)
+async def clear_included_types_handler(message: Message, state: FSMContext):
+    settings_service.clear_included_types(message.from_user.id)
+    await message.answer("✅ Категорії скинуто!")
+    await state.clear()
+    await send_main_menu(message)
+    
+
 
 
 @router.message(F.text == "🔢 Кількість")
@@ -165,3 +224,4 @@ async def set_max_result_count_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив кількість результатів на {int(text)}")
     await state.clear()
     await send_main_menu(message)
+

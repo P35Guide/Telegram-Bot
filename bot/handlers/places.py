@@ -1,6 +1,7 @@
 from bot.keyboards import place_navigation_keyboard
 from bot.states import BotState
 from ssl import SSLContext
+
 from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import search_keyboard
 import aiohttp

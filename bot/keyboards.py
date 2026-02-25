@@ -23,8 +23,7 @@ def actions_keyboard():
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text="🧹 Скинути категорії"),
-                
+                 
             ],
             [
                 KeyboardButton(text="🔢 Кількість"),

@@ -45,18 +45,26 @@ def settings_text(user_id: int) -> str:
     )
 
 
-async def send_main_menu(message: Message):
-    s = get_user_settings(message.from_user.id)
+async def send_main_menu(message: Message, user_id: int | None = None):
+    target_user_id = user_id or message.from_user.id
+    s = get_user_settings(target_user_id)
     coords = s.get("coordinates")
 
     if coords:
+        location_line = (
+            f"📍 <b>Координати:</b>\n"
+            f"├ Широта: <tg-spoiler>{coords['latitude']}</tg-spoiler>\n"
+            f"└ Довгота: <tg-spoiler>{coords['longitude']}</tg-spoiler>"
+        )
         reply_kb = actions_keyboard()
     else:
+        location_line = "Оберіть спосіб передачі координат:"
         reply_kb = choose_location_type_keyboard()
 
     await message.answer(
         f"👋 <b>P35Guide</b>\n\n"
-        f"{settings_text(message.from_user.id)}",
+        f"{settings_text(target_user_id)}\n\n"
+        f"{location_line}",
         parse_mode="HTML",
         reply_markup=reply_kb
     )
@@ -69,9 +77,6 @@ async def cmd_start(message: Message):
     await send_main_menu(message)
 
 
-
-
-# Обробник надсилання геолокації після підтвердження
 @router.message(F.location)
 async def handle_location_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     latitude = message.location.latitude
@@ -80,13 +85,10 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         f"Користувач {message.from_user.username}({message.from_user.id}) надіслав локацію: {latitude}, {longitude}")
     save_coordinates(message.from_user.id, latitude, longitude)
     await state.clear()
-    from bot.keyboards import actions_keyboard
     await message.answer(
         "✅ Геолокацію отримано! Ви повернулися до головного меню.",
         reply_markup=actions_keyboard()
     )
-
-
 
 # Обробник вибору міста у головному меню
 @router.message(F.text == "🏙️ Знайти потрібне місто")
