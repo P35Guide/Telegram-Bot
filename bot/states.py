@@ -13,3 +13,4 @@ class BotState(StatesGroup):
     choosing_location_type = State()
     entering_city_name = State()
     waiting_for_location = State()
+    choosing_random_type = State()
