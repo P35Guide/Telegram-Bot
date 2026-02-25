@@ -3,7 +3,6 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart, StateFilter, Command
 from aiogram.fsm.context import FSMContext
 import aiohttp
-import re
 
 from bot.keyboards import actions_keyboard, choose_location_type_keyboard
 from bot.services.settings import save_coordinates, get_user_settings
@@ -101,37 +100,9 @@ async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
         "Введіть назву міста (наприклад: Львів, Київ, Одеса)"
     )
 
-
-@router.message(F.text == "🌐 Ввести координати вручну")
-async def ask_for_coordinates_main_menu(message: Message, state: FSMContext):
-    await state.set_state(BotState.entering_coordinates)
-    await message.answer(
-        "Введіть координати у форматі:\n"
-        "49.2328, 28.4810\n"
-        "Наприклад: 50.4501, 30.5234"
-    )
-
-
 @router.message(StateFilter(BotState.entering_coordinates))
 async def handle_city_input_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     text = message.text.strip()
-    coord_match = re.match(r"^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$", text)
-
-    if coord_match:
-        lat = float(coord_match.group(1))
-        lon = float(coord_match.group(2))
-        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-            await message.answer("❗️ Невірний діапазон координат. Спробуйте ще раз.")
-            return
-
-        save_coordinates(message.from_user.id, lat, lon)
-        await state.clear()
-        await message.answer(
-            f"✅ Координати збережено: {lat}, {lon}\nТепер ви можете шукати місця поруч!"
-        )
-        await send_main_menu(message)
-        return
-
     from bot.services.api_client import get_city_coordinates
     await message.answer(f"Шукаю координати для міста: {text} ...")
     coords = await get_city_coordinates(text, session)

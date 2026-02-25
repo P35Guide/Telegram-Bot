@@ -7,7 +7,6 @@ def choose_location_type_keyboard():
         keyboard=[
             [KeyboardButton(text="📍 Передати мою локацію", request_location=True)],
             [KeyboardButton(text="🏙️ Знайти потрібне місто")],
-            [KeyboardButton(text="🌐 Ввести координати вручну")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True
@@ -25,7 +24,6 @@ def actions_keyboard():
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text="🧹 Скинути категорії"),
             ],
             [
                 KeyboardButton(text="🔢 Кількість"),

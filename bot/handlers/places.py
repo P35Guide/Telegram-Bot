@@ -51,13 +51,6 @@ async def handle_location_type_choice(message: Message, state: FSMContext):
     elif message.text == "🏙️ Знайти потрібне місто":
         await state.set_state(BotState.entering_coordinates)
         await message.answer("Введіть назву міста, для якого потрібно знайти координати:")
-    elif message.text == "🌐 Ввести координати вручну":
-        await state.set_state(BotState.entering_coordinates)
-        await message.answer(
-            "Введіть координати у форматі:\n"
-            "49.2328, 28.4810\n"
-            "Наприклад: 50.4501, 30.5234"
-        )
     else:
         await message.answer("Будь ласка, оберіть один із варіантів.", reply_markup=choose_location_type_keyboard())
 
