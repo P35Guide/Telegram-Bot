@@ -1,3 +1,4 @@
+from bot.model.place import Place
 PRICE_LEVELS = {
     "PRICE_LEVEL_UNSPECIFIED": "",
     "PRICE_LEVEL_FREE": "Безкоштовно",
@@ -48,8 +49,6 @@ def format_place_text(p: dict) -> str:
     website = f"🌐 <a href='{p.get('websiteUri')}'>Офіційний сайт</a>" if p.get(
         'websiteUri') else None
 
-   
-
     # Опис
     description = None
     summary = p.get('editorialSummary') or p.get('generativeSummary')
@@ -70,6 +69,19 @@ def format_place_text(p: dict) -> str:
         phone,
         website,
         "",
+        description
+    ]
+    return "\n".join(line for line in lines if line is not None)
+
+def format_custom_place_text(p:dict):
+    title = f"🏢 <b>{p.get('nameOfPlace')}</b>"
+    address = f"📍 <b>Адреса:</b>\n<i>{p.get('address')}</i>"
+    description = f"📝 <b>Про місце:</b>\n<i>{p.get('description')}</i>"
+    sep = "──────────────"
+    lines = [
+        title,
+        sep,
+        address,
         description
     ]
     return "\n".join(line for line in lines if line is not None)
