@@ -2,14 +2,14 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import cancel_keyboard, add_place_redirect_keyboard
+from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings
 from bot.states import BotState
 from bot.utils.logger import logger
 from bot.handlers.main_menu import send_settings_menu,send_main_menu
 from bot.services import settings as settings_service
-import aiohttp
+from bot.config import ADD_PLACE_BOT_USERNAME
 
 router = Router()
 
@@ -17,12 +17,11 @@ router = Router()
 @router.message(F.text == "🔗 Додати місце")
 async def add_place_redirect_handler(message: Message):
     """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
-    username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith(
-        "@") else f"@{ADD_PLACE_BOT_USERNAME}"
+    username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith("@") else f"@{ADD_PLACE_BOT_USERNAME}"
     await message.answer(
         "📌 <b>Додавання власних місць</b>\n\n"
         "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
+        "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
         f"👉 {username}",
         parse_mode="HTML",
         reply_markup=add_place_redirect_keyboard(),
@@ -51,9 +50,11 @@ async def radius_handler(message: Message, state: FSMContext):
     )
 
 
+
 @router.message(F.text == "🍴 Вибрати категорії")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
+
 
     popular_types = [
         ("🍕 Ресторан",  "restaurant"),
@@ -62,7 +63,12 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
+         
+        
+        
     ]
+
+    for label, code in popular_types:
 
     for label, code in popular_types:
         builder.button(
@@ -73,7 +79,12 @@ async def included_types_handler(message: Message, state: FSMContext):
     builder.button(text="🧹 Скинути категорії",
                    callback_data="cancel_included_types")
 
+
+    builder.button(text="🧹 Скинути категорії",
+                   callback_data="cancel_included_types")
+
     builder.adjust(2)
+
 
     current_settings = get_user_settings(message.from_user.id)
     included = current_settings.get("includedTypes", [])
@@ -87,130 +98,13 @@ async def included_types_handler(message: Message, state: FSMContext):
         reply_markup=builder.as_markup()
     )
 
+
     await state.set_state(BotState.waiting_for_category)
-
-@router.message(F.text == "🎧 Вибрати за настроєм")
-async def finding_places_by_group_types(message:Message,state: FSMContext,session: aiohttp.ClientSession):
-    builder = InlineKeyboardBuilder()
-
-    mood_types = [
-        "Need to Work 💻",
-        "Date Night 🌙",
-        "Loud Company 🍻",
-        "Breakfast at 2 PM 🥞"
-    ]
-
-    await message.answer(
-        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією\n\nBreakfast at 2 PM 🥞: місця де можна швидко керекусити"
-    )
-
-    for label in mood_types:
-        builder.button(
-            text=label,
-            callback_data=f"add_included_list_type:{label}"
-        )
-    
-    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
-
-    builder.adjust(2)
-    
-    current_settings = get_user_settings(message.from_user.id)
-    included = current_settings.get("includedTypes", [])
-    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
-
-    await message.answer(
-        "🔎 <b>Оберіть ваш настрій </b> зі списку нижче:\n\n"
-        f"{current_line}",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    
-    await state.set_state(BotState.waiting_for_category)
-
-
-
-@router.message(F.text == "🎧 Вибрати за настроєм")
-async def finding_places_by_group_types(message:Message,state: FSMContext,session: aiohttp.ClientSession):
-    builder = InlineKeyboardBuilder()
-
-    mood_types = [
-        "Need to Work 💻",
-        "Date Night 🌙",
-        "Loud Company 🍻",
-        "Breakfast at 2 PM 🥞"
-    ]
-
-    await message.answer(
-        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією\n\nBreakfast at 2 PM 🥞: місця де можна швидко керекусити"
-    )
-
-    for label in mood_types:
-        builder.button(
-            text=label,
-            callback_data=f"add_included_list_type:{label}"
-        )
-    
-    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
-
-    builder.adjust(2)
-    
-    current_settings = get_user_settings(message.from_user.id)
-    included = current_settings.get("includedTypes", [])
-    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
-
-    await message.answer(
-        "🔎 <b>Оберіть ваш настрій </b> зі списку нижче:\n\n"
-        f"{current_line}",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    
-    await state.set_state(BotState.waiting_for_category)
-
-
-
-@router.message(F.text == "🎧 Вибрати за настроєм")
-async def finding_places_by_group_types(message:Message,state: FSMContext,session: aiohttp.ClientSession):
-    builder = InlineKeyboardBuilder()
-
-    mood_types = [
-        "Need to Work 💻",
-        "Date Night 🌙",
-        "Loud Company 🍻"
-    ]
-
-    await message.answer(
-        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією"
-    )
-
-    for label in mood_types:
-        builder.button(
-            text=label,
-            callback_data=f"add_included_list_type:{label}"
-        )
-    
-    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
-
-    builder.adjust(2)
-    
-    current_settings = get_user_settings(message.from_user.id)
-    included = current_settings.get("includedTypes", [])
-    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
-
-    await message.answer(
-        "🔎 <b>Оберіть ваш настрій </b> зі списку нижче:\n\n"
-        f"{current_line}",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    
-    await state.set_state(BotState.waiting_for_category)
-
-
 
 @router.message(F.text == "✅ Включити типи")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
+
 
     popular_types = [
         ("🍕 Ресторан",  "restaurant"),
@@ -219,12 +113,10 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
+         
+        
+        
     ]
-    for label,code in popular_types:
-        builder.button(
-            text=label,
-            callback_data=f"add_included_type:{code}"
-        )
     
     for label,code in popular_types:
         builder.button(
@@ -235,7 +127,12 @@ async def included_types_handler(message: Message, state: FSMContext):
     builder.button(text="🧹 Скинути категорії",
                    callback_data="cancel_included_types")
 
+
+    builder.button(text="🧹 Скинути категорії",
+                   callback_data="cancel_included_types")
+
     builder.adjust(2)
+
 
     current_settings = get_user_settings(message.from_user.id)
     included = current_settings.get("includedTypes", [])
@@ -249,22 +146,17 @@ async def included_types_handler(message: Message, state: FSMContext):
         reply_markup=builder.as_markup()
     )
 
+
     await state.set_state(BotState.waiting_for_category)
 
+
+@router.callback_query(F.data.startswith("add_included_type:"))
 
 @router.callback_query(F.data.startswith("add_included_type:"))
 async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
     type_code = callback.data.split(":")[1]
     settings_service.add_included_type(callback.from_user.id, type_code)
     await callback.answer("✅ Категорію додано!")
-    await state.clear()
-    await send_main_menu(callback.message, user_id=callback.from_user.id)
-
-@router.callback_query(F.data.startswith("add_included_list_type:"))
-async def add_list_included(callback:CallbackQuery,state:FSMContext):
-    type_code = callback.data.split(":")[1]
-    settings_service.add_included_type(callback.from_user.id, type_code)
-    await callback.answer("✅ Категорії додані!")
     await state.clear()
     await send_main_menu(callback.message, user_id=callback.from_user.id)
 
@@ -279,7 +171,7 @@ async def add_custom_category_handler(message: Message, state: FSMContext):
     settings_service.add_included_type(message.from_user.id, user_text)
     await message.answer(f"✅ Прийнято! Шукаю нестандартну категорію: **{user_text}**")
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.callback_query(F.data == "cancel_included_types")
@@ -287,7 +179,7 @@ async def clear_included_types_callback(callback: CallbackQuery, state: FSMConte
     settings_service.clear_included_types(callback.from_user.id)
     await callback.answer("✅ Категорії скинуто!")
     await state.clear()
-    await send_settings_menu(callback.message, user_id=callback.from_user.id)
+    await send_main_menu(callback.message, user_id=callback.from_user.id)
 
 
 @router.message(F.text == "🧹 Скинути категорії", BotState.waiting_for_category)
@@ -295,7 +187,7 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     settings_service.clear_included_types(message.from_user.id)
     await message.answer("✅ Категорії скинуто!")
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.message(F.text == "🔢 Кількість")
@@ -325,7 +217,7 @@ async def rank_preference_handler(message: Message):
                             BotState.selecting_max_result_count), F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.message(F.text == "⏰ Відкрите зараз")
@@ -338,7 +230,7 @@ async def open_now_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.message(BotState.selecting_language)
@@ -407,4 +299,4 @@ async def set_max_result_count_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив кількість результатів на {int(text)}")
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)

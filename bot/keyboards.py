@@ -3,6 +3,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import ADD_PLACE_BOT_USERNAME
 
+from bot.config import ADD_PLACE_BOT_USERNAME
+
 
 def choose_location_type_keyboard():
     return ReplyKeyboardMarkup(
@@ -22,43 +24,31 @@ def actions_keyboard():
         keyboard=[
             [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
-            [KeyboardButton(text="⚙️ Налаштування"),
-             KeyboardButton(text="🔗 Додати місце")],
-        ],
-        resize_keyboard=True,
-    )
-
-
-def settings_keyboard():
-    """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
             [
                 KeyboardButton(text="🌐 Мова"),
                 KeyboardButton(text="📏 Радіус"),
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text = "🎧 Вибрати за настроєм")
+                KeyboardButton(text="🔢 Кількість"),
             ],
             [
                 KeyboardButton(text="⭐ Сортування"),
                 KeyboardButton(text="⏰ Відкрите зараз"),
+                KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text="💾 Зберегти на сервер"),
-             KeyboardButton(text="🔢 Кількість"),],
-            [KeyboardButton(text="🔙 Назад")],
+            [KeyboardButton(text="🔗 Додати місце")]
         ],
         resize_keyboard=True,
     )
+    return keyboard
 
 
 def add_place_redirect_keyboard():
     """Інлайн-клавіатура з посиланням на бота для додавання місць."""
     username = ADD_PLACE_BOT_USERNAME.lstrip("@")
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔗 Перейти до бота",
-                              url=f"https://t.me/{username}")],
+        [InlineKeyboardButton(text="🔗 Перейти до бота", url=f"https://t.me/{username}")],
     ])
 
 
@@ -94,6 +84,7 @@ def places_keyboard(places):
         if place_id:
             name = place.get("displayName") or place.get(
                 "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
+
 
             # Додаємо статус відчинено/зачинено
             open_now = place.get("openNow") or place.get("OpenNow")

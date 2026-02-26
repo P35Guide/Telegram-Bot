@@ -1,12 +1,4 @@
 import aiohttp
-from aiogram import Router, F
-from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
-from bot.handlers.main_menu import send_main_menu
-from bot.keyboards import places_keyboard, place_details_keyboard,custom_places_keyboard
-from bot.services.api_client import get_photos, get_places, get_place_details,add_custom_place,get_all_custom_places,get_custom_place_by_id
-from bot.services.settings import get_user_settings,decode_included_types,sort_by_night_places, incode_included_types
-from bot.utils.formatter import format_place_text,format_custom_place_text
-from aiogram.fsm.context import FSMContext
 import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
@@ -42,8 +34,106 @@ from bot.utils.formatter import format_place_text, format_comparison_text
 from bot.utils.logger import logger
 
 
+
+
 router = Router()
 _place_name_cache: dict[str, str] = {}
+
+@router.message(F.text == "📌 Додати своє місце")
+async def add_place_handler(message:Message,state:FSMContext):
+    logger.info(
+        f"Користувач {message.from_user.username} ({message.from_user.id}) додає своє місце"
+    )
+    await message.answer('Введи назву місця')
+    await state.set_state(AddPlace.wait_for_title)
+@router.message(AddPlace.wait_for_title)
+async def add_title(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(title=info)
+    data = await state.get_data()
+    saved = data.get("title")
+
+    if(saved == info):
+        logger.info("title local saved")
+        await message.answer("[Назва збережена]\nВведи опис місця")
+        await state.set_state(AddPlace.wait_for_discription)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_discription)
+async def add_discription(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(discription=info)
+    data = await state.get_data()
+    saved = data.get("discription")
+
+    if(saved == info):
+        logger.info("discription local saved")
+        await message.answer("[Опис збережений]\nВведи адресу місця")
+        await state.set_state(AddPlace.wait_for_shor_adress)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_shor_adress)
+async def add_adress(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(adress=info)
+    data = await state.get_data()
+    saved =  data.get("adress")
+
+    if(saved == info):
+        logger.info("adress local saved")
+        await message.answer("[Адреса збережена]\nНадай 5 фото місцевості")
+        await state.set_state(AddPlace.wait_for_foto)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_foto,F.photo)
+async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.ClientSession):
+    data = await state.get_data()
+    photos_ids = data.get("photos",[])
+
+    photos_ids.append(message.photo[-1].file_id)
+
+    await state.update_data(photos = photos_ids)
+
+    number_photo = len(photos_ids)
+
+    if(number_photo<5):
+        return
+
+    encoded_phtos = []
+
+    for photo_id in photos_ids:
+        file = await bot.get_file(photo_id)
+
+        photo_buffer = await bot.download_file(file.file_path)
+
+        photo_byts = photo_buffer.read()
+        base64photo = base64.b64encode(photo_byts).decode("utf-8")
+        encoded_phtos.append(base64photo)
+    
+    place = Place()
+
+    place.NameOfPlace =  data.get("title")
+    place.Description =  data.get("discription")
+    place.Address =  data.get("adress")
+
+    place.Photo1 = encoded_phtos[0]
+    place.Photo2 = encoded_phtos[1]
+    place.Photo3 = encoded_phtos[2]
+    place.Photo4 = encoded_phtos[3]
+    place.Photo5 = encoded_phtos[4]
+
+    result = await add_custom_place(place,session)
+
+    if(result == True):
+        await message.answer("Place added")
+        await send_main_menu(message)
+    else:
+        await message.answer("We got error")
+        await send_main_menu(message)
+
 
 # Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
 @router.message(F.text == "📍 Надіслати геолокацію")
@@ -102,6 +192,8 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
         return data
     finally:
         incode_included_types(user_id, mood_mode)
+
+
 
 
 @router.message(F.text == "🔍 Знайти місця поруч")
