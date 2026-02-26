@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import cancel_keyboard, add_place_redirect_keyboard
+from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
@@ -20,12 +20,11 @@ router = Router()
 @router.message(F.text.in_(["🔗 Додати місце", "🔗 Add place", "🔗 Ort hinzufügen", "🔗 Ajouter un lieu", "🔗 Añadir lugar", "🔗 Aggiungi luogo", "🔗 Dodaj miejsce", "🔗 Adicionar local", "🔗 場所を追加", "🔗 添加地点"]))
 async def add_place_redirect_handler(message: Message):
     """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
-    username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith(
-        "@") else f"@{ADD_PLACE_BOT_USERNAME}"
+    username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith("@") else f"@{ADD_PLACE_BOT_USERNAME}"
     await message.answer(
         "📌 <b>Додавання власних місць</b>\n\n"
         "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
+        "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
         f"👉 {username}",
         parse_mode="HTML",
         reply_markup=add_place_redirect_keyboard(user_id, lang_code),
@@ -255,6 +254,8 @@ async def included_types_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("add_included_type:"))
+
+@router.callback_query(F.data.startswith("add_included_type:"))
 async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
@@ -290,7 +291,7 @@ async def add_custom_category_handler(message: Message, state: FSMContext):
     settings_service.add_included_type(user_id, user_text)
     await message.answer(i18n.get(user_id, 'custom_category_accepted', lang_code, category=user_text))
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.callback_query(F.data == "cancel_included_types")
@@ -312,7 +313,7 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     settings_service.clear_included_types(user_id)
     await message.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
@@ -359,7 +360,7 @@ async def open_now_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
-    await send_settings_menu(message)
+    await send_main_menu(message)
 
 
 @router.message(BotState.selecting_language)
