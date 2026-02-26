@@ -34,8 +34,6 @@ from bot.utils.formatter import format_place_text, format_comparison_text
 from bot.utils.logger import logger
 
 
-
-
 router = Router()
 _place_name_cache: dict[str, str] = {}
 
@@ -185,15 +183,52 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
             return data
 
         places = data["places"]
-        if mood_mode != 0:
-            places = sort_by_night_places(places)
 
-        data["places"] = places
-        return data
-    finally:
-        incode_included_types(user_id, mood_mode)
+        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
+        if settings.get("openNow", False):
+            places = filter_open_now(places, True)
+
+        if not places:
+            await loading_msg.edit_text(
+                "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
+                "Спробуйте збільшити радіус пошуку.",
+                parse_mode="HTML"
+            )
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+            return
+
+        # Вибираємо випадкове місце
+        chosen = random.choice(places)
+        place_id = chosen.get("id") or chosen.get("Id")
 
 
+        if place_id:
+            language = settings.get("language", "uk")
+            await loading_msg.delete()
+
+
+            # Показуємо вибране місце
+            success = await send_place_info(message, session, place_id, language)
+
+
+            if not success:
+                await message.answer(
+                    "⚠️ <b>Не вдалося отримати деталі місця.</b>",
+                    parse_mode="HTML"
+                )
+        else:
+            await loading_msg.edit_text(
+                "⚠️ <b>Помилка при виборі випадкового місця.</b>",
+                parse_mode="HTML"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in random_place_handler: {e}")
+        await loading_msg.edit_text(
+            "❌ <b>Сталася помилка при обробці запиту.</b>",
+            parse_mode="HTML"
+        )
+        await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
 
 
 @router.message(F.text == "🔍 Знайти місця поруч")
@@ -331,12 +366,10 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
-        if(at_night == True):
-            places = sort_by_night_places(places)
 
-        incode_included_types(message.from_user.id ,at_night)
-
-        
+        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
+        if settings.get("openNow", False):
+            places = filter_open_now(places, True)
 
         if not places:
             await loading_msg.edit_text(
@@ -389,12 +422,19 @@ async def send_place_info(
                     elif isinstance(photo, dict):
                         photo_url = photo.get('photoUri') or photo.get(
                             'url') or photo.get('uri')
+                        photo_url = photo.get('photoUri') or photo.get(
+                            'url') or photo.get('uri')
                         if photo_url:
+                            media_group.append(
+                                InputMediaPhoto(media=photo_url))
+
                             media_group.append(
                                 InputMediaPhoto(media=photo_url))
 
                 if media_group:
                     await message.answer_media_group(media_group)
+                    logger.info(
+                        f"Надіслано {len(media_group)} фото для місця {place_id}")
                     logger.info(
                         f"Надіслано {len(media_group)} фото для місця {place_id}")
             except Exception as e:
@@ -437,6 +477,8 @@ async def send_place_info(
         return False
 
 
+
+
 @router.message(F.text == "🔍 Список")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
     loading_msg, places = await perform_search(message, session)
@@ -458,6 +500,7 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
+
 
 
 @router.message(F.text == "🌟 Улюблені")
