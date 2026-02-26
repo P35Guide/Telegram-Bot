@@ -60,7 +60,7 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
     """Інлайн-клавіатура з посиланням на бота для додавання місць."""
     username = ADD_PLACE_BOT_USERNAME.lstrip("@")
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=i18n.get(user_id or 0, 'go_to_bot', lang_code),
+        [InlineKeyboardButton(text="🔗 Перейти до бота",
                               url=f"https://t.me/{username}")],
     ])
 
