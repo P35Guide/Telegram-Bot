@@ -1,12 +1,14 @@
 from aiogram import Router, F
 from aiogram.types import Message
+from aiogram.filters import CommandStart
+from bot.keyboards import actions_keyboard
 from aiogram.filters import CommandStart, StateFilter, Command
 from aiogram.fsm.context import FSMContext
 import aiohttp
-
 from bot.keyboards import actions_keyboard, choose_location_type_keyboard
 from bot.services.settings import save_coordinates, get_user_settings
 from bot.utils.logger import logger
+from aiogram.fsm.state import default_state
 from bot.states import BotState
 
 router = Router()
@@ -33,15 +35,13 @@ def settings_text(user_id: int) -> str:
         "includedTypes") else "Всі"
     excluded = ", ".join(s.get("excludedTypes", [])) if s.get(
         "excludedTypes") else "Немає"
-    open_now = "Так" if s.get("openNow") else "Ні"
 
     return (
         f"⚙️ <b>Налаштування:</b>\n"
         f"├ 🌐 Мова: <code>{s.get('language', 'uk')}</code>\n"
         f"├ 📏 Радіус: <code>{s.get('radius', 1000)} м</code>\n"
-        f"├ 🍴 Вибрати категорії: <code>{included}</code>\n"
-        f"├ 🧹 Скинути категорії: <code>{excluded}</code>\n"
-        f"├ ⏰ Відкрите зараз: <code>{open_now}</code>\n"
+        f"├ ✅ Включити: <code>{included}</code>\n"
+        f"├ ❌ Виключити: <code>{excluded}</code>\n"
         f"├ 🔢 Максимальна кількість: <code>{s.get('maxResultCount', 20)}</code>\n"
         f"└ ⭐ Сортування: <code>{s.get('rankPreference', 'POPULARITY')}</code>"
     )
@@ -58,7 +58,6 @@ async def send_main_menu(message: Message, user_id: int | None = None):
             f"├ Широта: <tg-spoiler>{coords['latitude']}</tg-spoiler>\n"
             f"└ Довгота: <tg-spoiler>{coords['longitude']}</tg-spoiler>"
         )
-        reply_kb = actions_keyboard()
     else:
         location_line = "Оберіть спосіб передачі координат:"
         reply_kb = choose_location_type_keyboard()
@@ -68,7 +67,7 @@ async def send_main_menu(message: Message, user_id: int | None = None):
         f"{settings_text(target_user_id)}\n\n"
         f"{location_line}",
         parse_mode="HTML",
-        reply_markup=reply_kb
+        reply_markup=actions_keyboard()
     )
 
 
