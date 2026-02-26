@@ -357,12 +357,10 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return loading_msg, None
 
         places = data["places"]
-        if(at_night == True):
-            places = sort_by_night_places(places)
 
-        incode_included_types(message.from_user.id ,at_night)
-
-        
+        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
+        if settings.get("openNow", False):
+            places = filter_open_now(places, True)
 
         if not places:
             try:
@@ -426,7 +424,12 @@ async def send_place_info(
                     elif isinstance(photo, dict):
                         photo_url = photo.get('photoUri') or photo.get(
                             'url') or photo.get('uri')
+                        photo_url = photo.get('photoUri') or photo.get(
+                            'url') or photo.get('uri')
                         if photo_url:
+                            media_group.append(
+                                InputMediaPhoto(media=photo_url))
+
                             media_group.append(
                                 InputMediaPhoto(media=photo_url))
 
