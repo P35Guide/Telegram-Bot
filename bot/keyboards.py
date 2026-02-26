@@ -86,6 +86,13 @@ def places_keyboard(places):
         if place_id:
             name = place.get("displayName") or place.get(
                 "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
+            
+            # Додаємо статус відчинено/зачинено
+            open_now = place.get("openNow") or place.get("OpenNow")
+            if open_now is True:
+                name = f"🟢 {name}"
+            elif open_now is False:
+                name = f"🔴 {name}"
 
             builder.button(
                 text=name,

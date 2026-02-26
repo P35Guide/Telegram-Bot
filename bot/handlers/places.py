@@ -51,7 +51,7 @@ async def add_place_handler(message:Message,state:FSMContext):
     logger.info(
         f"Користувач {message.from_user.username} ({message.from_user.id}) додає своє місце"
     )
-    await message.answer('Введи назву міця')
+    await message.answer('Введи назву місця')
     await state.set_state(AddPlace.wait_for_title)
 @router.message(AddPlace.wait_for_title)
 async def add_title(message:Message,state:FSMContext):
@@ -262,6 +262,62 @@ async def random_place_handler(message: Message, state: FSMContext, session: aio
         )
         return
 
+    try:
+        data = await get_places(settings, session)
+
+        if not data or "places" not in data:
+            await loading_msg.edit_text(
+                "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
+                parse_mode="HTML"
+            )
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+            return
+
+        places = data["places"]
+        
+        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
+        if settings.get("openNow", False):
+            places = filter_open_now(places, True)
+        
+        if not places:
+            await loading_msg.edit_text(
+                "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
+                "Спробуйте збільшити радіус пошуку.",
+                parse_mode="HTML"
+            )
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+            return
+
+        # Вибираємо випадкове місце
+        chosen = random.choice(places)
+        place_id = chosen.get("id") or chosen.get("Id")
+        
+        if place_id:
+            language = settings.get("language", "uk")
+            await loading_msg.delete()
+            
+            # Показуємо вибране місце
+            success = await send_place_info(message, session, place_id, language)
+            
+            if not success:
+                await message.answer(
+                    "⚠️ <b>Не вдалося отримати деталі місця.</b>",
+                    parse_mode="HTML"
+                )
+        else:
+            await loading_msg.edit_text(
+                "⚠️ <b>Помилка при виборі випадкового місця.</b>",
+                parse_mode="HTML"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in random_place_handler: {e}")
+        await loading_msg.edit_text(
+            "❌ <b>Сталася помилка при обробці запиту.</b>",
+            parse_mode="HTML"
+        )
+        await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+
 
 
 
@@ -418,6 +474,11 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
+        
+        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
+        if settings.get("openNow", False):
+            places = filter_open_now(places, True)
+        
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
@@ -491,12 +552,22 @@ async def send_place_info(
 
         photos = await get_photos(place_id, session)
 
-        if photos:
+        if photos and len(photos) > 0:
             try:
-                media_group = [InputMediaPhoto(media=photo)
-                               for photo in photos[:10]]
+                media_group = []
+                for photo in photos[:10]:
+                    # Якщо API повертає URL напряму
+                    if isinstance(photo, str):
+                        media_group.append(InputMediaPhoto(media=photo))
+                    # Якщо API повертає словник з полем photoUri або url
+                    elif isinstance(photo, dict):
+                        photo_url = photo.get('photoUri') or photo.get('url') or photo.get('uri')
+                        if photo_url:
+                            media_group.append(InputMediaPhoto(media=photo_url))
+                
                 if media_group:
                     await message.answer_media_group(media_group)
+                    logger.info(f"Надіслано {len(media_group)} фото для місця {place_id}")
             except Exception as e:
                 logger.error(
                     f"Failed to send photos for place {place_id}: {e}")
