@@ -27,8 +27,6 @@ from bot.utils.formatter import format_place_text
 from bot.utils.logger import logger
 
 
-
-
 router = Router()
 _place_name_cache: dict[str, str] = {}
 
@@ -165,11 +163,11 @@ async def random_place_handler(message: Message, state: FSMContext, session: aio
             return
 
         places = data["places"]
-        
+
         # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
         if settings.get("openNow", False):
             places = filter_open_now(places, True)
-        
+
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
@@ -182,14 +180,14 @@ async def random_place_handler(message: Message, state: FSMContext, session: aio
         # Вибираємо випадкове місце
         chosen = random.choice(places)
         place_id = chosen.get("id") or chosen.get("Id")
-        
+
         if place_id:
             language = settings.get("language", "uk")
             await loading_msg.delete()
-            
+
             # Показуємо вибране місце
             success = await send_place_info(message, session, place_id, language)
-            
+
             if not success:
                 await message.answer(
                     "⚠️ <b>Не вдалося отримати деталі місця.</b>",
@@ -208,8 +206,6 @@ async def random_place_handler(message: Message, state: FSMContext, session: aio
             parse_mode="HTML"
         )
         await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
-
-
 
 
 @router.message(F.text == "🔍 Знайти місця поруч")
@@ -343,11 +339,11 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
-        
+
         # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
         if settings.get("openNow", False):
             places = filter_open_now(places, True)
-        
+
         if not places:
             await loading_msg.edit_text(
                 "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
@@ -397,13 +393,16 @@ async def send_place_info(
                         media_group.append(InputMediaPhoto(media=photo))
                     # Якщо API повертає словник з полем photoUri або url
                     elif isinstance(photo, dict):
-                        photo_url = photo.get('photoUri') or photo.get('url') or photo.get('uri')
+                        photo_url = photo.get('photoUri') or photo.get(
+                            'url') or photo.get('uri')
                         if photo_url:
-                            media_group.append(InputMediaPhoto(media=photo_url))
-                
+                            media_group.append(
+                                InputMediaPhoto(media=photo_url))
+
                 if media_group:
                     await message.answer_media_group(media_group)
-                    logger.info(f"Надіслано {len(media_group)} фото для місця {place_id}")
+                    logger.info(
+                        f"Надіслано {len(media_group)} фото для місця {place_id}")
             except Exception as e:
                 logger.error(
                     f"Failed to send photos for place {place_id}: {e}")
@@ -439,7 +438,8 @@ async def send_place_info(
     except Exception as e:
         logger.error(f"Error sending place info: {e}")
         return False
-    
+
+
 @router.message(F.text == "🔍 Список")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
     loading_msg, places = await perform_search(message, session)
@@ -461,6 +461,7 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
+
 
 @router.message(F.text == "🌟 Улюблені")
 async def favorite_places_handler(message: Message, session: aiohttp.ClientSession):
