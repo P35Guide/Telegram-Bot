@@ -99,7 +99,7 @@ async def add_custom_place(place:Place,session: aiohttp.ClientSession):
         "photo5": f"{place.Photo5}"
     }
     try:
-        async with session.post(f"https://localhost:7124/api/custom/addPlace",json=data_to_post,ssl=False)as response:
+        async with session.post(f"https://localhost:7124/api/",json=data_to_post,ssl=False)as response:
             if response.status == 200:
                 logger.info("custom place added")
                 return True
