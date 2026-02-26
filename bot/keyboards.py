@@ -52,6 +52,7 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
         ],
         resize_keyboard=True,
     )
+    return keyboard
 
 
 

@@ -1,12 +1,4 @@
 import aiohttp
-from aiogram import Router, F
-from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
-from bot.handlers.main_menu import send_main_menu
-from bot.keyboards import places_keyboard, place_details_keyboard,custom_places_keyboard
-from bot.services.api_client import get_photos, get_places, get_place_details,add_custom_place,get_all_custom_places,get_custom_place_by_id
-from bot.services.settings import get_user_settings,decode_included_types,sort_by_night_places, incode_included_types
-from bot.utils.formatter import format_place_text,format_custom_place_text
-from aiogram.fsm.context import FSMContext
 import random
 import base64
 from aiogram import Router, F, Bot
