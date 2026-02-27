@@ -98,6 +98,8 @@ async def add_adress(message:Message,state:FSMContext):
 @router.message(AddPlace.wait_for_foto,F.photo)
 async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.ClientSession):
     data = await state.get_data()
+    if data.get("saving"):
+        return
     photos_ids = data.get("photos",[])
 
     photos_ids.append(message.photo[-1].file_id)
@@ -108,6 +110,8 @@ async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.Cli
 
     if(number_photo<5):
         return
+
+    await state.update_data(saving=True)
 
     encoded_phtos = []
 
@@ -136,9 +140,11 @@ async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.Cli
 
     if(result == True):
         await message.answer("Place added")
+        await state.clear()
         await send_main_menu(message)
     else:
         await message.answer("We got error")
+        await state.clear()
         await send_main_menu(message)
 
 
