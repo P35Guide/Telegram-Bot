@@ -5,10 +5,10 @@ from bot.config import PHOTO_MAX_WIDTH
 import aiohttp
 from bot.config import API_BASE_URL
 from bot.utils.logger import logger
-from bot.model.place import Place
-import json
 
 # Отримати координати міста через API
+
+
 async def get_city_coordinates(city_name: str, session: aiohttp.ClientSession, language_code: str = "uk"):
     """
     Отримує координати міста за назвою через бекенд.
@@ -24,7 +24,8 @@ async def get_city_coordinates(city_name: str, session: aiohttp.ClientSession, l
     except Exception as e:
         logger.error(f"API Request Error (city-coordinates): {e}")
         return None
-    
+
+
 async def get_places(settings, session: aiohttp.ClientSession):
     """
     Отримує список місць у заданому радіусі від користувача.
@@ -85,50 +86,6 @@ async def get_photos(place_id, session: aiohttp.ClientSession):
         logger.error(f"API Request Error: {e}")
         return None
 
-
-async def add_custom_place(place:Place,session: aiohttp.ClientSession):
-    data_to_post = {
-        "id": 0,
-        "nameOfPlace": f"{place.NameOfPlace}",
-        "address": f"{place.Address}",
-        "description": f"{place.Description}",
-        "photo1": f"{place.Photo1}",
-        "photo2": f"{place.Photo2}",
-        "photo3": f"{place.Photo3}",
-        "photo4": f"{place.Photo4}",
-        "photo5": f"{place.Photo5}"
-    }
-    try:
-        async with session.post(f"https://localhost:7124/api/",json=data_to_post,ssl=False)as response:
-            if response.status == 200:
-                logger.info("custom place added")
-                return True
-            else:
-                return False
-    except Exception as e:
-        logger.error(f"API Request Error: {e}")
-
-async def get_all_custom_places(session:aiohttp.ClientSession):
-    try:
-        async with session.get(f"https://localhost:7124/api/custom/getAllPlaces",ssl=False) as resposns:
-            if resposns.status == 200:
-                logger.info("custom places gotten")
-                return await resposns.json()
-            else:
-                return None
-    except Exception as e:
-        logger.error(f"API Request Error: {e}")
-
-async def get_custom_place_by_id(id:int,session:aiohttp.ClientSession):
-    try:
-        async with session.get(f"https://localhost:7124/api/custom/getPlaceById?Id={id}",ssl=False) as resposns:
-            if resposns.status == 200:
-                logger.info("custom places gotten")
-                return await resposns.json()
-            else:
-                return None
-    except Exception as e:
-        logger.error(f"API Request Error: {e}")
 
 def generate_request_object(settings):
     """
