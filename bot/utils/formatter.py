@@ -1,3 +1,5 @@
+from math import radians, sin, cos, sqrt, atan2
+
 PRICE_LEVELS = {
     "PRICE_LEVEL_UNSPECIFIED": "",
     "PRICE_LEVEL_FREE": "Безкоштовно",
@@ -8,7 +10,30 @@ PRICE_LEVELS = {
 }
 
 
-def format_place_text(p: dict) -> str:
+def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Розраховує відстань між двома координатами в км (формула Гаверсина)"""
+    R = 6371  # Радіус Землі в км
+    
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    distance = R * c
+    
+    return distance
+
+
+def format_distance(distance_km: float) -> str:
+    """Форматує відстань у зручний вигляд"""
+    if distance_km < 1:
+        return f"{int(distance_km * 1000)} м"
+    else:
+        return f"{distance_km:.1f} км"
+
+
+def format_place_text(p: dict, user_coords: dict = None) -> str:
     """Форматує деталі місця у html рядок"""
 
     # хедер
@@ -44,6 +69,18 @@ def format_place_text(p: dict) -> str:
     # Адреса, телефон та вебсайт
     address = f"📍 {p.get('shortFormattedAddress')}" if p.get(
         'shortFormattedAddress') else None
+    
+    # Розраховуємо відстань, якщо є координати користувача
+    distance_text = None
+    if user_coords and user_coords.get('latitude') and user_coords.get('longitude'):
+        if p.get('latitude') and p.get('longitude'):
+            distance_km = calculate_distance(
+                user_coords['latitude'], user_coords['longitude'],
+                p['latitude'], p['longitude']
+            )
+            distance_str = format_distance(distance_km)
+            distance_text = f"📏 Відстань: <b>{distance_str}</b>"
+    
     phone = f"📞 {p.get('phoneNumber')}" if p.get('phoneNumber') else None
     website = f"🌐 <a href='{p.get('websiteUri')}'>Офіційний сайт</a>" if p.get(
         'websiteUri') else None
@@ -65,6 +102,7 @@ def format_place_text(p: dict) -> str:
         status,
         "",
         address,
+        distance_text,
         phone,
         website,
         "",

@@ -22,7 +22,7 @@ async def add_place_redirect_handler(message: Message):
     await message.answer(
         "📌 <b>Додавання власних місць</b>\n\n"
         "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
+        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
         f"👉 {username}",
         parse_mode="HTML",
         reply_markup=add_place_redirect_keyboard(),
