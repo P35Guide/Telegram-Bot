@@ -9,6 +9,7 @@ from bot.states import BotState
 from bot.utils.logger import logger
 from bot.handlers.main_menu import send_main_menu
 from bot.services import settings as settings_service
+import aiohttp
 
 router = Router()
 
@@ -45,9 +46,6 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
-         
-        
-        
     ]
     
     for label,code in popular_types:
@@ -74,6 +72,46 @@ async def included_types_handler(message: Message, state: FSMContext):
     
     await state.set_state(BotState.waiting_for_category)
 
+@router.message(F.text == "🎧 Вибрати за настроєм")
+async def finding_places_by_group_types(message:Message,state: FSMContext,session: aiohttp.ClientSession):
+    builder = InlineKeyboardBuilder()
+
+    mood_types = [
+        "Need to Work 💻",
+        "Date Night 🌙",
+        "Loud Company 🍻",
+        "Breakfast at 2 PM 🥞"
+    ]
+
+    await message.answer(
+        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією\n\nBreakfast at 2 PM 🥞: місця де можна швидко керекусити"
+    )
+
+    for label in mood_types:
+        builder.button(
+            text=label,
+            callback_data=f"add_included_list_type:{label}"
+        )
+    
+    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
+
+    builder.adjust(2)
+    
+    current_settings = get_user_settings(message.from_user.id)
+    included = current_settings.get("includedTypes", [])
+    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
+
+    await message.answer(
+        "🔎 <b>Оберіть ваш настрій </b> зі списку нижче:\n\n"
+        f"{current_line}",
+        parse_mode="HTML",
+        reply_markup=builder.as_markup()
+    )
+    
+    await state.set_state(BotState.waiting_for_category)
+
+
+
 @router.message(F.text == "✅ Включити типи")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
@@ -85,10 +123,12 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
-         
-        
-        
     ]
+    for label,code in popular_types:
+        builder.button(
+            text=label,
+            callback_data=f"add_included_type:{code}"
+        )
     
     for label,code in popular_types:
         builder.button(
@@ -120,6 +160,14 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
     type_code = callback.data.split(":")[1]
     settings_service.add_included_type(callback.from_user.id, type_code)
     await callback.answer("✅ Категорію додано!")
+    await state.clear()
+    await send_main_menu(callback.message, user_id=callback.from_user.id)
+
+@router.callback_query(F.data.startswith("add_included_list_type:"))
+async def add_list_included(callback:CallbackQuery,state:FSMContext):
+    type_code = callback.data.split(":")[1]
+    settings_service.add_included_type(callback.from_user.id, type_code)
+    await callback.answer("✅ Категорії додані!")
     await state.clear()
     await send_main_menu(callback.message, user_id=callback.from_user.id)
 

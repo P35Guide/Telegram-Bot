@@ -27,6 +27,7 @@ def actions_keyboard():
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
+                KeyboardButton(text = "🎧 Вибрати за настроєм")
             ],
             [
                 KeyboardButton(text="🔢 Кількість"),
