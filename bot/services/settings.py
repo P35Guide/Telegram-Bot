@@ -288,6 +288,7 @@ def add_included_list_type(user_id, type_label):
             
 
 
+
 def clear_included_types(user_id):
     """Очищає список категорій"""
     return update_included_types(user_id, [])
