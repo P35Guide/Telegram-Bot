@@ -360,10 +360,6 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
 
         places = data["places"]
 
-        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
-        if settings.get("openNow", False):
-            places = filter_open_now(places, True)
-
         if not places:
             try:
                 await loading_msg.edit_text(
