@@ -4,6 +4,11 @@ from bot.utils.logger import logger
 from bot.model.types_dict import SearchTypes
 import re
 import json
+import aiohttp
+from bot.services.api_client import get_places
+from bot.utils.logger import logger
+import re
+import json
 DEFAULTS = {
     "language": "uk",
     "radius": 1000,
@@ -152,20 +157,18 @@ def decode_included_types(user_id):
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
-    at_night = 0
+    at_night = False
     for type in types:
         if(type =="Loud Company 🍻"):
             for intype in mood_types.get("Loud Company 🍻"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Date Night 🌙"):
-            at_night = 1
+            at_night = True
             for intype in mood_types.get("Date Night 🌙"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Need to Work 💻"):
-            if(at_night == 1):
-                at_night = 2
             for intype in mood_types.get("Need to Work 💻"):
                 if intype not in new_types:
                     new_types.append(intype)
@@ -190,10 +193,10 @@ def incode_included_types(user_id, at_night):
     if(loud_company == True):
         new_types.append('Loud Company 🍻')
     if(night == True):
-        if(at_night != 0):
+        if(at_night == True):
             new_types.append("Date Night 🌙")
     if(work == True):
-        if(at_night !=1):
+        if(at_night != True):
             new_types.append("Need to Work 💻")
 
     included_types = []
@@ -271,6 +274,7 @@ def add_included_list_type(user_id, type_label):
     settings["includedTypes"] = included
     user_settings[user_id] = settings
             
+
 
 
 def clear_included_types(user_id):

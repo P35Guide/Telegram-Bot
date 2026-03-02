@@ -39,7 +39,7 @@ def settings_keyboard():
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text = "🎧 Вибрати за настроєм"),
+                KeyboardButton(text = "🎧 Вибрати за настроєм")
             ],
             [
                 KeyboardButton(text="⭐ Сортування"),

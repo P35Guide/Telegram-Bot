@@ -2,10 +2,10 @@ import aiohttp
 from aiogram import Router, F
 from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
 from bot.handlers.main_menu import send_main_menu
-from bot.keyboards import places_keyboard, place_details_keyboard
-from bot.services.api_client import get_photos, get_places, get_place_details
+from bot.keyboards import places_keyboard, place_details_keyboard,custom_places_keyboard
+from bot.services.api_client import get_photos, get_places, get_place_details,add_custom_place,get_all_custom_places,get_custom_place_by_id
 from bot.services.settings import get_user_settings,decode_included_types,sort_by_night_places, incode_included_types
-from bot.utils.formatter import format_place_text
+from bot.utils.formatter import format_place_text,format_custom_place_text
 from aiogram.fsm.context import FSMContext
 import random
 from aiogram import Router, F
@@ -164,6 +164,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message,state:FSMContext):
+async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
@@ -213,6 +214,8 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         parse_mode="HTML"
     )
 
+    at_night = decode_included_types(message.from_user.id)
+
     settings = get_user_settings(message.from_user.id)
 
     if not settings or not settings.get("coordinates"):
@@ -236,12 +239,12 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
+        if(at_night == True):
+            places = sort_by_night_places(places)
+
+        incode_included_types(message.from_user.id ,at_night)
 
         
-
-        # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
-        if settings.get("openNow", False):
-            places = filter_open_now(places, True)
 
         if not places:
             await loading_msg.edit_text(
