@@ -1,3 +1,5 @@
+from math import radians, sin, cos, sqrt, atan2
+
 PRICE_LEVELS = {
     "PRICE_LEVEL_UNSPECIFIED": "",
     "PRICE_LEVEL_FREE": "Безкоштовно",
