@@ -409,8 +409,11 @@ async def send_place_info(
         _place_name_cache[place_id] = place.get(
             "displayName") or place.get("name") or "Без назви"
 
+        # Отримуємо координати користувача для розрахунку відстані
+        user_coords = get_user_settings(uid).get("coordinates") if uid else None
+        
         favorite_callback = f"fav_toggle:{place_id}" if place_id else None
-        text = format_place_text(place)
+        text = format_place_text(place, user_coords)
         is_fav = is_favorite_place(uid, place_id) if uid else False
         kb = place_details_keyboard(
             place.get("websiteUri"),

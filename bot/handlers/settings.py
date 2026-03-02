@@ -22,7 +22,7 @@ async def add_place_redirect_handler(message: Message):
     await message.answer(
         "📌 <b>Додавання власних місць</b>\n\n"
         "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
+        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
         f"👉 {username}",
         parse_mode="HTML",
         reply_markup=add_place_redirect_keyboard(),
@@ -148,7 +148,7 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
 async def add_custom_category_handler(message: Message, state: FSMContext):
     user_text = (message.text or "").strip()
 
-    if len(user_text) < 3:п
+    if len(user_text) < 3:
         await message.answer("⚠️ Занадто коротка назва. Спробуйте ще раз або оберіть кнопку.")
         return
 
