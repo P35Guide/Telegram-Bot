@@ -10,7 +10,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 import aiohttp
 import random
 from ssl import SSLContext
@@ -22,6 +22,7 @@ from bot.keyboards import (
     places_keyboard,
     place_details_keyboard,
     choose_location_type_keyboard,
+    random_choice_keyboard,
 )
 from bot.services.api_client import get_photos, get_places, get_place_details
 from bot.services.settings import (
@@ -182,8 +183,62 @@ def filter_open_now(places, open_now):
     return [p for p in places if (p.get("openNow") is True or p.get("OpenNow") is True)]
 
 
-@router.message(F.text == "🎲 Випадкове місце")
-async def random_place_handler(message: Message, session: aiohttp.ClientSession):
+# Відкрити меню вибору випадкового місця (з пошуку / з улюблених)
+@router.message(F.text == "🎲 Випадкове місце", ~StateFilter(BotState.choosing_random_type))
+async def random_choice_menu_handler(message: Message, state: FSMContext):
+    await state.set_state(BotState.choosing_random_type)
+    await message.answer(
+        "Оберіть варіант:",
+        reply_markup=random_choice_keyboard()
+    )
+
+
+# Повернутися з меню випадкового місця до пошуку
+@router.message(F.text == "🔙 Скасувати", StateFilter(BotState.choosing_random_type))
+async def random_choice_back_handler(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Повернулися до пошуку.", reply_markup=search_keyboard())
+
+
+# Випадкове місце з улюблених
+@router.message(F.text == "❤️ Випадкове з улюблених", StateFilter(BotState.choosing_random_type))
+async def random_from_favorites_handler(
+    message: Message, state: FSMContext, session: aiohttp.ClientSession
+):
+    await state.clear()
+    user_id = message.from_user.id
+    favorites = get_favorite_places(user_id)
+
+    if not favorites:
+        await message.answer(
+            "🌟 Улюблених місць поки немає.\nДодайте місця через пошук.",
+            reply_markup=search_keyboard(),
+        )
+        return
+
+    await message.answer_dice(emoji="🎲")
+
+    loading_msg = await message.answer(
+        "⏳ <b>Крутимо рулетку...</b>\n"
+        "Зачекайте, виконується запит до API...",
+        parse_mode="HTML",
+    )
+
+    chosen = random.choice(favorites)
+    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
+
+    await loading_msg.edit_text(
+        "🎲 <b>Випадкове місце з улюблених:</b>\n"
+        "Оберіть місце, щоб відкрити його на карті:",
+        parse_mode="HTML",
+        reply_markup=places_keyboard(place_for_kb),
+    )
+
+
+# Реалізація випадкового місця (після вибору в меню)
+@router.message(F.text == "🎲 Випадкове місце", StateFilter(BotState.choosing_random_type))
+async def random_place_handler(message: Message, state: FSMContext, session: aiohttp.ClientSession):
+    await state.clear()
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) шукає випадкове місце")
 
@@ -261,6 +316,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
                 "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
                 parse_mode="HTML"
             )
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
             return
 
         places = data["places"]
@@ -270,6 +326,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
                 "Спробуйте збільшити радіус пошуку.",
                 parse_mode="HTML"
             )
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
             return
 
         await loading_msg.edit_text(
@@ -285,6 +342,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
             "❌ <b>Сталася помилка при обробці запиту.</b>",
             parse_mode="HTML"
         )
+        await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
 
 
 @router.message(F.text == "🔙 Скасувати")
