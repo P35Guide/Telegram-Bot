@@ -39,13 +39,14 @@ def settings_keyboard():
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text="🔢 Кількість"),
+                KeyboardButton(text = "🎧 Вибрати за настроєм"),
             ],
             [
                 KeyboardButton(text="⭐ Сортування"),
                 KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text="💾 Зберегти на сервер")],
+            [KeyboardButton(text="💾 Зберегти на сервер"),
+             KeyboardButton(text="🔢 Кількість"),],
             [KeyboardButton(text="🔙 Назад")],
         ],
         resize_keyboard=True,

@@ -1,4 +1,12 @@
 import aiohttp
+from aiogram import Router, F
+from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
+from bot.handlers.main_menu import send_main_menu
+from bot.keyboards import places_keyboard, place_details_keyboard
+from bot.services.api_client import get_photos, get_places, get_place_details
+from bot.services.settings import get_user_settings,decode_included_types,sort_by_night_places, incode_included_types
+from bot.utils.formatter import format_place_text
+from aiogram.fsm.context import FSMContext
 import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
@@ -274,7 +282,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
 
 
 @router.message(F.text == "🔙 Скасувати")
-async def cancel_handler(message: Message, state: FSMContext):
+async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
@@ -326,16 +334,19 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
 
     settings = get_user_settings(message.from_user.id)
 
-    if not settings.get("coordinates"):
-        await loading_msg.edit_text(
+    if not settings or not settings.get("coordinates"):
+        await loading_msg.delete() 
+        await message.answer(     
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
             "Оберіть спосіб передачі координат:",
             parse_mode="HTML",
             reply_markup=choose_location_type_keyboard()
         )
-        return
+        return loading_msg, None
 
     try:
+        at_night = decode_included_types(message.from_user.id)
+
         data = await get_places(settings, session)
 
         if not data or "places" not in data:
@@ -346,6 +357,12 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
+        if(at_night !=0):
+            places = sort_by_night_places(places)
+
+        incode_included_types(message.from_user.id ,at_night)
+
+        
 
         # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
         if settings.get("openNow", False):
