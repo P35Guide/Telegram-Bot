@@ -196,7 +196,7 @@ def filter_open_now(places, open_now):
     return [p for p in places if (p.get("openNow") is True or p.get("OpenNow") is True)]
 
 
-async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSession):
+async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSession, message=None, loading_msg=None):
     """Універсальний запит місць з урахуванням обраного настрою."""
     mood_mode = decode_included_types(user_id)
     try:
@@ -211,13 +211,15 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
             places = filter_open_now(places, True)
 
         if not places:
-            await loading_msg.edit_text(
-                "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
-                "Спробуйте збільшити радіус пошуку.",
-                parse_mode="HTML"
-            )
-            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
-            return
+            if loading_msg:
+                await loading_msg.edit_text(
+                    "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
+                    "Спробуйте збільшити радіус пошуку.",
+                    parse_mode="HTML"
+                )
+            if message:
+                await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+            return None
 
         # Вибираємо випадкове місце
         chosen = random.choice(places)
@@ -226,31 +228,39 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
 
         if place_id:
             language = settings.get("language", "uk")
-            await loading_msg.delete()
+            if loading_msg:
+                await loading_msg.delete()
 
 
             # Показуємо вибране місце
-            success = await send_place_info(message, session, place_id, language)
+            if message:
+                success = await send_place_info(message, session, place_id, language)
 
 
-            if not success:
-                await message.answer(
-                    "⚠️ <b>Не вдалося отримати деталі місця.</b>",
+                if not success:
+                    await message.answer(
+                        "⚠️ <b>Не вдалося отримати деталі місця.</b>",
+                        parse_mode="HTML"
+                    )
+        else:
+            if loading_msg:
+                await loading_msg.edit_text(
+                    "⚠️ <b>Помилка при виборі випадкового місця.</b>",
                     parse_mode="HTML"
                 )
-        else:
-            await loading_msg.edit_text(
-                "⚠️ <b>Помилка при виборі випадкового місця.</b>",
-                parse_mode="HTML"
-            )
+
+        return data
 
     except Exception as e:
-        logger.error(f"Error in random_place_handler: {e}")
-        await loading_msg.edit_text(
-            "❌ <b>Сталася помилка при обробці запиту.</b>",
-            parse_mode="HTML"
-        )
-        await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+        logger.error(f"Error in get_places_with_mood: {e}")
+        if loading_msg:
+            await loading_msg.edit_text(
+                "❌ <b>Сталася помилка при обробці запиту.</b>",
+                parse_mode="HTML"
+            )
+        if message:
+            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+        return None
 
 
 @router.message(F.text == "🔍 Знайти місця поруч")
@@ -375,7 +385,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         return loading_msg, None
 
     try:
-        data = await get_places_with_mood(settings, message.from_user.id, session)
+        data = await get_places_with_mood(settings, message.from_user.id, session, message, loading_msg)
 
         if not data or "places" not in data:
             await loading_msg.edit_text(
