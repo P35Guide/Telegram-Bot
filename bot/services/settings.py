@@ -82,7 +82,7 @@ def decode_included_types(user_id):
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
-    at_night = False
+    at_night = 0
     for type in types:
         if(type =="Loud Company 🍻"):
             for intype in mood_types.get("Loud Company 🍻"):
@@ -93,11 +93,13 @@ def decode_included_types(user_id):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Date Night 🌙"):
-            at_night = True
+            at_night = 1
             for intype in mood_types.get("Date Night 🌙"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Need to Work 💻"):
+            if(at_night == 1):
+                at_night = 2
             for intype in mood_types.get("Need to Work 💻"):
                 if intype not in new_types:
                     new_types.append(intype)
@@ -130,10 +132,10 @@ def incode_included_types(user_id,at_night):
     if(breakfest == True):
         new_types.append('Breakfast at 2 PM 🥞')
     if(night == True):
-        if(at_night == True):
+        if(at_night != 0):
             new_types.append("Date Night 🌙")
     if(work == True):
-        if(at_night != True):
+        if(at_night !=1):
             new_types.append("Need to Work 💻")
 
     included_types = []

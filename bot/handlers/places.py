@@ -420,7 +420,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
-        if(at_night == True):
+        if(at_night !=0):
             places = sort_by_night_places(places)
 
         incode_included_types(message.from_user.id ,at_night)
