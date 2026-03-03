@@ -255,13 +255,16 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
         await loading_msg.edit_text(
-            "❌ <b>Сталася помилка при обробці запиту.</b>",
+            i18n.get(user_id, 'search_error', lang_code),
             parse_mode="HTML"
         )
-        await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
+        await message.answer(
+            i18n.get(user_id, 'return_to_search', lang_code), 
+            reply_markup=search_keyboard(user_id, lang_code)
+        )
 
 
-@router.message(F.text == "🔙 Скасувати")
+@router.message(F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
 async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
