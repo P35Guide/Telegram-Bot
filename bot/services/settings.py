@@ -49,8 +49,15 @@ def apply_user_data_from_api(user_id: int, api_user: dict):
     server_settings = api_user.get("settings") or {}
     server_favorites = api_user.get("favoritePlaces") or []
 
+    # Отримуємо мову з сервера, якщо вона є
+    server_language = server_settings.get("language")
+    if server_language:
+        language = server_language
+    else:
+        language = DEFAULTS["language"]
+
     merged = {
-        "language": server_settings.get("language") or DEFAULTS["language"],
+        "language": language,
         "radius": server_settings.get("radius") or DEFAULTS["radius"],
         "coordinates": _parse_coordinates(server_settings.get("coordinates")),
         "includedTypes": list(server_settings.get("includedTypes") or []),
@@ -66,6 +73,11 @@ def apply_user_data_from_api(user_id: int, api_user: dict):
             merged["favoritePlaces"].append(n)
 
     user_settings[user_id] = merged
+    
+    # Також встановлюємо мову в i18n.user_languages
+    from bot.utils.localization import i18n
+    i18n.set_user_language(user_id, language)
+    
     return merged
 
 

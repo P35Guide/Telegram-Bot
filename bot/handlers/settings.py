@@ -4,13 +4,15 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from bot.keyboards import cancel_keyboard, add_place_redirect_keyboard
 from aiogram.filters import StateFilter
-from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings
+from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
 from bot.utils.logger import logger
 from bot.handlers.main_menu import send_settings_menu,send_main_menu
 from bot.utils.localization import i18n
 from bot.services import settings as settings_service
 from bot.config import ADD_PLACE_BOT_USERNAME
+from bot.services.api_client import save_user_settings
+import aiohttp
 
 router = Router()
 
@@ -54,20 +56,29 @@ async def language_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("set_lang:"))
-async def set_language_callback(callback: CallbackQuery):
+async def set_language_callback(callback: CallbackQuery, session: aiohttp.ClientSession):
     """Обробка вибору мови"""
     user_id = callback.from_user.id
     lang_code = callback.data.split(":")[1]
     
-    # Встановлюємо мову в системі локалізації
+    # Встановлюємо мову в системі локалізації (user_languages)
     if i18n.set_user_language(user_id, lang_code):
+        # Оновлюємо мову в user_settings
+        settings = get_user_settings(user_id)
+        settings["language"] = lang_code
+        
+        # Зберігаємо налаштування на сервер
+        payload = get_settings_payload_for_api(user_id)
+        await save_user_settings(user_id, payload, session)
+        logger.info(f"Language saved to server: {lang_code} for user {user_id}")
+        
         lang_name = i18n.get_available_languages().get(lang_code, lang_code)
         await callback.answer(f"✅ {lang_name}")
         await callback.message.edit_text(
             i18n.get(user_id, 'language_changed', lang_code, language=lang_name)
         )
         # Показуємо оновлене меню налаштувань
-        await send_settings_menu(callback.message, user_id=user_id, telegram_lang_code=lang_code)
+        await send_settings_menu(callback.message, user_id=user_id)
     else:
         await callback.answer("❌ Error")
 

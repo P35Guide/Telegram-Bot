@@ -94,6 +94,18 @@ class Localization:
         if user_id in self.user_languages:
             return self.user_languages[user_id]
         
+        # Перевіряємо чи є мова в user_settings (завантажена з API)
+        try:
+            from bot.services.settings import user_settings
+            if user_id in user_settings and "language" in user_settings[user_id]:
+                saved_lang = user_settings[user_id]["language"]
+                if saved_lang and saved_lang in self.SUPPORTED_LANGUAGES:
+                    self.user_languages[user_id] = saved_lang
+                    logger.info(f"Завантажено мову {saved_lang} з user_settings для user {user_id}")
+                    return saved_lang
+        except ImportError:
+            pass
+        
         # Якщо є мова з Telegram
         if telegram_lang_code:
             # Перевіряємо чи потрібно замапити (ru -> en, ua -> uk)
@@ -158,6 +170,38 @@ class Localization:
         # Якщо і англійського немає, повертаємо ключ
         if text is None:
             logger.warning(f"Переклад не знайдено: {key} для мови {lang}")
+            return key
+        
+        # Підстановка параметрів {name}, {count}, тощо
+        if kwargs:
+            try:
+                text = text.format(**kwargs)
+            except KeyError as e:
+                logger.error(f"Помилка форматування перекладу {key}: {e}")
+        
+        return text
+    
+    def get_translation(self, lang_code: str, key: str, **kwargs) -> str:
+        """
+        Отримати переклад безпосередньо за кодом мови (без user_id)
+        
+        Args:
+            lang_code: Код мови (en, uk, de, тощо)
+            key: Ключ перекладу
+            **kwargs: Параметри для форматування
+            
+        Returns:
+            Перекладений текст
+        """
+        text = self.translations.get(lang_code, {}).get(key)
+        
+        # Fallback на англійську, якщо не знайдено
+        if text is None and lang_code != self.default_lang:
+            text = self.translations.get(self.default_lang, {}).get(key)
+        
+        # Якщо і англійського немає, повертаємо ключ
+        if text is None:
+            logger.warning(f"Переклад не знайдено: {key} для мови {lang_code}")
             return key
         
         # Підстановка параметрів {name}, {count}, тощо

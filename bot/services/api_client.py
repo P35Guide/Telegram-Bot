@@ -113,12 +113,14 @@ async def get_city_coordinates(city_name: str, session: aiohttp.ClientSession, l
     Отримує координати міста за назвою через бекенд.
     """
     url = f"{API_BASE_URL}/api/place/city-coordinates?query={city_name}&languageCode={language_code}"
+    logger.info(f"[API] Getting city coordinates: {city_name}, language: {language_code}")
     try:
         async with session.get(url, ssl=False) as response:
             if response.status == 200:
                 data = await response.json()
                 return data  # {"latitude": ..., "longitude": ...}
             else:
+                logger.warning(f"[API] City coordinates request failed: {response.status}")
                 return None
     except Exception as e:
         logger.error(f"API Request Error (city-coordinates): {e}")
@@ -135,6 +137,8 @@ async def get_places(settings, session: aiohttp.ClientSession):
         return None
 
     data_to_post = generate_request_object(settings)
+    language = data_to_post.get("languageCode", "uk")
+    logger.info(f"[API] Searching places nearby, language: {language}, radius: {data_to_post.get('locationRestriction', {}).get('circle', {}).get('radius')}")
 
     try:
         async with session.post(f"{API_BASE_URL}/api/place/google-maps-search-nearby", json=data_to_post, ssl=False) as response:
@@ -142,9 +146,10 @@ async def get_places(settings, session: aiohttp.ClientSession):
                 data = await response.json()
                 return data
             else:
+                logger.warning(f"[API] Places search request failed: {response.status}")
                 return None
     except Exception as e:
-        logger.error(f"API Request Error: {e}")
+        logger.error(f"API Request Error (get_places): {e}")
         return None
 
 
@@ -153,15 +158,17 @@ async def get_place_details(place_id, session: aiohttp.ClientSession, language_c
     Отримує деталі місця за його ID.
     """
     try:
-        url = f"{API_BASE_URL}/api/place/google-maps-details/{place_id}?lang={language_code}"
+        url = f"{API_BASE_URL}/api/place/google-maps-details/{place_id}?languageCode={language_code}"
+        logger.info(f"[API] Getting place details: {place_id}, language: {language_code}")
         async with session.get(url, ssl=False) as response:
             if response.status == 200:
                 data = await response.json()
                 return data
             else:
+                logger.warning(f"[API] Place details request failed: {response.status}")
                 return None
     except Exception as e:
-        logger.error(f"API Request Error: {e}")
+        logger.error(f"API Request Error (get_place_details): {e}")
         return None
 
 

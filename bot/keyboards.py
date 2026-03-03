@@ -67,24 +67,25 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
 def search_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
-            [KeyboardButton(text="🎲 Випадкове місце"),
-             KeyboardButton(text="🌟 Улюблені")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)), 
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
             
-            [KeyboardButton(text="🔙 Скасувати")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
     return keyboard
 
 
-def random_choice_keyboard():
+def random_choice_keyboard(user_id: int = None, lang_code: str = None):
     """Клавіатура вибору типу випадкового місця (з пошуку чи з улюблених)."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🎲 Випадкове місце"), KeyboardButton(
-                text="❤️ Випадкове з улюблених")],
-            [KeyboardButton(text="🔙 Скасувати")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'random_from_search', lang_code)), 
+             KeyboardButton(text=i18n.get(user_id or 0, 'random_from_favorites', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
@@ -93,7 +94,7 @@ def random_choice_keyboard():
 
 
 
-def cancel_keyboard():
+def cancel_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
         resize_keyboard=True
@@ -128,32 +129,33 @@ def places_keyboard(places):
     return builder.as_markup()
 
 
-def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callback=None, is_favorite=False):
+def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callback=None, is_favorite=False, user_id: int = None, lang_code: str = None):
     """
     Генерує клавіатуру для детального перегляду місця.
     """
     builder = InlineKeyboardBuilder()
 
     if place_url:
-        builder.button(text="🌍 Сайт", url=place_url)
+        builder.button(text="🌍 " + i18n.get(user_id or 0, 'official_website', lang_code), url=place_url)
 
     if google_maps_url:
-        builder.button(text="📍 Карта", url=google_maps_url)
+        builder.button(text="📍 Map", url=google_maps_url)
 
     if favorite_callback:
         builder.button(
-            text="🌟 Додати до улюблених" if not is_favorite else "🌟 Вилучити з улюблених",
+            text=i18n.get(user_id or 0, 'add_to_favorites', lang_code) if not is_favorite else i18n.get(user_id or 0, 'remove_from_favorites', lang_code),
             callback_data=favorite_callback
         )
 
     return builder.as_markup()
 
 
-def place_navigation_keyboard():
+def place_navigation_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="⬅️ Назад"), KeyboardButton(text="➡️ Далі")],
-            [KeyboardButton(text="🛑 Стоп")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_prev', lang_code)), 
+             KeyboardButton(text=i18n.get(user_id or 0, 'menu_next', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_stop', lang_code))],
         ],
         resize_keyboard=True
     )
@@ -161,12 +163,12 @@ def place_navigation_keyboard():
     return keyboard
 
 
-def favorites_action_keyboard():
+def favorites_action_keyboard(user_id: int = None, lang_code: str = None):
     """Клавіатура для вибору дії з улюбленими місцями."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
-            [KeyboardButton(text="🔙 Скасувати")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )

@@ -51,31 +51,34 @@ async def show_location_choice_menu(message: Message, state: FSMContext):
 
 def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     s = get_user_settings(user_id)
+    # Використовуємо мову з налаштувань користувача
+    lang_code = s.get('language', 'uk')
 
     included = ", ".join(s.get("includedTypes", [])) if s.get(
-        "includedTypes") else i18n.get(user_id, 'all', telegram_lang_code)
+        "includedTypes") else i18n.get(user_id, 'all', lang_code)
     excluded = ", ".join(s.get("excludedTypes", [])) if s.get(
-        "excludedTypes") else i18n.get(user_id, 'none', telegram_lang_code)
+        "excludedTypes") else i18n.get(user_id, 'none', lang_code)
     
     open_now = s.get("openNow", False)
-    open_status = i18n.get(user_id, 'yes', telegram_lang_code) if open_now else i18n.get(user_id, 'no', telegram_lang_code)
+    open_status = i18n.get(user_id, 'yes', lang_code) if open_now else i18n.get(user_id, 'no', lang_code)
 
     return (
-        f"{i18n.get(user_id, 'settings_title', telegram_lang_code)}\n"
-        f"├ {i18n.get(user_id, 'settings_lang_label', telegram_lang_code, language=s.get('language', 'uk'))}\n"
-        f"├ {i18n.get(user_id, 'settings_radius_label', telegram_lang_code, radius=s.get('radius', 1000))}\n"
-        f"├ {i18n.get(user_id, 'settings_included_label', telegram_lang_code, included=included)}\n"
-        f"├ {i18n.get(user_id, 'settings_excluded_label', telegram_lang_code, excluded=excluded)}\n"
-        f"├ {i18n.get(user_id, 'settings_count_label', telegram_lang_code, count=s.get('maxResultCount', 20))}\n"
-        f"├ {i18n.get(user_id, 'settings_rank_label', telegram_lang_code, rank=s.get('rankPreference', 'POPULARITY'))}\n"
-        f"└ {i18n.get(user_id, 'settings_open_label', telegram_lang_code, status=open_status)}"
+        f"{i18n.get(user_id, 'settings_title', lang_code)}\n"
+        f"├ {i18n.get(user_id, 'settings_lang_label', lang_code, language=s.get('language', 'uk'))}\n"
+        f"├ {i18n.get(user_id, 'settings_radius_label', lang_code, radius=s.get('radius', 1000))}\n"
+        f"├ {i18n.get(user_id, 'settings_included_label', lang_code, included=included)}\n"
+        f"├ {i18n.get(user_id, 'settings_excluded_label', lang_code, excluded=excluded)}\n"
+        f"├ {i18n.get(user_id, 'settings_count_label', lang_code, count=s.get('maxResultCount', 20))}\n"
+        f"├ {i18n.get(user_id, 'settings_rank_label', lang_code, rank=s.get('rankPreference', 'POPULARITY'))}\n"
+        f"└ {i18n.get(user_id, 'settings_open_label', lang_code, status=open_status)}"
     )
 
 
 async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
     target_user_id = user_id or message.from_user.id
-    lang_code = telegram_lang_code or (message.from_user.language_code if hasattr(message, 'from_user') else None)
     s = get_user_settings(target_user_id)
+    # Використовуємо мову з налаштувань користувача
+    lang_code = s.get('language', 'uk')
     coords = s.get("coordinates")
 
     if coords:
@@ -98,7 +101,9 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
 async def send_settings_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
     """Показує екран налаштувань і клавіатуру (включно з кнопкою «Зберегти на сервер»)."""
     target_user_id = user_id or message.from_user.id
-    lang_code = telegram_lang_code or (message.from_user.language_code if hasattr(message, 'from_user') else None)
+    s = get_user_settings(target_user_id)
+    # Використовуємо мову з налаштувань користувача
+    lang_code = s.get('language', 'uk')
     await message.answer(
         settings_text(target_user_id, lang_code),
         parse_mode="HTML",
@@ -108,14 +113,15 @@ async def send_settings_menu(message: Message, user_id: int | None = None, teleg
 
 @router.message(F.text.in_(["⚙️ Налаштування", "⚙️ Settings", "⚙️ Einstellungen", "⚙️ Paramètres", "⚙️ Ajustes", "⚙️ Impostazioni", "⚙️ Ustawienia", "⚙️ Configurações", "⚙️ 設定", "⚙️ 设置"]))
 async def show_settings_menu(message: Message):
-    await send_settings_menu(message, telegram_lang_code=message.from_user.language_code)
+    await send_settings_menu(message)
 
 
 @router.message(F.text.in_(["💾 Зберегти на сервер", "💾 Save to server", "💾 Auf Server speichern", "💾 Sauvegarder sur le serveur", "💾 Guardar en servidor", "💾 Salva sul server", "💾 Zapisz na serwerze", "💾 Salvar no servidor", "💾 サーバーに保存", "💾 保存到服务器"]))
 async def settings_save_handler(message: Message, session: aiohttp.ClientSession):
     """Обробник кнопки «Зберегти на сервер» — відправляє поточні налаштування на API."""
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    s = get_user_settings(user_id)
+    lang_code = s.get('language', 'uk')
     payload = get_settings_payload_for_api(user_id)
     result = await api_save_user_settings(user_id, payload, session)
     if result is not None:
@@ -126,7 +132,7 @@ async def settings_save_handler(message: Message, session: aiohttp.ClientSession
 
 @router.message(F.text.in_(["🔙 Назад", "🔙 Back", "🔙 Zurück", "🔙 Retour", "🔙 Atrás", "🔙 Indietro", "🔙 Wstecz", "🔙 Voltar", "🔙 戻る", "🔙 返回"]))
 async def back_to_main_menu(message: Message):
-    await send_main_menu(message, telegram_lang_code=message.from_user.language_code)
+    await send_main_menu(message)
 
 
 @router.message(CommandStart())
@@ -146,13 +152,31 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
         created = await api_save_user(user_id, session)
         if created is not None:
             apply_user_data_from_api(user_id, created)
+    
+    # Встановлюємо визначену мову з Telegram, якщо у налаштуваннях ще не встановлена
+    settings = get_user_settings(user_id)
+    current_language = settings.get("language")
+    
+    # Якщо мова не була збережена на сервері (None, порожній рядок), встановлюємо detected_lang
+    if not current_language:
+        settings["language"] = detected_lang
+        i18n.set_user_language(user_id, detected_lang)
+        
+        # Зберігаємо налаштування на сервер
+        payload = get_settings_payload_for_api(user_id)
+        await api_save_user_settings(user_id, payload, session)
+        logger.info(f"Set user language to detected and saved to server: {detected_lang}")
+    else:
+        # Використовуємо мову з сервера
+        detected_lang = current_language
+        logger.info(f"Using language from server: {current_language}")
 
     # Показуємо запит про зміну мови (двома мовами: detected + English)
     lang_name = i18n.get_available_languages().get(detected_lang, detected_lang)
     
-    # Формуємо повідомлення двома мовами - отримуємо тексти з translations напряму
-    prompt_detected = i18n.translations.get(detected_lang, {}).get('language_prompt', 'Choose your interface language:')
-    prompt_en = i18n.translations.get('en', {}).get('language_prompt', 'Choose your interface language:')
+    # Формуємо повідомлення двома мовами - використовуємо метод get_translation
+    prompt_detected = i18n.get_translation(detected_lang, 'language_prompt')
+    prompt_en = i18n.get_translation('en', 'language_prompt')
     
     # Якщо мова не англійська, показуємо обидві
     if detected_lang != 'en':
@@ -160,10 +184,10 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
     else:
         message_text = prompt_en
     
-    # Кнопки - також отримуємо з translations напряму
+    # Кнопки - використовуємо метод get_translation
     builder = InlineKeyboardBuilder()
-    continue_text_detected = i18n.translations.get(detected_lang, {}).get('continue_with_language', '✅ Continue with {language}').format(language=lang_name)
-    change_text_detected = i18n.translations.get(detected_lang, {}).get('change_language_btn', '🌐 Change language')
+    continue_text_detected = i18n.get_translation(detected_lang, 'continue_with_language', language=lang_name)
+    change_text_detected = i18n.get_translation(detected_lang, 'change_language_btn')
     
     builder.button(
         text=continue_text_detected,
@@ -215,13 +239,22 @@ async def start_change_lang_callback(callback: CallbackQuery):
 
 
 @router.callback_query(F.data.startswith("start_set_lang:"))
-async def start_set_language_callback(callback: CallbackQuery):
+async def start_set_language_callback(callback: CallbackQuery, session: aiohttp.ClientSession):
     """Обробка вибору мови при старті"""
     user_id = callback.from_user.id
     lang_code = callback.data.split(":")[1]
     
-    # Встановлюємо мову в системі локалізації
+    # Встановлюємо мову в системі локалізації (user_languages)
     if i18n.set_user_language(user_id, lang_code):
+        # Оновлюємо мову в user_settings
+        settings = get_user_settings(user_id)
+        settings["language"] = lang_code
+        
+        # Зберігаємо налаштування на сервер
+        payload = get_settings_payload_for_api(user_id)
+        await api_save_user_settings(user_id, payload, session)
+        logger.info(f"Language saved to server at start: {lang_code} for user {user_id}")
+        
         lang_name = i18n.get_available_languages().get(lang_code, lang_code)
         await callback.answer(f"✅ {lang_name}")
         await callback.message.delete()
@@ -260,8 +293,11 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
     text = message.text.strip()
     user_id = message.from_user.id
     lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    language = settings.get("language", "uk")
+    
     await message.answer(i18n.get(user_id, 'searching_city', lang_code, city=text))
-    coords = await get_city_coordinates(text, session)
+    coords = await get_city_coordinates(text, session, language)
     if coords and coords.get("latitude") is not None and coords.get("longitude") is not None:
         await _save_coordinates_and_sync(
             user_id, coords["latitude"], coords["longitude"], session
