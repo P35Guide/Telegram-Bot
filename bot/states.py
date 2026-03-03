@@ -1,10 +1,5 @@
 from aiogram.fsm.state import State, StatesGroup
 
-class AddPlace(StatesGroup):
-    wait_for_title = State()
-    wait_for_discription = State()
-    wait_for_shor_adress = State()
-    wait_for_foto = State()
 
 class BotState(StatesGroup):
     selecting_language = State()

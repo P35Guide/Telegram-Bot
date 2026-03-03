@@ -1,6 +1,8 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from bot.config import ADD_PLACE_BOT_USERNAME
+
 
 def choose_location_type_keyboard():
     return ReplyKeyboardMarkup(
@@ -19,27 +21,34 @@ def actions_keyboard():
         keyboard=[
             [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
-            
-            [KeyboardButton(text = "🧾 Дістати місця користувачів"),
-             KeyboardButton(text ="📌 Додати своє місце")],
             [
                 KeyboardButton(text="🌐 Мова"),
                 KeyboardButton(text="📏 Радіус"),
             ],
             [
                 KeyboardButton(text="🍴 Вибрати категорії"),
-                KeyboardButton(text = "🎧 Вибрати за настроєм")
+                KeyboardButton(text = "🎧 Вибрати за настроєм"),
             ],
             [
-                KeyboardButton(text="🔢 Кількість"),
                 KeyboardButton(text="⭐ Сортування"),
-
+                KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text="⏰ Відкрите зараз")]
+            [KeyboardButton(text="🔗 Додати місце"),
+             KeyboardButton(text="🔢 Кількість"),
+            ]
         ],
         resize_keyboard=True
     )
     return keyboard
+
+
+def add_place_redirect_keyboard():
+    """Інлайн-клавіатура з посиланням на бота для додавання місць."""
+    username = ADD_PLACE_BOT_USERNAME.lstrip("@")
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔗 Перейти до бота",
+                              url=f"https://t.me/{username}")],
+    ])
 
 
 def search_keyboard():
@@ -88,6 +97,13 @@ def places_keyboard(places):
             name = place.get("displayName") or place.get(
                 "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
 
+            # Додаємо статус відчинено/зачинено
+            open_now = place.get("openNow") or place.get("OpenNow")
+            if open_now is True:
+                name = f"🟢 {name}"
+            elif open_now is False:
+                name = f"🔴 {name}"
+
             builder.button(
                 text=name,
                 callback_data=f"place_view:{place_id}"
@@ -96,26 +112,6 @@ def places_keyboard(places):
     builder.adjust(2)
     return builder.as_markup()
 
-def custom_places_keyboard(places):
-    """
-    Генерує клавіатуру зі списком місць.
-    Кожна кнопка має callback_data з ID місця.
-    """
-    builder = InlineKeyboardBuilder()
-
-    for place in places:
-        place_id = place.get("id") or place.get("Id")
-        if place_id:
-            name = place.get("displayName") or place.get(
-                "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace") or place.get("nameOfPlace")
-
-            builder.button(
-                text=name,
-                callback_data=f"custom_place_view:{place_id}"
-            )
-
-    builder.adjust(2)
-    return builder.as_markup()
 
 def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callback=None, is_favorite=False):
     """
