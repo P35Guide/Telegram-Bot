@@ -16,7 +16,13 @@ from bot.keyboards import (
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
 )
-from bot.services.api_client import get_photos, get_places, get_place_details
+from bot.services.api_client import (
+    get_photos,
+    get_places,
+    get_place_details,
+    api_add_favorite,
+    api_remove_favorite,
+)
 from bot.services.settings import (
     add_favorite_place,
     get_favorite_places,
@@ -641,18 +647,20 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
 
 
 @router.callback_query(F.data.startswith("fav_toggle:"))
-async def fav_toggle_handler(callback: CallbackQuery):
-    """Додає або вилучає місце з улюблених. Назва береться з кешу — без API-запиту."""
+async def fav_toggle_handler(callback: CallbackQuery, session: aiohttp.ClientSession):
+    """Додає або вилучає місце з улюблених (локально та на сервері)."""
     place_id = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
 
     if is_favorite_place(user_id, place_id):
         remove_favorite_place(user_id, place_id)
+        await api_remove_favorite(user_id, place_id, session)
         await callback.answer("❌ Вилучено з улюблених")
         return
 
     name = _place_name_cache.get(place_id, "Без назви")
     add_favorite_place(user_id, place_id, name)
+    await api_add_favorite(user_id, place_id, name, session)
     await callback.answer("✅ Додано до улюблених")
 
 
