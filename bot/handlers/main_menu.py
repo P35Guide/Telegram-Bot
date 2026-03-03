@@ -76,7 +76,6 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
 
 async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
     target_user_id = user_id or message.from_user.id
-    lang_code = telegram_lang_code or (message.from_user.language_code if hasattr(message, 'from_user') else None)
     s = get_user_settings(target_user_id)
     # Використовуємо мову з налаштувань користувача
     lang_code = s.get('language', 'uk')
@@ -114,7 +113,7 @@ async def send_settings_menu(message: Message, user_id: int | None = None, teleg
 
 @router.message(F.text.in_(["⚙️ Налаштування", "⚙️ Settings", "⚙️ Einstellungen", "⚙️ Paramètres", "⚙️ Ajustes", "⚙️ Impostazioni", "⚙️ Ustawienia", "⚙️ Configurações", "⚙️ 設定", "⚙️ 设置"]))
 async def show_settings_menu(message: Message):
-    await send_settings_menu(message, telegram_lang_code=message.from_user.language_code)
+    await send_settings_menu(message)
 
 
 @router.message(F.text.in_(["💾 Зберегти на сервер", "💾 Save to server", "💾 Auf Server speichern", "💾 Sauvegarder sur le serveur", "💾 Guardar en servidor", "💾 Salva sul server", "💾 Zapisz na serwerze", "💾 Salvar no servidor", "💾 サーバーに保存", "💾 保存到服务器"]))
@@ -133,7 +132,7 @@ async def settings_save_handler(message: Message, session: aiohttp.ClientSession
 
 @router.message(F.text.in_(["🔙 Назад", "🔙 Back", "🔙 Zurück", "🔙 Retour", "🔙 Atrás", "🔙 Indietro", "🔙 Wstecz", "🔙 Voltar", "🔙 戻る", "🔙 返回"]))
 async def back_to_main_menu(message: Message):
-    await send_main_menu(message, telegram_lang_code=message.from_user.language_code)
+    await send_main_menu(message)
 
 
 @router.message(CommandStart())
