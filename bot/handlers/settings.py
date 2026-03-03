@@ -183,6 +183,15 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
     await state.clear()
     await send_main_menu(callback.message, user_id=callback.from_user.id)
 
+@router.callback_query(F.data.startswith("add_included_list_type:"))
+
+async def add_list_included(callback:CallbackQuery,state:FSMContext):
+    type_code = callback.data.split(":")[1]
+    settings_service.add_included_type(callback.from_user.id, type_code)
+
+    await callback.answer("✅ Категорії додані!")
+    await state.clear()
+    await send_main_menu(callback.message, user_id=callback.from_user.id)
 
 @router.message(BotState.waiting_for_category)
 async def add_custom_category_handler(message: Message, state: FSMContext):

@@ -15,7 +15,8 @@ DEFAULTS = {
     "favoritePlaces": [],
 }
 
-user_settings = {}
+user_settings = {
+}
 
 
 def save_user_settings(user_id, settings):
@@ -235,7 +236,6 @@ def  add_included_list_type(user_id,type_labal):
                 settings["includedTypes"] = included
                 user_settings[user_id] = settings
             
-
 
 
 def clear_included_types(user_id):

@@ -324,20 +324,21 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         parse_mode="HTML"
     )
 
-    at_night = decode_included_types(message.from_user.id)
-
     settings = get_user_settings(message.from_user.id)
 
-    if not settings.get("coordinates"):
-        await loading_msg.edit_text(
+    if not settings or not settings.get("coordinates"):
+        await loading_msg.delete() 
+        await message.answer(     
             "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
             "Оберіть спосіб передачі координат:",
             parse_mode="HTML",
             reply_markup=choose_location_type_keyboard()
         )
-        return
+        return loading_msg, None
 
     try:
+        at_night = decode_included_types(message.from_user.id)
+
         data = await get_places(settings, session)
 
         if not data or "places" not in data:
