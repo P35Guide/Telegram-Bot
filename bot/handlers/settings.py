@@ -100,12 +100,11 @@ async def finding_places_by_group_types(message:Message,state: FSMContext,sessio
     mood_types = [
         "Need to Work 💻",
         "Date Night 🌙",
-        "Loud Company 🍻",
-        "Breakfast at 2 PM 🥞"
+        "Loud Company 🍻"
     ]
 
     await message.answer(
-        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією\n\nBreakfast at 2 PM 🥞: місця де можна швидко керекусити"
+        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією"
     )
 
     for label in mood_types:
@@ -186,10 +185,10 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
 @router.callback_query(F.data.startswith("add_included_list_type:"))
 
 async def add_list_included(callback:CallbackQuery,state:FSMContext):
-    type_code = callback.data.split(":")[1]
-    settings_service.add_included_type(callback.from_user.id, type_code)
+    mood_label = callback.data.split(":")[1]
+    settings_service.add_included_list_type(callback.from_user.id, mood_label)
 
-    await callback.answer("✅ Категорії додані!")
+    await callback.answer("✅ Настрій обран!")
     await state.clear()
     await send_main_menu(callback.message, user_id=callback.from_user.id)
 
