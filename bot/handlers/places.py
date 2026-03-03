@@ -263,7 +263,6 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message,state:FSMContext):
-async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
