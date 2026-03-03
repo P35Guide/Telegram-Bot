@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard
+from bot.keyboards import cancel_keyboard, add_place_redirect_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
@@ -291,7 +291,7 @@ async def add_custom_category_handler(message: Message, state: FSMContext):
     settings_service.add_included_type(user_id, user_text)
     await message.answer(i18n.get(user_id, 'custom_category_accepted', lang_code, category=user_text))
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.callback_query(F.data == "cancel_included_types")
@@ -313,7 +313,7 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     settings_service.clear_included_types(user_id)
     await message.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
@@ -360,7 +360,7 @@ async def open_now_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_language)
