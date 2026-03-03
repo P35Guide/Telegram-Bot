@@ -142,3 +142,61 @@ def place_navigation_keyboard():
     )
 
     return keyboard
+
+
+def favorites_action_keyboard():
+    """Клавіатура для вибору дії з улюбленими місцями."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
+            [KeyboardButton(text="🔙 Скасувати")],
+        ],
+        resize_keyboard=True
+    )
+
+
+def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None):
+    """
+    Генерує інлайн-клавіатуру для вибору закладів до порівняння.
+    Показує галочки для обраних закладів.
+    """
+    if selected_ids is None:
+        selected_ids = []
+    
+    builder = InlineKeyboardBuilder()
+    
+    for favorite in favorites:
+        place_id = favorite.get("id")
+        name = favorite.get("name", "Без назви")
+        is_selected = place_id in selected_ids
+        
+        # Додаємо галочку якщо обрано
+        checkbox = "✅" if is_selected else "⬜"
+        display_name = f"{checkbox} {name}"
+        
+        builder.button(
+            text=display_name,
+            callback_data=f"compare_toggle:{place_id}"
+        )
+    
+    # Кнопки керування внизу
+    builder.adjust(1)
+    
+    # Додаємо кнопку "Порівняти" якщо обрано хоча б 2 місця
+    if len(selected_ids) >= 2:
+        builder.button(
+            text="⚖️ Порівняти обрані",
+            callback_data="perform_comparison"
+        )
+    else:
+        builder.button(
+            text="⚖️ Обрати мінімум 2 (обрано: {})".format(len(selected_ids)),
+            callback_data="comparison_help"
+        )
+    
+    builder.button(
+        text="🔙 Скасувати",
+        callback_data="cancel_comparison"
+    )
+    
+    return builder.as_markup()

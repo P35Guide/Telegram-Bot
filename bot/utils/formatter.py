@@ -109,3 +109,133 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
         description
     ]
     return "\n".join(line for line in lines if line is not None)
+
+
+def format_comparison_text(places: list, user_coords: dict = None) -> str:
+    """
+    Форматує порівняння кількох місць у HTML рядок з таблицею.
+    Порівнює за: кількість відгуків, рейтингом (зірки), відстанню.
+    Показує позначки для найкращих та найгірших.
+    """
+    if not places or len(places) < 2:
+        return "❌ Потрібно вибрати мінімум 2 місця для порівняння."
+    
+    # Заголовок
+    header = "⚖️ <b>ПОРІВНЯННЯ ЗАКЛАДІВ</b>\n" + "═" * 30 + "\n"
+    
+    # Збираємо дані для порівняння
+    comparison_data = []
+    for place in places:
+        data = {
+            "name": place.get("displayName") or place.get("name", "Без назви"),
+            "rating": place.get("rating", 0),
+            "user_rating_count": place.get("userRatingCount", 0),
+            "reviews_count": place.get("reviewCount", place.get("userRatingCount", 0)),
+            "latitude": place.get("latitude"),
+            "longitude": place.get("longitude"),
+            "phone": place.get("phoneNumber"),
+            "address": place.get("shortFormattedAddress"),
+            "price_level": place.get("priceLevel"),
+            "open_now": place.get("openNow"),
+        }
+        
+        # Розраховуємо відстань
+        if user_coords and data["latitude"] and data["longitude"]:
+            distance_km = calculate_distance(
+                user_coords.get("latitude", 0),
+                user_coords.get("longitude", 0),
+                data["latitude"],
+                data["longitude"]
+            )
+            data["distance_km"] = distance_km
+            data["distance_str"] = format_distance(distance_km)
+        else:
+            data["distance_km"] = float('inf')
+            data["distance_str"] = "Невідомо"
+        
+        comparison_data.append(data)
+    
+    # Знаходимо найкращих і найгірших за кожним параметром
+    # Рейтинг
+    best_rating = max(comparison_data, key=lambda x: x["rating"]) if comparison_data else None
+    worst_rating = min(comparison_data, key=lambda x: x["rating"]) if comparison_data else None
+    
+    # Відгуки
+    most_reviews = max(comparison_data, key=lambda x: x["reviews_count"]) if comparison_data else None
+    least_reviews = min(comparison_data, key=lambda x: x["reviews_count"]) if comparison_data else None
+    
+    # Відстань
+    closest = min(comparison_data, key=lambda x: x["distance_km"]) if comparison_data else None
+    farthest = max(comparison_data, key=lambda x: x["distance_km"]) if comparison_data else None
+    
+    # Формуємо порівняльну таблицю
+    lines = [header]
+    
+    # Таблиця порівняння
+    for i, data in enumerate(comparison_data, 1):
+        lines.append(f"\n<b>#{i} {data['name']}</b>")
+        
+        
+        # Рейтинг
+        rating_text = ""
+        if data['rating'] > 0:
+            stars = "⭐" * int(round(data['rating']))
+            rating_text = f"<b>{data['rating']}</b> {stars}"
+            
+            # Позначаємо найкращий та найгірший за рейтингом
+            if data == best_rating and data != worst_rating:
+                rating_text += " <b>✅ (НАЙЛІПШИЙ)</b>"
+            elif data == worst_rating and data != best_rating:
+                rating_text += " <b>❌ (НАЙГІРШИЙ)</b>"
+        else:
+            rating_text = "<i>Немає оцінок</i> ❌"
+        
+        lines.append(f"⭐ Рейтинг: {rating_text}")
+        
+        # Кількість відгуків
+        reviews_marker = ""
+        if data == most_reviews and data != least_reviews:
+            reviews_marker = " <b>✅ (НАЙБІЛЬШЕ)</b>"
+        elif data == least_reviews and data != most_reviews:
+            reviews_marker = " <b>❌ (НАЙМЕНШЕ)</b>"
+        
+        lines.append(f"💬 Відгуків: <b>{data['reviews_count']}</b>{reviews_marker}")
+        
+        # Відстань
+        distance_marker = ""
+        if data['distance_km'] != float('inf'):
+            if data == closest and data != farthest:
+                distance_marker = " <b>✅ (НАЙБЛИЖЧЕ)</b>"
+            elif data == farthest and data != closest:
+                distance_marker = " <b>❌ (НАЙДАЛІ)</b>"
+        
+        lines.append(f"📏 Відстань: <b>{data['distance_str']}</b>{distance_marker}")
+        
+        # Статус
+        if data['open_now'] is not None:
+            status = "🟢 Відчинено" if data['open_now'] else "🔴 Зачинено"
+            lines.append(f"🕒 Статус: {status}")
+        
+        # Ціна
+        if data['price_level']:
+            price_symbol = PRICE_LEVELS.get(data['price_level'], data['price_level'])
+            if price_symbol:
+                lines.append(f"💰 Ціна: {price_symbol}")
+    
+    # Рекомендація
+    
+    lines.append("<b>💡 ПОРІВНЯННЯ:</b>\n")
+    
+    # Найкращий за рейтингом
+    if best_rating:
+        lines.append(f"⭐ За рейтингом ЛІДЕР: <b>{best_rating['name']}</b> ({best_rating['rating']})")
+    
+    # Найближче
+    if closest and closest['distance_km'] != float('inf'):
+        lines.append(f"📍 Найближче до вас: <b>{closest['name']}</b> ({closest['distance_str']})")
+    
+    # Найбільше відгуків
+    if most_reviews:
+        lines.append(f"💬 Найбільше відгуків: <b>{most_reviews['name']}</b> ({most_reviews['reviews_count']})")
+    
+    return "\n".join(lines)
