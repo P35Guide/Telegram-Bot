@@ -2,12 +2,12 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard
+from bot.keyboards import cancel_keyboard, add_place_redirect_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings
 from bot.states import BotState
 from bot.utils.logger import logger
-from bot.handlers.main_menu import send_main_menu
+from bot.handlers.main_menu import send_settings_menu
 from bot.services import settings as settings_service
 import aiohttp
 from bot.config import ADD_PLACE_BOT_USERNAME
@@ -181,7 +181,7 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
     settings_service.add_included_type(callback.from_user.id, type_code)
     await callback.answer("✅ Категорію додано!")
     await state.clear()
-    await send_main_menu(callback.message, user_id=callback.from_user.id)
+    await send_settings_menu(callback.message, user_id=callback.from_user.id)
 
 @router.callback_query(F.data.startswith("add_included_list_type:"))
 
@@ -204,7 +204,7 @@ async def add_custom_category_handler(message: Message, state: FSMContext):
     settings_service.add_included_type(message.from_user.id, user_text)
     await message.answer(f"✅ Прийнято! Шукаю нестандартну категорію: **{user_text}**")
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.callback_query(F.data == "cancel_included_types")
@@ -212,7 +212,7 @@ async def clear_included_types_callback(callback: CallbackQuery, state: FSMConte
     settings_service.clear_included_types(callback.from_user.id)
     await callback.answer("✅ Категорії скинуто!")
     await state.clear()
-    await send_main_menu(callback.message, user_id=callback.from_user.id)
+    await send_settings_menu(callback.message, user_id=callback.from_user.id)
 
 
 @router.message(F.text == "🧹 Скинути категорії", BotState.waiting_for_category)
@@ -220,7 +220,7 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     settings_service.clear_included_types(message.from_user.id)
     await message.answer("✅ Категорії скинуто!")
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(F.text == "🔢 Кількість")
@@ -242,7 +242,7 @@ async def rank_preference_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
@@ -250,7 +250,7 @@ async def rank_preference_handler(message: Message):
                             BotState.selecting_max_result_count), F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(F.text == "⏰ Відкрите зараз")
@@ -263,7 +263,7 @@ async def open_now_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_language)
@@ -273,7 +273,7 @@ async def set_language_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив мову на {lang}")
     update_language(message.from_user.id, lang)
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_radius)
@@ -290,7 +290,7 @@ async def set_radius_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив радіус на {radius}")
     update_radius(message.from_user.id, radius)
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_included_types)
@@ -304,7 +304,7 @@ async def set_included_types_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив включені типи на {types}")
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_excluded_types)
@@ -318,7 +318,7 @@ async def set_excluded_types_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив виключені типи на {types}")
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_max_result_count)
@@ -332,4 +332,4 @@ async def set_max_result_count_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив кількість результатів на {int(text)}")
     await state.clear()
-    await send_main_menu(message)
+    await send_settings_menu(message)

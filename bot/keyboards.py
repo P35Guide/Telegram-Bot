@@ -17,10 +17,22 @@ def choose_location_type_keyboard():
 
 
 def actions_keyboard():
-    keyboard = ReplyKeyboardMarkup(
+    """Головне меню: локація, пошук, налаштування, додати місце."""
+    return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
+            [KeyboardButton(text="⚙️ Налаштування"),
+             KeyboardButton(text="🔗 Додати місце")],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def settings_keyboard():
+    """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
             [
                 KeyboardButton(text="🌐 Мова"),
                 KeyboardButton(text="📏 Радіус"),
@@ -33,13 +45,12 @@ def actions_keyboard():
                 KeyboardButton(text="⭐ Сортування"),
                 KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text="🔗 Додати місце"),
-             KeyboardButton(text="🔢 Кількість"),
-            ]
+            [KeyboardButton(text="💾 Зберегти на сервер"),
+             KeyboardButton(text="🔢 Кількість"),],
+            [KeyboardButton(text="🔙 Назад")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
-    return keyboard
 
 
 def add_place_redirect_keyboard():
@@ -85,10 +96,7 @@ def cancel_keyboard():
 
 
 def places_keyboard(places):
-    """
-    Генерує клавіатуру зі списком місць.
-    Кожна кнопка має callback_data з ID місця.
-    """
+   
     builder = InlineKeyboardBuilder()
 
     for place in places:
@@ -144,3 +152,58 @@ def place_navigation_keyboard():
     )
 
     return keyboard
+
+
+def favorites_action_keyboard():
+    """Клавіатура для вибору дії з улюбленими місцями."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
+            [KeyboardButton(text="🔙 Скасувати")],
+        ],
+        resize_keyboard=True
+    )
+
+
+def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None):
+   
+    if selected_ids is None:
+        selected_ids = []
+    
+    builder = InlineKeyboardBuilder()
+    
+    for favorite in favorites:
+        place_id = favorite.get("id")
+        name = favorite.get("name", "Без назви")
+        is_selected = place_id in selected_ids
+        
+        # Додаємо галочку якщо обрано
+        checkbox = "✅" if is_selected else "⬜"
+        display_name = f"{checkbox} {name}"
+        
+        builder.button(
+            text=display_name,
+            callback_data=f"compare_toggle:{place_id}"
+        )
+    
+   
+    builder.adjust(1)
+    
+    
+    if len(selected_ids) >= 2:
+        builder.button(
+            text="⚖️ Порівняти обрані",
+            callback_data="perform_comparison"
+        )
+    else:
+        builder.button(
+            text="⚖️ Обрати мінімум 2 (обрано: {})".format(len(selected_ids)),
+            callback_data="comparison_help"
+        )
+    
+    builder.button(
+        text="🔙 Скасувати",
+        callback_data="cancel_comparison"
+    )
+    
+    return builder.as_markup()

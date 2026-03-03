@@ -19,9 +19,48 @@ user_settings = {
 }
 
 
-def save_user_settings(user_id, settings):
-    user_settings[user_id] = settings
-    return settings
+def _parse_coordinates(coord):
+    """Повертає None якщо coordinates порожні або нульові."""
+    if not coord or not isinstance(coord, dict):
+        return None
+    lat = coord.get("latitude")
+    lon = coord.get("longitude")
+    if lat is None or lon is None:
+        return None
+    try:
+        if float(lat) == 0 and float(lon) == 0:
+            return None
+    except (TypeError, ValueError):
+        return None
+    return {"latitude": float(lat), "longitude": float(lon)}
+
+
+def apply_user_data_from_api(user_id: int, api_user: dict):
+    """
+    Заповнює user_settings з відповіді API (get_user).
+    api_user: { "settings": {...}, "favoritePlaces": [...] }
+    """
+    server_settings = api_user.get("settings") or {}
+    server_favorites = api_user.get("favoritePlaces") or []
+
+    merged = {
+        "language": server_settings.get("language") or DEFAULTS["language"],
+        "radius": server_settings.get("radius") or DEFAULTS["radius"],
+        "coordinates": _parse_coordinates(server_settings.get("coordinates")),
+        "includedTypes": list(server_settings.get("includedTypes") or []),
+        "excludedTypes": list(server_settings.get("excludedTypes") or []),
+        "maxResultCount": server_settings.get("maxResultCount") or DEFAULTS["maxResultCount"],
+        "rankPreference": server_settings.get("rankPreference") or DEFAULTS["rankPreference"],
+        "openNow": server_settings.get("openNow") if server_settings.get("openNow") is not None else DEFAULTS["openNow"],
+        "favoritePlaces": [],
+    }
+    for p in server_favorites:
+        n = _normalize_favorite(p)
+        if n and n.get("id"):
+            merged["favoritePlaces"].append(n)
+
+    user_settings[user_id] = merged
+    return merged
 
 
 def get_user_settings(user_id):
@@ -36,6 +75,40 @@ def get_user_settings(user_id):
             if key not in settings:
                 settings[key] = list(value) if isinstance(value, list) else value
     return settings
+
+
+# Поля налаштувань для POST /api/telegram-user/{id}/settings (контракт API)
+SETTINGS_API_KEYS = (
+    "language", "radius", "coordinates", "includedTypes", "excludedTypes",
+    "maxResultCount", "rankPreference", "openNow",
+)
+
+
+def _coordinates_for_api(coord):
+    """Повертає coordinates для API: None або { latitude, longitude }."""
+    if not coord or not isinstance(coord, dict):
+        return None
+    try:
+        lat = float(coord.get("latitude", 0))
+        lon = float(coord.get("longitude", 0))
+        return {"latitude": lat, "longitude": lon}
+    except (TypeError, ValueError):
+        return None
+
+
+def get_settings_payload_for_api(user_id):
+    """Словник для POST /api/telegram-user/{id}/settings: id, language, radius, coordinates, ..."""
+    s = get_user_settings(user_id)
+    payload = {"id": 0}
+    for key in SETTINGS_API_KEYS:
+        val = s.get(key)
+        if key == "coordinates":
+            payload[key] = _coordinates_for_api(val)
+        elif isinstance(val, list):
+            payload[key] = list(val)
+        else:
+            payload[key] = val
+    return payload
 
 
 # --- Основні функції для категорій (Чекбокси та Текст) ---
