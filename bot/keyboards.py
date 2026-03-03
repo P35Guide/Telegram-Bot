@@ -24,6 +24,17 @@ def actions_keyboard():
         keyboard=[
             [KeyboardButton(text="📍 Передати координати")],
             [KeyboardButton(text="🚀 Пошук маршрутів")],
+            [KeyboardButton(text="⚙️ Налаштування"),
+             KeyboardButton(text="🔗 Додати місце")],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def settings_keyboard():
+    """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
             [
                 KeyboardButton(text="🌐 Мова"),
                 KeyboardButton(text="📏 Радіус"),
@@ -37,11 +48,11 @@ def actions_keyboard():
                 KeyboardButton(text="⏰ Відкрите зараз"),
                 KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text="🔗 Додати місце")]
+            [KeyboardButton(text="💾 Зберегти на сервер")],
+            [KeyboardButton(text="🔙 Назад")],
         ],
         resize_keyboard=True,
     )
-    return keyboard
 
 
 def add_place_redirect_keyboard():
