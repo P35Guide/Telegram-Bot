@@ -8,6 +8,7 @@ from bot.services.settings import update_language, update_radius, update_include
 from bot.states import BotState
 from bot.utils.logger import logger
 from bot.handlers.main_menu import send_settings_menu,send_main_menu
+from bot.utils.localization import i18n
 from bot.services import settings as settings_service
 import aiohttp
 from bot.config import ADD_PLACE_BOT_USERNAME
@@ -15,33 +16,64 @@ from bot.config import ADD_PLACE_BOT_USERNAME
 router = Router()
 
 
-@router.message(F.text == "🔗 Додати місце")
+@router.message(F.text.in_(["🔗 Додати місце", "🔗 Add place", "🔗 Ort hinzufügen", "🔗 Ajouter un lieu", "🔗 Añadir lugar", "🔗 Aggiungi luogo", "🔗 Dodaj miejsce", "🔗 Adicionar local", "🔗 場所を追加", "🔗 添加地点"]))
 async def add_place_redirect_handler(message: Message):
     """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
+    user_id = message.from_user.id
+    lang_code = message.from_user.language_code
     username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith(
         "@") else f"@{ADD_PLACE_BOT_USERNAME}"
     await message.answer(
-        "📌 <b>Додавання власних місць</b>\n\n"
-        "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
-        f"👉 {username}",
+        i18n.get(user_id, 'add_place_title', lang_code, username=username),
         parse_mode="HTML",
-        reply_markup=add_place_redirect_keyboard(),
+        reply_markup=add_place_redirect_keyboard(user_id, lang_code),
     )
 
 
-@router.message(F.text == "🌐 Мова")
+@router.message(F.text.in_(["🌐 Мова", "🌐 Language", "🌐 Sprache", "🌐 Langue", "🌐 Idioma", "🌐 Lingua", "🌐 Język", "🌐 Idioma", "🌐 言語", "🌐 语言"]))
 async def language_handler(message: Message, state: FSMContext):
-    logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) хоче змінити мову")
-    await state.set_state(BotState.selecting_language)
+    user_id = message.from_user.id
+    lang_code = message.from_user.language_code
+    logger.info(f"Користувач {message.from_user.username}({user_id}) хоче змінити мову")
+    
+    # Показуємо доступні мови через inline клавіатуру
+    builder = InlineKeyboardBuilder()
+    
+    for code, name in i18n.get_available_languages().items():
+        builder.button(
+            text=name,
+            callback_data=f"set_lang:{code}"
+        )
+    
+    builder.adjust(2)
+    
     await message.answer(
-        "✏️ Введіть мову пошуку (у форматі: uk, en, pl, ...):",
-        reply_markup=cancel_keyboard()
+        i18n.get(user_id, 'select_language', lang_code),
+        reply_markup=builder.as_markup()
     )
+    await state.clear()
 
 
-@router.message(F.text == "📏 Радіус")
+@router.callback_query(F.data.startswith("set_lang:"))
+async def set_language_callback(callback: CallbackQuery):
+    """Обробка вибору мови"""
+    user_id = callback.from_user.id
+    lang_code = callback.data.split(":")[1]
+    
+    # Встановлюємо мову в системі локалізації
+    if i18n.set_user_language(user_id, lang_code):
+        lang_name = i18n.get_available_languages().get(lang_code, lang_code)
+        await callback.answer(f"✅ {lang_name}")
+        await callback.message.edit_text(
+            i18n.get(user_id, 'language_changed', lang_code, language=lang_name)
+        )
+        # Показуємо оновлене меню налаштувань
+        await send_settings_menu(callback.message, user_id=user_id, telegram_lang_code=lang_code)
+    else:
+        await callback.answer("❌ Error")
+
+
+@router.message(F.text.in_(["📏 Радіус", "📏 Radius", "📏 Rayon", "📏 Radio", "📏 Raggio", "📏 Promień", "📏 Raio", "📏 半径"]))
 async def radius_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) хоче змінити радіус")

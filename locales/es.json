@@ -1,0 +1,114 @@
+{
+  "welcome": "👋 <b>P35Guide</b>",
+  "choose_action": "Elige una acción:",
+  "send_location": "📍 Enviar mi ubicación",
+  "find_city": "🏙️ Encontrar ciudad",
+  "send_coordinates": "📍 Enviar coordenadas",
+  "search_routes": "🚀 Buscar rutas",
+  "settings": "⚙️ Ajustes",
+  "add_place": "🔗 Añadir lugar",
+  
+  "menu_back": "🔙 Atrás",
+  "menu_cancel": "🔙 Cancelar",
+  "menu_stop": "🛑 Parar",
+  "menu_next": "➡️ Siguiente",
+  "menu_prev": "⬅️ Anterior",
+  
+  "settings_language": "🌐 Idioma",
+  "settings_radius": "📏 Radio",
+  "settings_categories": "🍴 Seleccionar categorías",
+  "settings_mood": "🎧 Seleccionar por ánimo",
+  "settings_sorting": "⭐ Ordenar",
+  "settings_open_now": "⏰ Abierto ahora",
+  "settings_save": "💾 Guardar en servidor",
+  "settings_count": "🔢 Cantidad",
+  
+  "location_received": "✅ ¡Ubicación recibida! Has vuelto al menú principal.",
+  "choose_location_type": "Elige cómo enviar coordenadas:",
+  "enter_city_name": "Ingresa el nombre de la ciudad (ej.: Madrid, Barcelona, Valencia)",
+  "searching_city": "Buscando coordenadas para la ciudad: {city} ...",
+  "city_found": "✅ ¡Ciudad '{city}' encontrada!\\n¡Ahora puedes buscar lugares cercanos!",
+  "city_not_found": "❗️ No se pudieron encontrar coordenadas para la ciudad '{city}'. Inténtalo de nuevo.",
+  
+  "settings_title": "⚙️ <b>Ajustes:</b>",
+  "settings_lang_label": "🌐 Idioma: <code>{language}</code>",
+  "settings_radius_label": "📏 Radio: <code>{radius} m</code>",
+  "settings_included_label": "✅ Incluir: <code>{included}</code>",
+  "settings_excluded_label": "❌ Excluir: <code>{excluded}</code>",
+  "settings_count_label": "🔢 Cantidad máxima: <code>{count}</code>",
+  "settings_rank_label": "⭐ Ordenar: <code>{rank}</code>",
+  "settings_open_label": "⏰ Abierto ahora: <code>{status}</code>",
+  
+  "coordinates_label": "📍 <b>Coordenadas:</b>\\n├ Latitud: <tg-spoiler>{latitude}</tg-spoiler>\\n└ Longitud: <tg-spoiler>{longitude}</tg-spoiler>",
+  
+  "enter_language": "✏️ Ingresa el idioma de búsqueda (formato: uk, en, pl, ...):",
+  "enter_radius": "✏️ Ingresa el radio de búsqueda en metros (1-5000):",
+  
+  "choose_category": "🔎 <b>Elige una categoría popular</b> de la lista a continuación:\\n\\n{current}✍️ <b>O simplemente escribe</b> la tuya (ej.: shawarma, cine, parque).",
+  "current_categories": "Actual: <code>{categories}</code>\\n\\n",
+  "category_added": "✅ ¡Categoría añadida!",
+  "categories_added": "✅ ¡Categorías añadidas!",
+  "categories_reset": "🧹 Categorías restablecidas",
+  "category_too_short": "⚠️ Categoría demasiado corta (mínimo 3 caracteres)",
+  
+  "category_restaurant": "🍕 Restaurante",
+  "category_cafe": "☕ Cafetería",
+  "category_bar": "🍺 Bar",
+  "category_fastfood": "🍔 Comida rápida",
+  "category_pharmacy": "💊 Farmacia",
+  "category_store": "🛒 Tienda",
+  "category_reset": "🧹 Restablecer categorías",
+  
+  "mood_work": "Necesito trabajar 💻",
+  "mood_date": "Cita nocturna 🌙",
+  "mood_company": "Compañía ruidosa 🍻",
+  "mood_breakfast": "Desayuno a las 2 PM 🥞",
+  "mood_description": "Necesito trabajar 💻: lugares tranquilos para trabajo remoto\\n\\nCita nocturna 🌙: lugares donde comer por la noche\\n\\nCompañía ruidosa 🍻: lugares para grupos grandes\\n\\nDesayuno a las 2 PM 🥞: lugares para comer rápido",
+  "choose_mood": "🔎 <b>Elige tu ánimo</b> de la lista a continuación:\\n\\n{current}",
+  
+  "settings_saved": "✅ Ajustes guardados en el servidor",
+  "settings_save_failed": "⚠️ Error al guardar ajustes en el servidor",
+  
+  "search_places": "🚀 Lugares",
+  "search_list": "🔍 Lista",
+  "search_random": "🎲 Lugar aleatorio",
+  "search_favorites": "🌟 Favoritos",
+  
+  "places_found": "Lugares encontrados: {count}",
+  "no_places_found": "❌ No se encontraron lugares",
+  "error_occurred": "⚠️ Ocurrió un error",
+  
+  "open_now": "🟢 Abierto",
+  "closed_now": "🔴 Cerrado",
+  "distance": "📏 Distancia: <b>{distance}</b>",
+  
+  "add_to_favorites": "🌟 Añadir a favoritos",
+  "remove_from_favorites": "🌟 Quitar de favoritos",
+  "added_to_favorites": "✅ ¡Añadido a favoritos!",
+  "removed_from_favorites": "✅ ¡Quitado de favoritos!",
+  
+  "price_free": "Gratis",
+  "price_inexpensive": "💰",
+  "price_moderate": "💰💰",
+  "price_expensive": "💰💰💰",
+  "price_very_expensive": "💰💰💰💰",
+  
+  "schedule_title": "🕒 <b>Horario:</b>",
+  "official_website": "🌐 Sitio oficial",
+  "about_place": "📝 <b>Acerca de este lugar:</b>",
+  
+  "all": "Todos",
+  "none": "Ninguno",
+  "yes": "🟢 Sí",
+  "no": "🔴 No",
+  
+  "language_changed": "✅ Idioma cambiado a {language}",
+  "select_language": "Selecciona el idioma de la interfaz:",
+  
+  "language_prompt": "Elige el idioma de tu interfaz:",
+  "continue_with_language": "✅ Continuar con {language}",
+  "change_language_btn": "🌐 Cambiar idioma",
+  
+  "add_place_title": "📌 <b>Añadir lugares personalizados</b>\\n\\nEste bot solo puede <b>buscar</b> lugares cercanos.\\nPara <b>añadir y ver tus propios lugares</b> en el mapa, usa un bot separado:\\n\\n👉 {username}",
+  "go_to_bot": "🔗 Ir al bot"
+}

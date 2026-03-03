@@ -1,0 +1,114 @@
+{
+  "welcome": "👋 <b>P35Guide</b>",
+  "choose_action": "Choose an action:",
+  "send_location": "📍 Send my location",
+  "find_city": "🏙️ Find a city",
+  "send_coordinates": "📍 Send coordinates",
+  "search_routes": "🚀 Search routes",
+  "settings": "⚙️ Settings",
+  "add_place": "🔗 Add place",
+  
+  "menu_back": "🔙 Back",
+  "menu_cancel": "🔙 Cancel",
+  "menu_stop": "🛑 Stop",
+  "menu_next": "➡️ Next",
+  "menu_prev": "⬅️ Previous",
+  
+  "settings_language": "🌐 Language",
+  "settings_radius": "📏 Radius",
+  "settings_categories": "🍴 Select categories",
+  "settings_mood": "🎧 Select by mood",
+  "settings_sorting": "⭐ Sorting",
+  "settings_open_now": "⏰ Open now",
+  "settings_save": "💾 Save to server",
+  "settings_count": "🔢 Count",
+  
+  "location_received": "✅ Location received! You're back to the main menu.",
+  "choose_location_type": "Choose how to send coordinates:",
+  "enter_city_name": "Enter city name (e.g.: London, Paris, Berlin)",
+  "searching_city": "Searching coordinates for city: {city} ...",
+  "city_found": "✅ City '{city}' found!\\nYou can now search for nearby places!",
+  "city_not_found": "❗️ Couldn't find coordinates for city '{city}'. Please try again.",
+  
+  "settings_title": "⚙️ <b>Settings:</b>",
+  "settings_lang_label": "🌐 Language: <code>{language}</code>",
+  "settings_radius_label": "📏 Radius: <code>{radius} m</code>",
+  "settings_included_label": "✅ Include: <code>{included}</code>",
+  "settings_excluded_label": "❌ Exclude: <code>{excluded}</code>",
+  "settings_count_label": "🔢 Maximum count: <code>{count}</code>",
+  "settings_rank_label": "⭐ Sorting: <code>{rank}</code>",
+  "settings_open_label": "⏰ Open now: <code>{status}</code>",
+  
+  "coordinates_label": "📍 <b>Coordinates:</b>\\n├ Latitude: <tg-spoiler>{latitude}</tg-spoiler>\\n└ Longitude: <tg-spoiler>{longitude}</tg-spoiler>",
+  
+  "enter_language": "✏️ Enter search language (format: uk, en, pl, ...):",
+  "enter_radius": "✏️ Enter search radius in meters (1-5000):",
+  
+  "choose_category": "🔎 <b>Choose a popular category</b> from the list below:\\n\\n{current}✍️ <b>Or simply write</b> your own (e.g.: shawarma, cinema, park).",
+  "current_categories": "Current: <code>{categories}</code>\\n\\n",
+  "category_added": "✅ Category added!",
+  "categories_added": "✅ Categories added!",
+  "categories_reset": "🧹 Categories reset",
+  "category_too_short": "⚠️ Category too short (minimum 3 characters)",
+  
+  "category_restaurant": "🍕 Restaurant",
+  "category_cafe": "☕ Café",
+  "category_bar": "🍺 Bar",
+  "category_fastfood": "🍔 Fast food",
+  "category_pharmacy": "💊 Pharmacy",
+  "category_store": "🛒 Store",
+  "category_reset": "🧹 Reset categories",
+  
+  "mood_work": "Need to Work 💻",
+  "mood_date": "Date Night 🌙",
+  "mood_company": "Loud Company 🍻",
+  "mood_breakfast": "Breakfast at 2 PM 🥞",
+  "mood_description": "Need to Work 💻: quiet places suitable for remote work\\n\\nDate Night 🌙: places where you can eat at night\\n\\nLoud Company 🍻: places where you can be with a large group\\n\\nBreakfast at 2 PM 🥞: places where you can grab a quick bite",
+  "choose_mood": "🔎 <b>Choose your mood</b> from the list below:\\n\\n{current}",
+  
+  "settings_saved": "✅ Settings saved to server",
+  "settings_save_failed": "⚠️ Failed to save settings to server",
+  
+  "search_places": "🚀 Places",
+  "search_list": "🔍 List",
+  "search_random": "🎲 Random place",
+  "search_favorites": "🌟 Favorites",
+  
+  "places_found": "Places found: {count}",
+  "no_places_found": "❌ No places found",
+  "error_occurred": "⚠️ An error occurred",
+  
+  "open_now": "🟢 Open",
+  "closed_now": "🔴 Closed",
+  "distance": "📏 Distance: <b>{distance}</b>",
+  
+  "add_to_favorites": "🌟 Add to favorites",
+  "remove_from_favorites": "🌟 Remove from favorites",
+  "added_to_favorites": "✅ Added to favorites!",
+  "removed_from_favorites": "✅ Removed from favorites!",
+  
+  "price_free": "Free",
+  "price_inexpensive": "💰",
+  "price_moderate": "💰💰",
+  "price_expensive": "💰💰💰",
+  "price_very_expensive": "💰💰💰💰",
+  
+  "schedule_title": "🕒 <b>Opening hours:</b>",
+  "official_website": "🌐 Official website",
+  "about_place": "📝 <b>About this place:</b>",
+  
+  "all": "All",
+  "none": "None",
+  "yes": "🟢 Yes",
+  "no": "🔴 No",
+  
+  "language_changed": "✅ Language changed to {language}",
+  "select_language": "Select interface language:",
+  
+  "language_prompt": "Choose your interface language:",
+  "continue_with_language": "✅ Continue with {language}",
+  "change_language_btn": "🌐 Change language",
+  
+  "add_place_title": "📌 <b>Adding custom places</b>\\n\\nThis bot can only <b>search</b> for nearby places.\\nTo <b>add and view your own places</b> on the map, use a separate bot:\\n\\n👉 {username}",
+  "go_to_bot": "🔗 Go to bot"
+}

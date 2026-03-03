@@ -1,0 +1,112 @@
+{
+  "welcome": "👋 <b>P35Guide</b>",
+  "choose_action": "选择一个操作:",
+  "send_location": "📍 发送我的位置",
+  "find_city": "🏙️ 查找城市",
+  "send_coordinates": "📍 发送坐标",
+  "search_routes": "🚀 搜索路线",
+  "settings": "⚙️ 设置",
+  "add_place": "🔗 添加地点",
+  
+  "menu_back": "🔙 返回",
+  "menu_cancel": "🔙 取消",
+  "menu_stop": "🛑 停止",
+  "menu_next": "➡️ 下一个",
+  "menu_prev": "⬅️ 上一个",
+  
+  "settings_language": "🌐 语言",
+  "settings_radius": "📏 半径",
+  "settings_categories": "🍴 选择类别",
+  "settings_mood": "🎧 按心情选择",
+  "settings_sorting": "⭐ 排序",
+  "settings_open_now": "⏰ 现在营业",
+  "settings_save": "💾 保存到服务器",
+  "settings_count": "🔢 数量",
+  
+  "location_received": "✅ 已收到位置！您已返回主菜单。",
+  "choose_location_type": "选择如何发送坐标:",
+  "enter_city_name": "输入城市名称（例如：北京、上海、广州）",
+  "searching_city": "正在搜索城市坐标: {city} ...",
+  "city_found": "✅ 找到城市 '{city}'！\\n现在您可以搜索附近的地点！",
+  "city_not_found": "❗️ 无法找到城市 '{city}' 的坐标。请重试。",
+  
+  "settings_title": "⚙️ <b>设置:</b>",
+  "settings_lang_label": "🌐 语言: <code>{language}</code>",
+  "settings_radius_label": "📏 半径: <code>{radius} 米</code>",
+  "settings_included_label": "✅ 包括: <code>{included}</code>",
+  "settings_excluded_label": "❌ 排除: <code>{excluded}</code>",
+  "settings_count_label": "🔢 最大数量: <code>{count}</code>",
+  "settings_rank_label": "⭐ 排序: <code>{rank}</code>",
+  "settings_open_label": "⏰ 现在营业: <code>{status}</code>",
+  
+  "coordinates_label": "📍 <b>坐标:</b>\\n├ 纬度: <tg-spoiler>{latitude}</tg-spoiler>\\n└ 经度: <tg-spoiler>{longitude}</tg-spoiler>",
+  
+  "enter_language": "✏️ 输入搜索语言（格式: uk, en, pl, ...）:",
+  "enter_radius": "✏️ 输入搜索半径（米）（1-5000）:",
+  
+  "choose_category": "🔎 <b>从下面列表中选择热门类别</b>:\\n\\n{current}✍️ <b>或者直接输入</b>您自己的（例如：烧烤、电影院、公园）。",
+  "current_categories": "当前: <code>{categories}</code>\\n\\n",
+  "category_added": "✅ 已添加类别！",
+  "categories_added": "✅ 已添加类别！",
+  "categories_reset": "🧹 已重置类别",
+  "category_too_short": "⚠️ 类别太短（至少3个字符）",
+  
+  "category_restaurant": "🍕 餐厅",
+  "category_cafe": "☕ 咖啡馆",
+  "category_bar": "🍺 酒吧",
+  "category_fastfood": "🍔 快餐",
+  "category_pharmacy": "💊 药店",
+  "category_store": "🛒 商店",
+  "category_reset": "🧹 重置类别",
+  
+  "mood_work": "需要工作 💻",
+  "mood_date": "约会之夜 🌙",
+  "mood_company": "聚会 🍻",
+  "mood_breakfast": "下午2点早餐 🥞",
+  "mood_description": "需要工作 💻: 适合远程工作的安静地方\\n\\n约会之夜 🌙: 晚上可以吃饭的地方\\n\\n聚会 🍻: 适合大团体的地方\\n\\n下午2点早餐 🥞: 可以快速用餐的地方",
+  "choose_mood": "🔎 <b>从下面列表中选择您的心情</b>:\\n\\n{current}",
+  
+  "settings_saved": "✅ 设置已保存到服务器",
+  "settings_save_failed": "⚠️ 保存设置到服务器失败",
+  
+  "search_places": "🚀 地点",
+  "search_list": "🔍 列表",
+  "search_random": "🎲 随机地点",
+  "search_favorites": "🌟 收藏",
+  
+  "places_found": "找到的地点: {count}",
+  "no_places_found": "❌ 未找到地点",
+  "error_occurred": "⚠️ 发生错误",
+  
+  "open_now": "🟢 营业中",
+  "closed_now": "🔴 已关闭",
+  "distance": "📏 距离: <b>{distance}</b>",
+  
+  "add_to_favorites": "🌟 添加到收藏",
+  "remove_from_favorites": "🌟 从收藏中删除",
+  "added_to_favorites": "✅ 已添加到收藏！",
+  "removed_from_favorites": "✅ 已从收藏中删除！",
+  
+  "price_free": "免费",
+  "price_inexpensive": "💰",
+  "price_moderate": "💰💰",
+  "price_expensive": "💰💰💰",
+  "price_very_expensive": "💰💰💰💰",
+  
+  "schedule_title": "🕒 <b>营业时间:</b>",
+  "official_website": "🌐 官方网站",
+  "about_place": "📝 <b>关于此地点:</b>",
+  
+  "all": "全部",
+  "none": "无",
+  "yes": "🟢 是",
+  "no": "🔴 否",
+  
+  "language_changed": "✅ 语言已更改为 {language}",
+  "select_language": "选择界面语言:",
+    "language_prompt": "选择您的界面语言：",
+  "continue_with_language": "✅ 继续使用{language}",
+  "change_language_btn": "🌐 更改语言",
+    "add_place_title": "📌 <b>添加自定义地点</b>\\n\\n此机器人只能<b>搜索</b>附近的地点。\\n要<b>添加和查看您自己的地点</b>，请使用单独的机器人:\\n\\n👉 {username}",
+  "go_to_bot": "🔗 前往机器人"
+}

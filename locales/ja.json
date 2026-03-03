@@ -1,0 +1,112 @@
+{
+  "welcome": "👋 <b>P35Guide</b>",
+  "choose_action": "アクションを選んでください:",
+  "send_location": "📍 現在地を送信",
+  "find_city": "🏙️ 都市を検索",
+  "send_coordinates": "📍 座標を送信",
+  "search_routes": "🚀 ルートを検索",
+  "settings": "⚙️ 設定",
+  "add_place": "🔗 場所を追加",
+  
+  "menu_back": "🔙 戻る",
+  "menu_cancel": "🔙 キャンセル",
+  "menu_stop": "🛑 停止",
+  "menu_next": "➡️ 次へ",
+  "menu_prev": "⬅️ 前へ",
+  
+  "settings_language": "🌐 言語",
+  "settings_radius": "📏 半径",
+  "settings_categories": "🍴 カテゴリーを選択",
+  "settings_mood": "🎧 気分で選択",
+  "settings_sorting": "⭐ 並び替え",
+  "settings_open_now": "⏰ 営業中",
+  "settings_save": "💾 サーバーに保存",
+  "settings_count": "🔢 件数",
+  
+  "location_received": "✅ 位置情報を受信しました！メインメニューに戻りました。",
+  "choose_location_type": "座標の送信方法を選んでください:",
+  "enter_city_name": "都市名を入力してください（例：東京、大阪、京都）",
+  "searching_city": "都市の座標を検索中: {city} ...",
+  "city_found": "✅ 都市 '{city}' が見つかりました！\\n近くの場所を検索できます！",
+  "city_not_found": "❗️ 都市 '{city}' の座標が見つかりませんでした。もう一度お試しください。",
+  
+  "settings_title": "⚙️ <b>設定:</b>",
+  "settings_lang_label": "🌐 言語: <code>{language}</code>",
+  "settings_radius_label": "📏 半径: <code>{radius} m</code>",
+  "settings_included_label": "✅ 含める: <code>{included}</code>",
+  "settings_excluded_label": "❌ 除外: <code>{excluded}</code>",
+  "settings_count_label": "🔢 最大件数: <code>{count}</code>",
+  "settings_rank_label": "⭐ 並び替え: <code>{rank}</code>",
+  "settings_open_label": "⏰ 営業中: <code>{status}</code>",
+  
+  "coordinates_label": "📍 <b>座標:</b>\\n├ 緯度: <tg-spoiler>{latitude}</tg-spoiler>\\n└ 経度: <tg-spoiler>{longitude}</tg-spoiler>",
+  
+  "enter_language": "✏️ 検索言語を入力してください（形式: uk, en, pl, ...）:",
+  "enter_radius": "✏️ 検索半径をメートルで入力してください（1-5000）:",
+  
+  "choose_category": "🔎 <b>人気のカテゴリーを選ぶ</b> 以下のリストから:\\n\\n{current}✍️ <b>または自分で入力</b>してください（例：ラーメン、映画館、公園）。",
+  "current_categories": "現在: <code>{categories}</code>\\n\\n",
+  "category_added": "✅ カテゴリーが追加されました！",
+  "categories_added": "✅ カテゴリーが追加されました！",
+  "categories_reset": "🧹 カテゴリーがリセットされました",
+  "category_too_short": "⚠️ カテゴリーが短すぎます（最低3文字）",
+  
+  "category_restaurant": "🍕 レストラン",
+  "category_cafe": "☕ カフェ",
+  "category_bar": "🍺 バー",
+  "category_fastfood": "🍔 ファストフード",
+  "category_pharmacy": "💊 薬局",
+  "category_store": "🛒 店舗",
+  "category_reset": "🧹 カテゴリーをリセット",
+  
+  "mood_work": "仕事モード 💻",
+  "mood_date": "デートナイト 🌙",
+  "mood_company": "大人数 🍻",
+  "mood_breakfast": "遅い朝食 🥞",
+  "mood_description": "仕事モード 💻: リモートワークに適した静かな場所\\n\\nデートナイト 🌙: 夜に食事できる場所\\n\\n大人数 🍻: 大きなグループ向けの場所\\n\\n遅い朝食 🥞: 軽食できる場所",
+  "choose_mood": "🔎 <b>気分を選ぶ</b> 以下のリストから:\\n\\n{current}",
+  
+  "settings_saved": "✅ 設定がサーバーに保存されました",
+  "settings_save_failed": "⚠️ サーバーへの設定保存に失敗しました",
+  
+  "search_places": "🚀 場所",
+  "search_list": "🔍 リスト",
+  "search_random": "🎲 ランダムな場所",
+  "search_favorites": "🌟 お気に入り",
+  
+  "places_found": "見つかった場所: {count}",
+  "no_places_found": "❌ 場所が見つかりませんでした",
+  "error_occurred": "⚠️ エラーが発生しました",
+  
+  "open_now": "🟢 営業中",
+  "closed_now": "🔴 閉店中",
+  "distance": "📏 距離: <b>{distance}</b>",
+  
+  "add_to_favorites": "🌟 お気に入りに追加",
+  "remove_from_favorites": "🌟 お気に入りから削除",
+  "added_to_favorites": "✅ お気に入りに追加されました！",
+  "removed_from_favorites": "✅ お気に入りから削除されました！",
+  
+  "price_free": "無料",
+  "price_inexpensive": "💰",
+  "price_moderate": "💰💰",
+  "price_expensive": "💰💰💰",
+  "price_very_expensive": "💰💰💰💰",
+  
+  "schedule_title": "🕒 <b>営業時間:</b>",
+  "official_website": "🌐 公式サイト",
+  "about_place": "📝 <b>この場所について:</b>",
+  
+  "all": "すべて",
+  "none": "なし",
+  "yes": "🟢 はい",
+  "no": "🔴 いいえ",
+  
+  "language_changed": "✅ 言語が {language} に変更されました",
+  "select_language": "インターフェース言語を選択してください:",
+    "language_prompt": "インターフェース言語を選択してください：",
+  "continue_with_language": "✅ {language}で続ける",
+  "change_language_btn": "🌐 言語を変更",
+    "add_place_title": "📌 <b>カスタム場所の追加</b>\\n\\nこのボットは近くの場所を<b>検索</b>することのみできます。\\n<b>自分の場所を追加して表示する</b>には、別のボットを使用してください:\\n\\n👉 {username}",
+  "go_to_bot": "🔗 ボットに移動"
+}

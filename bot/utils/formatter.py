@@ -1,5 +1,7 @@
 from math import radians, sin, cos, sqrt, atan2
+from bot.utils.localization import i18n
 
+# Ці константи більше не використовуються напряму, але залишаємо для сумісності
 PRICE_LEVELS = {
     "PRICE_LEVEL_UNSPECIFIED": "",
     "PRICE_LEVEL_FREE": "Безкоштовно",
@@ -8,6 +10,18 @@ PRICE_LEVELS = {
     "PRICE_LEVEL_EXPENSIVE": "💰💰💰",
     "PRICE_LEVEL_VERY_EXPENSIVE": "💰💰💰💰"
 }
+
+
+def get_price_level_text(price_level: str, user_id: int = 0, lang_code: str = None) -> str:
+    """Отримати переклад рівня ціни"""
+    price_map = {
+        "PRICE_LEVEL_FREE": i18n.get(user_id, 'price_free', lang_code),
+        "PRICE_LEVEL_INEXPENSIVE": i18n.get(user_id, 'price_inexpensive', lang_code),
+        "PRICE_LEVEL_MODERATE": i18n.get(user_id, 'price_moderate', lang_code),
+        "PRICE_LEVEL_EXPENSIVE": i18n.get(user_id, 'price_expensive', lang_code),
+        "PRICE_LEVEL_VERY_EXPENSIVE": i18n.get(user_id, 'price_very_expensive', lang_code),
+    }
+    return price_map.get(price_level, "")
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -33,7 +47,7 @@ def format_distance(distance_km: float) -> str:
         return f"{distance_km:.1f} км"
 
 
-def format_place_text(p: dict, user_coords: dict = None) -> str:
+def format_place_text(p: dict, user_coords: dict = None, user_id: int = 0, lang_code: str = None) -> str:
     """Форматує деталі місця у html рядок"""
 
     # хедер
@@ -49,22 +63,21 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
 
         price_level = p.get('priceLevel')
         if price_level:
-            # Спробуємо отримати символ з мапи, або виведемо як є, якщо не знайдено
-            price_symbol = PRICE_LEVELS.get(price_level, price_level)
+            price_symbol = get_price_level_text(price_level, user_id, lang_code)
             if price_symbol:
                 rating_line += f" • {price_symbol}"
 
     # Статус
     status = None
     if p.get('openNow') is not None:
-        status = "🟢 <b>Відчинено</b>" if p.get(
-            'openNow') else "🔴 <b>Зачинено</b>"
+        status_text = i18n.get(user_id, 'open_now', lang_code) if p.get('openNow') else i18n.get(user_id, 'closed_now', lang_code)
+        status = status_text
 
         # Графік роботи
         schedule = p.get('weekdayDescriptions', [])
         if schedule:
             schedule_text = "\n".join([f"▫️ {day}" for day in schedule])
-            status += f"\n\n🕒 <b>Графік роботи:</b>\n{schedule_text}"
+            status += f"\n\n{i18n.get(user_id, 'schedule_title', lang_code)}\n{schedule_text}"
 
     # Адреса, телефон та вебсайт
     address = f"📍 {p.get('shortFormattedAddress')}" if p.get(
@@ -79,17 +92,17 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
                 p['latitude'], p['longitude']
             )
             distance_str = format_distance(distance_km)
-            distance_text = f"📏 Відстань: <b>{distance_str}</b>"
+            distance_text = i18n.get(user_id, 'distance', lang_code, distance=distance_str)
     
     phone = f"📞 {p.get('phoneNumber')}" if p.get('phoneNumber') else None
-    website = f"🌐 <a href='{p.get('websiteUri')}'>Офіційний сайт</a>" if p.get(
+    website = f"🌐 <a href='{p.get('websiteUri')}'>{i18n.get(user_id, 'official_website', lang_code)}</a>" if p.get(
         'websiteUri') else None
 
     # Опис
     description = None
     summary = p.get('editorialSummary') or p.get('generativeSummary')
     if summary:
-        description = f"📝 <b>Про місце:</b>\n<i>{summary}</i>"
+        description = f"{i18n.get(user_id, 'about_place', lang_code)}\n<i>{summary}</i>"
 
     # Відділювач
     sep = "──────────────"
@@ -111,7 +124,7 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
     return "\n".join(line for line in lines if line is not None)
 
 
-def format_comparison_text(places: list, user_coords: dict = None) -> str:
+def format_comparison_text(places: list, user_coords: dict = None, user_id: int = 0, lang_code: str = None) -> str:
    
     if not places or len(places) < 2:
         return "❌ Потрібно вибрати мінімум 2 місця для порівняння."
