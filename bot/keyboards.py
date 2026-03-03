@@ -2,7 +2,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import ADD_PLACE_BOT_USERNAME
-from bot.utils.localization import i18n
+
+from bot.config import ADD_PLACE_BOT_USERNAME
 
 
 def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
@@ -39,16 +40,16 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_radius', lang_code)),
             ],
             [
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_categories', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
+                KeyboardButton(text="🍴 Вибрати категорії"),
+                KeyboardButton(text="🔢 Кількість"),
             ],
             [
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_sorting', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_open_now', lang_code)),
+                KeyboardButton(text="⭐ Сортування"),
+                KeyboardButton(text="⏰ Відкрите зараз"),
+                KeyboardButton(text="⏰ Відкрите зараз"),
             ],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
+            [KeyboardButton(text="💾 Зберегти на сервер")],
+            [KeyboardButton(text="🔙 Назад")],
         ],
         resize_keyboard=True,
     )
@@ -66,27 +67,16 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
 def search_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)), 
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
+            [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
+            [KeyboardButton(text="🌟 Улюблені")],
+            [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True
     )
     return keyboard
 
 
-def random_choice_keyboard(user_id: int = None, lang_code: str = None):
-    """Клавіатура вибору типу випадкового місця (з пошуку чи з улюблених)."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)), 
-             KeyboardButton(text="❤️ " + i18n.get(user_id or 0, 'search_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
-        ],
-        resize_keyboard=True
-    )
+
 
 
 def cancel_keyboard(user_id: int = None, lang_code: str = None):
@@ -106,6 +96,7 @@ def places_keyboard(places):
         if place_id:
             name = place.get("displayName") or place.get(
                 "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
+
 
             # Додаємо статус відчинено/зачинено
             open_now = place.get("openNow") or place.get("OpenNow")
@@ -161,6 +152,7 @@ def favorites_action_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
+            [KeyboardButton(text="❤️ Випадкове з улюблених")],
             [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True

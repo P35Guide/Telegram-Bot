@@ -1,12 +1,4 @@
 import aiohttp
-from aiogram import Router, F
-from aiogram.types import KeyboardButton, Message, CallbackQuery, InputMediaPhoto, ReplyKeyboardMarkup,BufferedInputFile
-from bot.handlers.main_menu import send_main_menu
-from bot.keyboards import places_keyboard, place_details_keyboard
-from bot.services.api_client import get_photos, get_places, get_place_details
-from bot.services.settings import get_user_settings,decode_included_types,sort_by_night_places, incode_included_types
-from bot.utils.formatter import format_place_text
-from aiogram.fsm.context import FSMContext
 import random
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
@@ -20,7 +12,6 @@ from bot.keyboards import (
     places_keyboard,
     place_details_keyboard,
     choose_location_type_keyboard,
-    random_choice_keyboard,
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
 )
@@ -45,6 +36,102 @@ from bot.utils.logger import logger
 
 router = Router()
 _place_name_cache: dict[str, str] = {}
+
+@router.message(F.text == "📌 Додати своє місце")
+async def add_place_handler(message:Message,state:FSMContext):
+    logger.info(
+        f"Користувач {message.from_user.username} ({message.from_user.id}) додає своє місце"
+    )
+    await message.answer('Введи назву місця')
+    await state.set_state(AddPlace.wait_for_title)
+@router.message(AddPlace.wait_for_title)
+async def add_title(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(title=info)
+    data = await state.get_data()
+    saved = data.get("title")
+
+    if(saved == info):
+        logger.info("title local saved")
+        await message.answer("[Назва збережена]\nВведи опис місця")
+        await state.set_state(AddPlace.wait_for_discription)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_discription)
+async def add_discription(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(discription=info)
+    data = await state.get_data()
+    saved = data.get("discription")
+
+    if(saved == info):
+        logger.info("discription local saved")
+        await message.answer("[Опис збережений]\nВведи адресу місця")
+        await state.set_state(AddPlace.wait_for_shor_adress)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_shor_adress)
+async def add_adress(message:Message,state:FSMContext):
+    info = message.text
+    await state.update_data(adress=info)
+    data = await state.get_data()
+    saved =  data.get("adress")
+
+    if(saved == info):
+        logger.info("adress local saved")
+        await message.answer("[Адреса збережена]\nНадай 5 фото місцевості")
+        await state.set_state(AddPlace.wait_for_foto)
+    else:
+        await message.answer("[помилка в збережені]")
+        send_main_menu()
+@router.message(AddPlace.wait_for_foto,F.photo)
+async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.ClientSession):
+    data = await state.get_data()
+    photos_ids = data.get("photos",[])
+
+    photos_ids.append(message.photo[-1].file_id)
+
+    await state.update_data(photos = photos_ids)
+
+    number_photo = len(photos_ids)
+
+    if(number_photo<5):
+        return
+
+    encoded_phtos = []
+
+    for photo_id in photos_ids:
+        file = await bot.get_file(photo_id)
+
+        photo_buffer = await bot.download_file(file.file_path)
+
+        photo_byts = photo_buffer.read()
+        base64photo = base64.b64encode(photo_byts).decode("utf-8")
+        encoded_phtos.append(base64photo)
+    
+    place = Place()
+
+    place.NameOfPlace =  data.get("title")
+    place.Description =  data.get("discription")
+    place.Address =  data.get("adress")
+
+    place.Photo1 = encoded_phtos[0]
+    place.Photo2 = encoded_phtos[1]
+    place.Photo3 = encoded_phtos[2]
+    place.Photo4 = encoded_phtos[3]
+    place.Photo5 = encoded_phtos[4]
+
+    result = await add_custom_place(place,session)
+
+    if(result == True):
+        await message.answer("Place added")
+        await send_main_menu(message)
+    else:
+        await message.answer("We got error")
+        await send_main_menu(message)
+
 
 # Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
 @router.message(F.text == "📍 Надіслати геолокацію")
@@ -87,95 +174,13 @@ def filter_open_now(places, open_now):
     return [p for p in places if (p.get("openNow") is True or p.get("OpenNow") is True)]
 
 
-# Відкрити меню вибору випадкового місця (з пошуку / з улюблених)
-@router.message(F.text == "🎲 Випадкове місце", ~StateFilter(BotState.choosing_random_type))
-async def random_choice_menu_handler(message: Message, state: FSMContext):
-    await state.set_state(BotState.choosing_random_type)
-    await message.answer(
-        "Оберіть варіант:",
-        reply_markup=random_choice_keyboard()
-    )
-
-
-# Повернутися з меню випадкового місця до пошуку
-@router.message(F.text == "🔙 Скасувати", StateFilter(BotState.choosing_random_type))
-async def random_choice_back_handler(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer("Повернулися до пошуку.", reply_markup=search_keyboard())
-
-
-# Випадкове місце з улюблених
-@router.message(F.text == "❤️ Випадкове з улюблених", StateFilter(BotState.choosing_random_type))
-async def random_from_favorites_handler(
-    message: Message, state: FSMContext, session: aiohttp.ClientSession
-):
-    await state.clear()
-    user_id = message.from_user.id
-    favorites = get_favorite_places(user_id)
-
-    if not favorites:
-        await message.answer(
-            "🌟 Улюблених місць поки немає.\nДодайте місця через пошук.",
-            reply_markup=search_keyboard(),
-        )
-        return
-
-    await message.answer_dice(emoji="🎲")
-
-    loading_msg = await message.answer(
-        "⏳ <b>Крутимо рулетку...</b>\n"
-        "Зачекайте, виконується запит до API...",
-        parse_mode="HTML",
-    )
-
-    chosen = random.choice(favorites)
-    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
-
-    await loading_msg.edit_text(
-        "🎲 <b>Випадкове місце з улюблених:</b>\n"
-        "Оберіть місце, щоб відкрити його на карті:",
-        parse_mode="HTML",
-        reply_markup=places_keyboard(place_for_kb),
-    )
-
-
-# Реалізація випадкового місця (після вибору в меню)
-@router.message(F.text == "🎲 Випадкове місце", StateFilter(BotState.choosing_random_type))
-async def random_place_handler(message: Message, state: FSMContext, session: aiohttp.ClientSession):
-    await state.clear()
-    logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) шукає випадкове місце")
-
-    await message.answer_dice(emoji="🎲")
-
-    loading_msg = await message.answer(
-        "⏳ <b>Крутимо рулетку...</b>\n"
-        "Зачекайте, виконується запит до API...",
-        parse_mode="HTML"
-    )
-
-    settings = get_user_settings(message.from_user.id)
-
-    if not settings.get("coordinates"):
-        await loading_msg.delete()
-        await message.answer(
-            "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
-            "Будь ласка, надішліть геолокацію або введіть координати:",
-            parse_mode="HTML",
-            reply_markup=choose_location_type_keyboard()
-        )
-        return
-
+async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSession):
+    """Універсальний запит місць з урахуванням обраного настрою."""
+    mood_mode = decode_included_types(user_id)
     try:
         data = await get_places(settings, session)
-
         if not data or "places" not in data:
-            await loading_msg.edit_text(
-                "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
-                parse_mode="HTML"
-            )
-            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard())
-            return
+            return data
 
         places = data["places"]
 
@@ -196,12 +201,15 @@ async def random_place_handler(message: Message, state: FSMContext, session: aio
         chosen = random.choice(places)
         place_id = chosen.get("id") or chosen.get("Id")
 
+
         if place_id:
             language = settings.get("language", "uk")
             await loading_msg.delete()
 
+
             # Показуємо вибране місце
             success = await send_place_info(message, session, place_id, language)
+
 
             if not success:
                 await message.answer(
@@ -283,6 +291,7 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message,state:FSMContext):
+async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
@@ -345,9 +354,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         return loading_msg, None
 
     try:
-        at_night = decode_included_types(message.from_user.id)
-
-        data = await get_places(settings, session)
+        data = await get_places_with_mood(settings, message.from_user.id, session)
 
         if not data or "places" not in data:
             await loading_msg.edit_text(
@@ -357,12 +364,6 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return
 
         places = data["places"]
-        if(at_night !=0):
-            places = sort_by_night_places(places)
-
-        incode_included_types(message.from_user.id ,at_night)
-
-        
 
         # Застосовуємо фільтр "відкрите зараз", якщо увімкнено
         if settings.get("openNow", False):
@@ -419,12 +420,19 @@ async def send_place_info(
                     elif isinstance(photo, dict):
                         photo_url = photo.get('photoUri') or photo.get(
                             'url') or photo.get('uri')
+                        photo_url = photo.get('photoUri') or photo.get(
+                            'url') or photo.get('uri')
                         if photo_url:
+                            media_group.append(
+                                InputMediaPhoto(media=photo_url))
+
                             media_group.append(
                                 InputMediaPhoto(media=photo_url))
 
                 if media_group:
                     await message.answer_media_group(media_group)
+                    logger.info(
+                        f"Надіслано {len(media_group)} фото для місця {place_id}")
                     logger.info(
                         f"Надіслано {len(media_group)} фото для місця {place_id}")
             except Exception as e:
@@ -467,6 +475,8 @@ async def send_place_info(
         return False
 
 
+
+
 @router.message(F.text == "🔍 Список")
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
     loading_msg, places = await perform_search(message, session)
@@ -484,10 +494,11 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         "<b>Оберіть варіант пошуку:</b>\n"
         "🚀 <b>Місця</b> - зручно оцінити місця\n"
         "🔍 <b>Список</b> - переглянути список знайдених місць.\n"
-        "🎲 <b>Випадкове місце</b> - випадково вибрати місце",
+        
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
+
 
 
 @router.message(F.text == "🌟 Улюблені")
@@ -529,6 +540,41 @@ async def view_favorite_places_handler(message: Message, session: aiohttp.Client
     places = [{"id": p["id"], "displayName": p["name"]} for p in favorites]
     loading_msg = await message.answer("🌟 Завантаження улюблених місць...", parse_mode="HTML")
     await show_places_list(loading_msg, places, "Улюблені місця ({count})")
+
+
+@router.message(F.text == "❤️ Випадкове з улюблених")
+async def random_from_favorites_handler(message: Message, session: aiohttp.ClientSession):
+    """Випадково обирає місце з улюблених."""
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) обирає випадкове місце з улюблених")
+
+    user_id = message.from_user.id
+    favorites = get_favorite_places(user_id)
+
+    if not favorites:
+        await message.answer(
+            "🌟 Улюблених місць поки немає.\nДодайте місця через пошук.",
+            reply_markup=search_keyboard(),
+        )
+        return
+
+    await message.answer_dice(emoji="🎲")
+
+    loading_msg = await message.answer(
+        "⏳ <b>Крутимо рулетку...</b>\n"
+        "Зачекайте, виконується запит до API...",
+        parse_mode="HTML",
+    )
+
+    chosen = random.choice(favorites)
+    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
+
+    await loading_msg.edit_text(
+        "🎲 <b>Випадкове місце з улюблених:</b>\n"
+        "Оберіть місце, щоб відкрити його на карті:",
+        parse_mode="HTML",
+        reply_markup=places_keyboard(place_for_kb),
+    )
 
 
 @router.message(F.text == "⚖️ Порівняти")

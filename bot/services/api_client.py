@@ -125,6 +125,8 @@ async def get_city_coordinates(city_name: str, session: aiohttp.ClientSession, l
         return None
 
 
+
+
 async def get_places(settings, session: aiohttp.ClientSession):
     """
     Отримує список місць у заданому радіусі від користувача.

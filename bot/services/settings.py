@@ -1,6 +1,12 @@
 import aiohttp
 from bot.services.api_client import get_places
 from bot.utils.logger import logger
+from bot.model.types_dict import SearchTypes
+import re
+import json
+import aiohttp
+from bot.services.api_client import get_places
+from bot.utils.logger import logger
 import re
 import json
 DEFAULTS = {
@@ -147,33 +153,22 @@ def add_included_type(user_id, type_code):
     return settings
 
 def decode_included_types(user_id):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant")),
-        "Need to Work 💻":list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"))
-    } 
+    mood_types = SearchTypes.mood_types 
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
-    at_night = 0
+    at_night = False
     for type in types:
         if(type =="Loud Company 🍻"):
             for intype in mood_types.get("Loud Company 🍻"):
                 if intype not in new_types:
                     new_types.append(intype)
-        elif (type == "Breakfast at 2 PM 🥞"):
-            for intype in mood_types.get("Breakfast at 2 PM 🥞"):
-                if intype not in new_types:
-                    new_types.append(intype)
         elif(type == "Date Night 🌙"):
-            at_night = 1
+            at_night = True
             for intype in mood_types.get("Date Night 🌙"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Need to Work 💻"):
-            if(at_night == 1):
-                at_night = 2
             for intype in mood_types.get("Need to Work 💻"):
                 if intype not in new_types:
                     new_types.append(intype)
@@ -185,31 +180,23 @@ def decode_included_types(user_id):
     user_settings[user_id] = settings
     return at_night
 
-def incode_included_types(user_id,at_night):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant")),
-        "Need to Work 💻":list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"))
-    } 
+def incode_included_types(user_id, at_night):
+    mood_types = SearchTypes.mood_types 
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
 
     loud_company = all(type in types for type in mood_types.get("Loud Company 🍻"))
-    breakfest = all(type in types for type in mood_types.get("Breakfast at 2 PM 🥞"))
     work = all(type in types for type in mood_types.get("Need to Work 💻"))
     night = all(type in types for type in mood_types.get("Date Night 🌙"))
 
     if(loud_company == True):
         new_types.append('Loud Company 🍻')
-    if(breakfest == True):
-        new_types.append('Breakfast at 2 PM 🥞')
     if(night == True):
-        if(at_night != 0):
+        if(at_night == True):
             new_types.append("Date Night 🌙")
     if(work == True):
-        if(at_night !=1):
+        if(at_night != True):
             new_types.append("Need to Work 💻")
 
     included_types = []
@@ -273,41 +260,19 @@ def sort_by_night_places(places):
             
     return new_places
 
-def  add_included_list_type(user_id,type_labal):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","food","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": False,
-        "Need to Work 💻":True
-    } 
+def add_included_list_type(user_id, type_label):
+    mood_types = SearchTypes.mood_types
     settings = get_user_settings(user_id)
-    code = mood_types.get(type_labal)
+    place_list = mood_types.get(type_label, [])
     included = settings.get("includedTypes", [])
     included.clear()
-    if(code == True):
-        place_list = {"restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"}
-        for type in place_list:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
-        
-        return
-    elif(code == False):
-        place_list = {"restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"}
-
-        for type in place_list:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
-
-    else:
-        for type in code:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
+    
+    for place_type in place_list:
+        if place_type not in included:
+            included.append(place_type)
+    
+    settings["includedTypes"] = included
+    user_settings[user_id] = settings
             
 
 

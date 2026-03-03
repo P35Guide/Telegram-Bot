@@ -10,7 +10,6 @@ from bot.utils.logger import logger
 from bot.handlers.main_menu import send_settings_menu,send_main_menu
 from bot.utils.localization import i18n
 from bot.services import settings as settings_service
-import aiohttp
 from bot.config import ADD_PLACE_BOT_USERNAME
 
 router = Router()
@@ -84,9 +83,11 @@ async def radius_handler(message: Message, state: FSMContext):
     )
 
 
+
 @router.message(F.text == "🍴 Вибрати категорії")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
+
 
     popular_types = [
         ("🍕 Ресторан",  "restaurant"),
@@ -95,10 +96,12 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
-
-
-
+         
+        
+        
     ]
+
+    for label, code in popular_types:
 
     for label, code in popular_types:
         builder.button(
@@ -109,7 +112,12 @@ async def included_types_handler(message: Message, state: FSMContext):
     builder.button(text="🧹 Скинути категорії",
                    callback_data="cancel_included_types")
 
+
+    builder.button(text="🧹 Скинути категорії",
+                   callback_data="cancel_included_types")
+
     builder.adjust(2)
+
 
     current_settings = get_user_settings(message.from_user.id)
     included = current_settings.get("includedTypes", [])
@@ -123,52 +131,14 @@ async def included_types_handler(message: Message, state: FSMContext):
         reply_markup=builder.as_markup()
     )
 
+
     await state.set_state(BotState.waiting_for_category)
-
-@router.message(F.text == "🎧 Вибрати за настроєм")
-async def finding_places_by_group_types(message:Message,state: FSMContext,session: aiohttp.ClientSession):
-    builder = InlineKeyboardBuilder()
-
-    mood_types = [
-        "Need to Work 💻",
-        "Date Night 🌙",
-        "Loud Company 🍻",
-        "Breakfast at 2 PM 🥞"
-    ]
-
-    await message.answer(
-        "Need to Work 💻: досить тихі місця які підходять для дистанційної роботи\n\nDate Night 🌙: місця де можна щось зїсти у ночі\n\nLoud Company 🍻: місця де можна бути великою компанією\n\nBreakfast at 2 PM 🥞: місця де можна швидко керекусити"
-    )
-
-    for label in mood_types:
-        builder.button(
-            text=label,
-            callback_data=f"add_included_list_type:{label}"
-        )
-    
-    builder.button(text="🧹 Скинути категорії", callback_data="cancel_included_types")
-
-    builder.adjust(2)
-    
-    current_settings = get_user_settings(message.from_user.id)
-    included = current_settings.get("includedTypes", [])
-    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
-
-    await message.answer(
-        "🔎 <b>Оберіть ваш настрій </b> зі списку нижче:\n\n"
-        f"{current_line}",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    
-    await state.set_state(BotState.waiting_for_category)
-
-
 
 @router.message(F.text == "✅ Включити типи")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
 
+
     popular_types = [
         ("🍕 Ресторан",  "restaurant"),
         ("☕ Кав'ярня", "cafe"),
@@ -176,12 +146,12 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
-
-
-
+         
+        
+        
     ]
-
-    for label, code in popular_types:
+    
+    for label,code in popular_types:
         builder.button(
             text=label,
             callback_data=f"add_included_type:{code}"
@@ -190,7 +160,12 @@ async def included_types_handler(message: Message, state: FSMContext):
     builder.button(text="🧹 Скинути категорії",
                    callback_data="cancel_included_types")
 
+
+    builder.button(text="🧹 Скинути категорії",
+                   callback_data="cancel_included_types")
+
     builder.adjust(2)
+
 
     current_settings = get_user_settings(message.from_user.id)
     included = current_settings.get("includedTypes", [])
@@ -204,8 +179,11 @@ async def included_types_handler(message: Message, state: FSMContext):
         reply_markup=builder.as_markup()
     )
 
+
     await state.set_state(BotState.waiting_for_category)
 
+
+@router.callback_query(F.data.startswith("add_included_type:"))
 
 @router.callback_query(F.data.startswith("add_included_type:"))
 async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
@@ -275,6 +253,7 @@ async def rank_preference_handler(message: Message):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
     await send_settings_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
@@ -306,6 +285,7 @@ async def set_language_handler(message: Message, state: FSMContext):
     update_language(message.from_user.id, lang)
     await state.clear()
     await send_settings_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_radius)
@@ -323,6 +303,7 @@ async def set_radius_handler(message: Message, state: FSMContext):
     update_radius(message.from_user.id, radius)
     await state.clear()
     await send_settings_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_included_types)
@@ -337,6 +318,7 @@ async def set_included_types_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив включені типи на {types}")
     await state.clear()
     await send_settings_menu(message)
+    await send_settings_menu(message)
 
 
 @router.message(BotState.selecting_excluded_types)
@@ -350,6 +332,7 @@ async def set_excluded_types_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив виключені типи на {types}")
     await state.clear()
+    await send_settings_menu(message)
     await send_settings_menu(message)
 
 

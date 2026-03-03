@@ -15,3 +15,4 @@ class BotState(StatesGroup):
     waiting_for_location = State()
     choosing_random_type = State()
     comparing_favorites = State()
+    selecting_mood = State()
