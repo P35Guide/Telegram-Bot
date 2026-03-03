@@ -83,10 +83,7 @@ def cancel_keyboard():
 
 
 def places_keyboard(places):
-    """
-    Генерує клавіатуру зі списком місць.
-    Кожна кнопка має callback_data з ID місця.
-    """
+   
     builder = InlineKeyboardBuilder()
 
     for place in places:
@@ -179,10 +176,10 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
             callback_data=f"compare_toggle:{place_id}"
         )
     
-    # Кнопки керування внизу
+   
     builder.adjust(1)
     
-    # Додаємо кнопку "Порівняти" якщо обрано хоча б 2 місця
+    
     if len(selected_ids) >= 2:
         builder.button(
             text="⚖️ Порівняти обрані",
