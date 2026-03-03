@@ -20,13 +20,12 @@ router = Router()
 @router.message(F.text.in_(["🔗 Додати місце", "🔗 Add place", "🔗 Ort hinzufügen", "🔗 Ajouter un lieu", "🔗 Añadir lugar", "🔗 Aggiungi luogo", "🔗 Dodaj miejsce", "🔗 Adicionar local", "🔗 場所を追加", "🔗 添加地点"]))
 async def add_place_redirect_handler(message: Message):
     """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
+    user_id = message.from_user.id
+    lang_code = message.from_user.language_code
     username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith(
         "@") else f"@{ADD_PLACE_BOT_USERNAME}"
     await message.answer(
-        "📌 <b>Додавання власних місць</b>\n\n"
-        "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n"
-        f"👉 {username}",
+        i18n.get(user_id, 'add_place_title', lang_code, username=username),
         parse_mode="HTML",
         reply_markup=add_place_redirect_keyboard(user_id, lang_code),
     )
