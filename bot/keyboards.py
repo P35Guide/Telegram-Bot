@@ -153,10 +153,7 @@ def favorites_action_keyboard():
 
 
 def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None):
-    """
-    Генерує інлайн-клавіатуру для вибору закладів до порівняння.
-    Показує галочки для обраних закладів.
-    """
+   
     if selected_ids is None:
         selected_ids = []
     
