@@ -1,6 +1,7 @@
 import aiohttp
 from bot.services.api_client import get_places
 from bot.utils.logger import logger
+from bot.model.types_dict import SearchTypes
 import re
 import json
 DEFAULTS = {
@@ -147,12 +148,7 @@ def add_included_type(user_id, type_code):
     return settings
 
 def decode_included_types(user_id):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant")),
-        "Need to Work 💻":list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"))
-    } 
+    mood_types = SearchTypes.mood_types 
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
@@ -185,13 +181,8 @@ def decode_included_types(user_id):
     user_settings[user_id] = settings
     return at_night
 
-def incode_included_types(user_id,at_night):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant")),
-        "Need to Work 💻":list(("restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"))
-    } 
+def incode_included_types(user_id, at_night):
+    mood_types = SearchTypes.mood_types 
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
@@ -273,41 +264,19 @@ def sort_by_night_places(places):
             
     return new_places
 
-def  add_included_list_type(user_id,type_labal):
-    mood_types:dict = {
-        "Loud Company 🍻":list(("stadium","dance_hall","karaoke","bar","night_club","comedy_club","live_music_venue","event_venue")),
-        "Breakfast at 2 PM 🥞": list(("restaurant","cafe","food","fast_food_restaurant","bakery","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant","steak_house")),
-        "Date Night 🌙": False,
-        "Need to Work 💻":True
-    } 
+def add_included_list_type(user_id, type_label):
+    mood_types = SearchTypes.mood_types
     settings = get_user_settings(user_id)
-    code = mood_types.get(type_labal)
+    place_list = mood_types.get(type_label, [])
     included = settings.get("includedTypes", [])
     included.clear()
-    if(code == True):
-        place_list = {"restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"}
-        for type in place_list:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
-        
-        return
-    elif(code == False):
-        place_list = {"restaurant","cafe","pizza_restaurant","japanese_restaurant","chinese_restaurant","mexican_restaurant"}
-
-        for type in place_list:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
-
-    else:
-        for type in code:
-            if type not in included:
-                included.append(type)
-                settings["includedTypes"] = included
-                user_settings[user_id] = settings
+    
+    for place_type in place_list:
+        if place_type not in included:
+            included.append(place_type)
+    
+    settings["includedTypes"] = included
+    user_settings[user_id] = settings
             
 
 

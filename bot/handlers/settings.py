@@ -186,10 +186,10 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
 @router.callback_query(F.data.startswith("add_included_list_type:"))
 
 async def add_list_included(callback:CallbackQuery,state:FSMContext):
-    type_code = callback.data.split(":")[1]
-    settings_service.add_included_type(callback.from_user.id, type_code)
+    mood_label = callback.data.split(":")[1]
+    settings_service.add_included_list_type(callback.from_user.id, mood_label)
 
-    await callback.answer("✅ Категорії додані!")
+    await callback.answer("✅ Настрій обран!")
     await state.clear()
     await send_main_menu(callback.message, user_id=callback.from_user.id)
 

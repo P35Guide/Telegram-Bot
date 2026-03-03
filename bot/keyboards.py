@@ -66,8 +66,7 @@ def search_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🚀 Місця"), KeyboardButton(text="🔍 Список")],
-            [KeyboardButton(text="🎲 Випадкове місце"),
-             KeyboardButton(text="🌟 Улюблені")],
+            [KeyboardButton(text="🌟 Улюблені")],
             [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True
@@ -75,16 +74,7 @@ def search_keyboard():
     return keyboard
 
 
-def random_choice_keyboard():
-    """Клавіатура вибору типу випадкового місця (з пошуку чи з улюблених)."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🎲 Випадкове місце"), KeyboardButton(
-                text="❤️ Випадкове з улюблених")],
-            [KeyboardButton(text="🔙 Скасувати")],
-        ],
-        resize_keyboard=True
-    )
+
 
 
 def cancel_keyboard():
@@ -159,6 +149,7 @@ def favorites_action_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
+            [KeyboardButton(text="❤️ Випадкове з улюблених")],
             [KeyboardButton(text="🔙 Скасувати")],
         ],
         resize_keyboard=True
