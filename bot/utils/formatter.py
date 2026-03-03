@@ -112,11 +112,7 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
 
 
 def format_comparison_text(places: list, user_coords: dict = None) -> str:
-    """
-    Форматує порівняння кількох місць у HTML рядок з таблицею.
-    Порівнює за: кількість відгуків, рейтингом (зірки), відстанню.
-    Показує позначки для найкращих та найгірших.
-    """
+   
     if not places or len(places) < 2:
         return "❌ Потрібно вибрати мінімум 2 місця для порівняння."
     
