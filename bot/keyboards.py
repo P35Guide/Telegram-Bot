@@ -7,10 +7,13 @@ from bot.utils.localization import i18n
 
 
 def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
+def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=i18n.get(user_id or 0, 'send_location', lang_code),
+            [KeyboardButton(text=i18n.get(user_id or 0, 'send_location', lang_code),
                             request_location=True)],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'find_city', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'find_city', lang_code))],
         ],
         resize_keyboard=True,
@@ -19,9 +22,14 @@ def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def actions_keyboard(user_id: int = None, lang_code: str = None):
+def actions_keyboard(user_id: int = None, lang_code: str = None):
     """Головне меню: локація, пошук, налаштування, додати місце."""
     return ReplyKeyboardMarkup(
         keyboard=[
+            [KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_routes', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_routes', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
@@ -32,10 +40,13 @@ def actions_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def settings_keyboard(user_id: int = None, lang_code: str = None):
+def settings_keyboard(user_id: int = None, lang_code: str = None):
     """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [
+                KeyboardButton(text=i18n.get(user_id or 0, 'settings_language', lang_code)),
+                KeyboardButton(text=i18n.get(user_id or 0, 'settings_radius', lang_code)),
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_language', lang_code)),
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_radius', lang_code)),
             ],
@@ -58,14 +69,17 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
+def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
     """Інлайн-клавіатура з посиланням на бота для додавання місць."""
     username = ADD_PLACE_BOT_USERNAME.lstrip("@")
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(user_id or 0, 'go_to_bot', lang_code),
         [InlineKeyboardButton(text=i18n.get(user_id or 0, 'go_to_bot', lang_code),
                               url=f"https://t.me/{username}")],
     ])
 
 
+def search_keyboard(user_id: int = None, lang_code: str = None):
 def search_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
@@ -112,6 +126,7 @@ def random_choice_keyboard(user_id: int = None, lang_code: str = None):
 
 def cancel_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
         keyboard=[[KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
         resize_keyboard=True
     )
