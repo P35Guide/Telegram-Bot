@@ -10,6 +10,7 @@ from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import (
     place_navigation_keyboard,
     search_keyboard,
+    random_choice_keyboard,
     places_keyboard,
     place_details_keyboard,
     choose_location_type_keyboard,
@@ -525,10 +526,27 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
         "<b>Оберіть варіант пошуку:</b>\n"
         "🚀 <b>Місця</b> - зручно оцінити місця\n"
         "🔍 <b>Список</b> - переглянути список знайдених місць.\n",
+        
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
 
+
+@router.message(StateFilter(None), F.text == "🎲 Випадкове місце")
+async def random_choice_menu_handler(message: Message, state: FSMContext):
+    """Показує вибір: випадкове з пошуку чи з улюблених."""
+    await state.set_state(BotState.choosing_random_type)
+    await message.answer(
+        "🎲 <b>Оберіть джерело випадкового місця:</b>",
+        parse_mode="HTML",
+        reply_markup=random_choice_keyboard(),
+    )
+
+
+@router.message(StateFilter(BotState.choosing_random_type), F.text == "🔙 Скасувати")
+async def random_choice_back_handler(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("🔙 Повернулись у меню пошуку.", reply_markup=search_keyboard())
 
 
 @router.message(F.text == "🌟 Улюблені")
@@ -572,7 +590,7 @@ async def view_favorite_places_handler(message: Message, session: aiohttp.Client
     await show_places_list(loading_msg, places, "Улюблені місця ({count})")
 
 
-@router.message(F.text == "❤️ Випадкове з улюблених")
+@router.message(StateFilter(BotState.choosing_random_type), F.text == "❤️ Випадкове з улюблених")
 async def random_from_favorites_handler(message: Message, session: aiohttp.ClientSession):
     """Випадково обирає місце з улюблених."""
     logger.info(
@@ -605,6 +623,53 @@ async def random_from_favorites_handler(message: Message, session: aiohttp.Clien
         parse_mode="HTML",
         reply_markup=places_keyboard(place_for_kb),
     )
+
+
+@router.message(StateFilter(BotState.choosing_random_type), F.text == "🎲 Випадкове місце")
+async def random_place_handler(message: Message, session: aiohttp.ClientSession, state: FSMContext):
+    """Випадково обирає місце з результатів пошуку за поточними налаштуваннями."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+
+    if not settings.get("coordinates"):
+        await message.answer(
+            "❌ Немає координат. Спочатку надішліть геолокацію.",
+            reply_markup=search_keyboard(),
+        )
+        await state.clear()
+        return
+
+    await message.answer_dice(emoji="🎲")
+    loading_msg = await message.answer(
+        "⏳ <b>Крутимо рулетку...</b>\n"
+        "Шукаємо випадкове місце за вашими налаштуваннями...",
+        parse_mode="HTML",
+    )
+
+    data = await get_places_with_mood(settings, user_id, session)
+    places = (data or {}).get("places", [])
+    places = filter_open_now(places, settings.get("openNow", False))
+
+    if not places:
+        await loading_msg.edit_text(
+            "⚠️ За поточними фільтрами місць не знайдено.",
+            parse_mode="HTML",
+            reply_markup=search_keyboard(),
+        )
+        await state.clear()
+        return
+
+    chosen = random.choice(places)
+    chosen_id = chosen.get("id") or chosen.get("Id")
+    chosen_name = chosen.get("displayName") or chosen.get("DisplayName") or chosen.get("name") or "Місце"
+
+    await loading_msg.edit_text(
+        "🎲 <b>Випадкове місце з пошуку:</b>\n"
+        "Оберіть місце, щоб відкрити його на карті:",
+        parse_mode="HTML",
+        reply_markup=places_keyboard([{"id": chosen_id, "displayName": chosen_name}]),
+    )
+    await state.clear()
 
 
 @router.message(F.text == "⚖️ Порівняти")
