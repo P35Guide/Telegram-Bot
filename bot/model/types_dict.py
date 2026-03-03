@@ -8,10 +8,13 @@ class SearchTypes:
         )),
         "Date Night 🌙": list((
             "restaurant", "cafe", "bakery", "fine_dining_restaurant",
-            "italian_restaurant", "french_restaurant", "seafood_restaurant"
+            "italian_restaurant", "french_restaurant", "seafood_restaurant",
+            "wine_bar", "cocktail_bar", "sushi_restaurant", "dessert_shop",
+            "art_gallery", "movie_theater", "spa"
         )),
         "Need to Work 💻": list((
-            "restaurant", "cafe", "coworking_space", "library", "book_store"
+            "restaurant", "cafe", "coworking_space", "library", "book_store",
+            "coffee_shop", "bakery"
         ))
     }
     

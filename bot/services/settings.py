@@ -158,10 +158,6 @@ def decode_included_types(user_id):
             for intype in mood_types.get("Loud Company 🍻"):
                 if intype not in new_types:
                     new_types.append(intype)
-        elif (type == "Breakfast at 2 PM 🥞"):
-            for intype in mood_types.get("Breakfast at 2 PM 🥞"):
-                if intype not in new_types:
-                    new_types.append(intype)
         elif(type == "Date Night 🌙"):
             at_night = 1
             for intype in mood_types.get("Date Night 🌙"):
@@ -188,14 +184,11 @@ def incode_included_types(user_id, at_night):
     new_types = []
 
     loud_company = all(type in types for type in mood_types.get("Loud Company 🍻"))
-    breakfest = all(type in types for type in mood_types.get("Breakfast at 2 PM 🥞"))
     work = all(type in types for type in mood_types.get("Need to Work 💻"))
     night = all(type in types for type in mood_types.get("Date Night 🌙"))
 
     if(loud_company == True):
         new_types.append('Loud Company 🍻')
-    if(breakfest == True):
-        new_types.append('Breakfast at 2 PM 🥞')
     if(night == True):
         if(at_night != 0):
             new_types.append("Date Night 🌙")
