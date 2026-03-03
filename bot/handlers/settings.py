@@ -96,22 +96,13 @@ async def included_types_handler(message: Message, state: FSMContext):
         ("🍔 Фастфуд", "fast_food_restaurant"),
         ("💊 Аптека", "pharmacy"),
         ("🛒 Магазин", "store")
-         
-        
-        
     ]
-
-    for label, code in popular_types:
 
     for label, code in popular_types:
         builder.button(
             text=label,
             callback_data=f"add_included_type:{code}"
         )
-
-    builder.button(text="🧹 Скинути категорії",
-                   callback_data="cancel_included_types")
-
 
     builder.button(text="🧹 Скинути категорії",
                    callback_data="cancel_included_types")

@@ -1,6 +1,7 @@
 import aiohttp
 import random
-from aiogram import Router, F
+import base64
+from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command, StateFilter
@@ -29,9 +30,30 @@ from bot.services.settings import (
     is_favorite_place,
     remove_favorite_place,
 )
-from bot.states import BotState
-from bot.utils.formatter import format_place_text, format_comparison_text
+from bot.states import BotState, AddPlace
+from bot.utils.formatter import format_place_text
 from bot.utils.logger import logger
+
+# Placeholder class for custom place
+class Place:
+    def __init__(self):
+        self.NameOfPlace = ""
+        self.Description = ""
+        self.Address = ""
+        self.Photo1 = ""
+        self.Photo2 = ""
+        self.Photo3 = ""
+        self.Photo4 = ""
+        self.Photo5 = ""
+
+# Placeholder function for adding custom place
+async def add_custom_place(place, session):
+    logger.warning("add_custom_place not fully implemented")
+    return False
+
+# Placeholder function for decoding included types
+def decode_included_types(user_id):
+    return []
 
 
 router = Router()
@@ -291,7 +313,6 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
 
 @router.message(F.text == "🔙 Скасувати")
 async def cancel_handler(message: Message,state:FSMContext):
-async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
@@ -493,8 +514,7 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     await message.answer(
         "<b>Оберіть варіант пошуку:</b>\n"
         "🚀 <b>Місця</b> - зручно оцінити місця\n"
-        "🔍 <b>Список</b> - переглянути список знайдених місць.\n"
-        
+        "🔍 <b>Список</b> - переглянути список знайдених місць.\n",
         parse_mode="HTML",
         reply_markup=search_keyboard()
     )
@@ -803,7 +823,15 @@ async def perform_comparison_handler(callback: CallbackQuery, state: FSMContext,
             return
 
         # Форматуємо й надсилаємо порівняння
-        comparison_text = format_comparison_text(places_details, user_coords)
+        comparison_parts = [f"<b>📊 Порівняння {len(places_details)} місць:</b>\n"]
+        for idx, place in enumerate(places_details, 1):
+            name = place.get('displayName') or place.get('name', 'Невідоме місце')
+            rating = place.get('rating', 'N/A')
+            comparison_parts.append(f"\n{idx}. <b>{name}</b>")
+            comparison_parts.append(f"   ⭐ Рейтинг: {rating}")
+            if place.get('shortFormattedAddress'):
+                comparison_parts.append(f"   📍 {place.get('shortFormattedAddress')}")
+        comparison_text = "\n".join(comparison_parts)
         await loading_msg.edit_text(comparison_text, parse_mode="HTML")
 
     except Exception as e:
