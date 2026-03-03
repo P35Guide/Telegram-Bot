@@ -13,6 +13,8 @@ from bot.keyboards import (
     place_details_keyboard,
     choose_location_type_keyboard,
     random_choice_keyboard,
+    favorites_action_keyboard,
+    select_favorites_for_comparison_keyboard,
 )
 from bot.services.api_client import get_photos, get_places, get_place_details
 from bot.services.settings import (
@@ -23,7 +25,7 @@ from bot.services.settings import (
     remove_favorite_place,
 )
 from bot.states import BotState
-from bot.utils.formatter import format_place_text
+from bot.utils.formatter import format_place_text, format_comparison_text
 from bot.utils.logger import logger
 
 
@@ -466,8 +468,33 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
 
 
 @router.message(F.text == "🌟 Улюблені")
-async def favorite_places_handler(message: Message, session: aiohttp.ClientSession):
-    """Показує список улюблених. Назви зберігаються разом з id — API не викликається."""
+async def favorite_menu_handler(message: Message, state: FSMContext):
+    """Показує меню дій для улюблених місць."""
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) переглядає меню улюблених")
+
+    favorites = get_favorite_places(message.from_user.id)
+    if not favorites:
+        await message.answer(
+            "🌟 <b>Улюблених місць поки немає</b>\n\n"
+            "Спочатку додайте улюблені місця через пошук! 🔍",
+            parse_mode="HTML",
+            reply_markup=search_keyboard()
+        )
+        return
+
+    await state.clear()
+    await message.answer(
+        f"🌟 <b>У вас {len(favorites)} улюблених місць</b>\n\n"
+        "Що ви хочете зробити?",
+        parse_mode="HTML",
+        reply_markup=favorites_action_keyboard()
+    )
+
+
+@router.message(F.text == "🌟 Переглянути")
+async def view_favorite_places_handler(message: Message, session: aiohttp.ClientSession):
+    """Показує список улюблених місць для перегляду."""
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) переглядає улюблені місця")
 
@@ -477,8 +504,31 @@ async def favorite_places_handler(message: Message, session: aiohttp.ClientSessi
         return
 
     places = [{"id": p["id"], "displayName": p["name"]} for p in favorites]
-    loading_msg = await message.answer("🌟 Улюблені місця...", parse_mode="HTML")
+    loading_msg = await message.answer("🌟 Завантаження улюблених місць...", parse_mode="HTML")
     await show_places_list(loading_msg, places, "Улюблені місця ({count})")
+
+
+@router.message(F.text == "⚖️ Порівняти")
+async def start_comparison_handler(message: Message, state: FSMContext):
+    """Розпочинає процес порівняння улюблених місць."""
+    logger.info(
+        f"Користувач {message.from_user.username}({message.from_user.id}) розпочинає порівняння")
+
+    favorites = get_favorite_places(message.from_user.id)
+    if not favorites or len(favorites) < 2:
+        await message.answer("⚖️ Потрібно мінімум 2 улюблених місця для порівняння.")
+        return
+
+    await state.set_state(BotState.comparing_favorites)
+    await state.update_data(selected_for_comparison=[])
+
+    kb = select_favorites_for_comparison_keyboard(favorites, [])
+    await message.answer(
+        "⚖️ <b>Обрати місця для порівняння:</b>\n\n"
+        "Натисніть на місце, щоб обрати його для порівняння (мінімум 2):",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
 
 
 async def show_place_card(message: Message, state: FSMContext, session: aiohttp.ClientSession):
@@ -604,3 +654,113 @@ async def fav_toggle_handler(callback: CallbackQuery):
     name = _place_name_cache.get(place_id, "Без назви")
     add_favorite_place(user_id, place_id, name)
     await callback.answer("✅ Додано до улюблених")
+
+
+@router.callback_query(F.data.startswith("compare_toggle:"), BotState.comparing_favorites)
+async def compare_toggle_handler(callback: CallbackQuery, state: FSMContext):
+    """Додає або видаляє місце із виділення для порівняння."""
+    place_id = callback.data.split(":", 1)[1]
+    user_id = callback.from_user.id
+
+    data = await state.get_data()
+    selected_ids = data.get("selected_for_comparison", [])
+
+    if place_id in selected_ids:
+        selected_ids.remove(place_id)
+    else:
+        selected_ids.append(place_id)
+
+    await state.update_data(selected_for_comparison=selected_ids)
+
+    # Оновлюємо клавіатуру
+    favorites = get_favorite_places(user_id)
+    kb = select_favorites_for_comparison_keyboard(favorites, selected_ids)
+
+    await callback.message.edit_reply_markup(reply_markup=kb)
+
+    count = len(selected_ids)
+    if count >= 2:
+        await callback.answer(f"✅ Обрано {count} місць")
+    else:
+        await callback.answer(f"️ Обрано {count} / мінімум 2")
+
+
+@router.callback_query(F.data == "perform_comparison", BotState.comparing_favorites)
+async def perform_comparison_handler(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession):
+    """Виконує порівняння обраних місць."""
+    user_id = callback.from_user.id
+    data = await state.get_data()
+    selected_ids = data.get("selected_for_comparison", [])
+
+    if len(selected_ids) < 2:
+        await callback.answer("⚠️ Потрібно обрати мінімум 2 місця", show_alert=True)
+        return
+
+    await callback.answer()
+
+    # Показуємо повідомлення про завантаження
+    loading_msg = await callback.message.answer(
+        "⚖️ <b>Завантаження деталей для порівняння...</b>\n"
+        "⏳ Зачекайте, виконується запит до API...",
+        parse_mode="HTML"
+    )
+
+    try:
+        # Отримуємо деталі всіх вибраних місць
+        favorites = get_favorite_places(user_id)
+        settings = get_user_settings(user_id)
+        language = settings.get("language", "uk")
+        user_coords = settings.get("coordinates")
+
+        places_details = []
+        for place_id in selected_ids:
+            # Знаходимо улюблене місце у списку
+            favorite = next((p for p in favorites if p["id"] == place_id), None)
+            if not favorite:
+                continue
+
+            # Отримуємо деталі місця
+            place_details = await get_place_details(place_id, session, language)
+            if place_details:
+                places_details.append(place_details)
+
+        if not places_details:
+            await loading_msg.edit_text(
+                "⚠️ <b>Не вдалося отримати деталі місць.</b>",
+                parse_mode="HTML"
+            )
+            return
+
+        # Форматуємо й надсилаємо порівняння
+        comparison_text = format_comparison_text(places_details, user_coords)
+        await loading_msg.edit_text(comparison_text, parse_mode="HTML")
+
+    except Exception as e:
+        logger.error(f"Error in perform_comparison_handler: {e}")
+        await loading_msg.edit_text(
+            "❌ <b>Сталася помилка при порівнянні місць.</b>",
+            parse_mode="HTML"
+        )
+    finally:
+        await state.clear()
+
+
+@router.callback_query(F.data == "cancel_comparison", BotState.comparing_favorites)
+async def cancel_comparison_handler(callback: CallbackQuery, state: FSMContext):
+    """Скасовує порівняння й повертається до меню."""
+    await state.clear()
+    await callback.answer()
+    await callback.message.edit_text(
+        "❌ Порівняння скасовано.",
+        parse_mode="HTML"
+    )
+    await callback.message.answer("Повернулися до головного меню.", reply_markup=search_keyboard())
+
+
+@router.callback_query(F.data == "comparison_help", BotState.comparing_favorites)
+async def comparison_help_handler(callback: CallbackQuery):
+    """Показує довідку про мінімальну кількість місць для порівняння."""
+    await callback.answer(
+        "Обрати мінімум 2 місця для порівняння",
+        show_alert=False
+    )
