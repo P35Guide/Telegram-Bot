@@ -7,7 +7,7 @@ from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings
 from bot.states import BotState
 from bot.utils.logger import logger
-from bot.handlers.main_menu import send_settings_menu
+from bot.handlers.main_menu import send_settings_menu,send_main_menu
 from bot.services import settings as settings_service
 from bot.config import ADD_PLACE_BOT_USERNAME
 
