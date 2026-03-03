@@ -341,8 +341,6 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         parse_mode="HTML"
     )
 
-    at_night = decode_included_types(message.from_user.id)
-
     settings = get_user_settings(message.from_user.id)
 
     if not settings or not settings.get("coordinates"):
