@@ -264,7 +264,7 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
         )
 
 
-@router.message(F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
+@router.message(StateFilter(None), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
 async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
