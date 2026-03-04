@@ -4,6 +4,11 @@ from bot.utils.logger import logger
 from bot.model.types_dict import SearchTypes
 import re
 import json
+import aiohttp
+from bot.services.api_client import get_places
+from bot.utils.logger import logger
+import re
+import json
 DEFAULTS = {
     "language": "uk",
     "radius": 1000,
@@ -44,8 +49,15 @@ def apply_user_data_from_api(user_id: int, api_user: dict):
     server_settings = api_user.get("settings") or {}
     server_favorites = api_user.get("favoritePlaces") or []
 
+    # Отримуємо мову з сервера, якщо вона є
+    server_language = server_settings.get("language")
+    if server_language:
+        language = server_language
+    else:
+        language = DEFAULTS["language"]
+
     merged = {
-        "language": server_settings.get("language") or DEFAULTS["language"],
+        "language": language,
         "radius": server_settings.get("radius") or DEFAULTS["radius"],
         "coordinates": _parse_coordinates(server_settings.get("coordinates")),
         "includedTypes": list(server_settings.get("includedTypes") or []),
@@ -61,6 +73,11 @@ def apply_user_data_from_api(user_id: int, api_user: dict):
             merged["favoritePlaces"].append(n)
 
     user_settings[user_id] = merged
+    
+    # Також встановлюємо мову в i18n.user_languages
+    from bot.utils.localization import i18n
+    i18n.set_user_language(user_id, language)
+    
     return merged
 
 
@@ -100,7 +117,7 @@ def _coordinates_for_api(coord):
 def get_settings_payload_for_api(user_id):
     """Словник для POST /api/telegram-user/{id}/settings: id, language, radius, coordinates, ..."""
     s = get_user_settings(user_id)
-    payload = {"id": 0}
+    payload = {"id": user_id}
     for key in SETTINGS_API_KEYS:
         val = s.get(key)
         if key == "coordinates":
@@ -152,20 +169,18 @@ def decode_included_types(user_id):
     settings = get_user_settings(user_id)
     types = settings.get("includedTypes", [])
     new_types = []
-    at_night = 0
+    at_night = False
     for type in types:
         if(type =="Loud Company 🍻"):
             for intype in mood_types.get("Loud Company 🍻"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Date Night 🌙"):
-            at_night = 1
+            at_night = True
             for intype in mood_types.get("Date Night 🌙"):
                 if intype not in new_types:
                     new_types.append(intype)
         elif(type == "Need to Work 💻"):
-            if(at_night == 1):
-                at_night = 2
             for intype in mood_types.get("Need to Work 💻"):
                 if intype not in new_types:
                     new_types.append(intype)
@@ -190,10 +205,10 @@ def incode_included_types(user_id, at_night):
     if(loud_company == True):
         new_types.append('Loud Company 🍻')
     if(night == True):
-        if(at_night != 0):
+        if(at_night == True):
             new_types.append("Date Night 🌙")
     if(work == True):
-        if(at_night !=1):
+        if(at_night != True):
             new_types.append("Need to Work 💻")
 
     included_types = []
@@ -271,6 +286,7 @@ def add_included_list_type(user_id, type_label):
     settings["includedTypes"] = included
     user_settings[user_id] = settings
             
+
 
 
 def clear_included_types(user_id):
@@ -394,3 +410,10 @@ def update_radius(user_id, radius):
     settings["radius"] = radius
     user_settings[user_id] = settings
     return settings
+
+
+def update_mood(user_id: int, mood: str):
+    """Update user's mood setting."""
+    settings = get_user_settings(user_id)
+    settings["mood"] = mood
+    user_settings[user_id] = settings

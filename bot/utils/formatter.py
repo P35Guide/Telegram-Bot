@@ -1,5 +1,7 @@
 from math import radians, sin, cos, sqrt, atan2
+from bot.utils.localization import i18n
 
+# Ці константи більше не використовуються напряму, але залишаємо для сумісності
 PRICE_LEVELS = {
     "PRICE_LEVEL_UNSPECIFIED": "",
     "PRICE_LEVEL_FREE": "Безкоштовно",
@@ -10,9 +12,21 @@ PRICE_LEVELS = {
 }
 
 
+def get_price_level_text(price_level: str, user_id: int = 0, lang_code: str = None) -> str:
+    """Отримати переклад рівня ціни"""
+    price_map = {
+        "PRICE_LEVEL_FREE": i18n.get(user_id, 'price_free', lang_code),
+        "PRICE_LEVEL_INEXPENSIVE": i18n.get(user_id, 'price_inexpensive', lang_code),
+        "PRICE_LEVEL_MODERATE": i18n.get(user_id, 'price_moderate', lang_code),
+        "PRICE_LEVEL_EXPENSIVE": i18n.get(user_id, 'price_expensive', lang_code),
+        "PRICE_LEVEL_VERY_EXPENSIVE": i18n.get(user_id, 'price_very_expensive', lang_code),
+    }
+    return price_map.get(price_level, "")
+
+
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Розраховує відстань між двома координатами в км (формула Гаверсина)"""
-    R = 6371  # Радіус Землі в км
+    """Calculates distance between two coordinates in km (Haversine formula)"""
+    R = 6371  # Earth radius in km
     
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
@@ -25,15 +39,17 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return distance
 
 
-def format_distance(distance_km: float) -> str:
-    """Форматує відстань у зручний вигляд"""
+def format_distance(distance_km: float, user_id: int = 0, lang_code: str = None) -> str:
+    """Formats distance in readable format"""
     if distance_km < 1:
-        return f"{int(distance_km * 1000)} м"
+        meters = int(distance_km * 1000)
+        return f"{meters} м" if lang_code in ['uk', 'ru'] else f"{meters} m"
     else:
-        return f"{distance_km:.1f} км"
+        km_str = "км" if lang_code in ['uk', 'ru'] else "km"
+        return f"{distance_km:.1f} {km_str}"
 
 
-def format_place_text(p: dict, user_coords: dict = None) -> str:
+def format_place_text(p: dict, user_coords: dict = None, user_id: int = 0, lang_code: str = None) -> str:
     """Форматує деталі місця у html рядок"""
 
     # хедер
@@ -45,26 +61,26 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
     rating_line = None
     if p.get('rating'):
         stars = "⭐" * int(round(p.get('rating', 0)))
-        rating_line = f"{stars} <b>{p.get('rating')}</b> ({p.get('userRatingCount')} відгуків)"
+        reviews_text = i18n.get(user_id, 'reviews_count', lang_code, count=p.get('userRatingCount', 0))
+        rating_line = f"{stars} <b>{p.get('rating')}</b> ({reviews_text})"
 
         price_level = p.get('priceLevel')
         if price_level:
-            # Спробуємо отримати символ з мапи, або виведемо як є, якщо не знайдено
-            price_symbol = PRICE_LEVELS.get(price_level, price_level)
+            price_symbol = get_price_level_text(price_level, user_id, lang_code)
             if price_symbol:
                 rating_line += f" • {price_symbol}"
 
     # Статус
     status = None
     if p.get('openNow') is not None:
-        status = "🟢 <b>Відчинено</b>" if p.get(
-            'openNow') else "🔴 <b>Зачинено</b>"
+        status_text = i18n.get(user_id, 'open_now', lang_code) if p.get('openNow') else i18n.get(user_id, 'closed_now', lang_code)
+        status = status_text
 
         # Графік роботи
         schedule = p.get('weekdayDescriptions', [])
         if schedule:
             schedule_text = "\n".join([f"▫️ {day}" for day in schedule])
-            status += f"\n\n🕒 <b>Графік роботи:</b>\n{schedule_text}"
+            status += f"\n\n{i18n.get(user_id, 'schedule_title', lang_code)}\n{schedule_text}"
 
     # Адреса, телефон та вебсайт
     address = f"📍 {p.get('shortFormattedAddress')}" if p.get(
@@ -78,18 +94,18 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
                 user_coords['latitude'], user_coords['longitude'],
                 p['latitude'], p['longitude']
             )
-            distance_str = format_distance(distance_km)
-            distance_text = f"📏 Відстань: <b>{distance_str}</b>"
+            distance_str = format_distance(distance_km, user_id, lang_code)
+            distance_text = i18n.get(user_id, 'distance', lang_code, distance=distance_str)
     
     phone = f"📞 {p.get('phoneNumber')}" if p.get('phoneNumber') else None
-    website = f"🌐 <a href='{p.get('websiteUri')}'>Офіційний сайт</a>" if p.get(
+    website = f"🌐 <a href='{p.get('websiteUri')}'>{i18n.get(user_id, 'official_website', lang_code)}</a>" if p.get(
         'websiteUri') else None
 
     # Опис
     description = None
     summary = p.get('editorialSummary') or p.get('generativeSummary')
     if summary:
-        description = f"📝 <b>Про місце:</b>\n<i>{summary}</i>"
+        description = f"{i18n.get(user_id, 'about_place', lang_code)}\n<i>{summary}</i>"
 
     # Відділювач
     sep = "──────────────"
@@ -111,13 +127,13 @@ def format_place_text(p: dict, user_coords: dict = None) -> str:
     return "\n".join(line for line in lines if line is not None)
 
 
-def format_comparison_text(places: list, user_coords: dict = None) -> str:
+def format_comparison_text(places: list, user_coords: dict = None, user_id: int = 0, lang_code: str = None) -> str:
    
     if not places or len(places) < 2:
-        return "❌ Потрібно вибрати мінімум 2 місця для порівняння."
+        return i18n.get(user_id, 'comparison_min_2', lang_code)
     
     # Заголовок
-    header = "⚖️ <b>Порівняння закладів</b>\n"
+    header = i18n.get(user_id, 'comparison_header', lang_code) + "\n"
     
     # Збираємо дані для порівняння
     comparison_data = []
@@ -144,10 +160,10 @@ def format_comparison_text(places: list, user_coords: dict = None) -> str:
                 data["longitude"]
             )
             data["distance_km"] = distance_km
-            data["distance_str"] = format_distance(distance_km)
+            data["distance_str"] = format_distance(distance_km, user_id, lang_code)
         else:
             data["distance_km"] = float('inf')
-            data["distance_str"] = "Невідомо"
+            data["distance_str"] = i18n.get(user_id, 'unknown_distance', lang_code)
         
         comparison_data.append(data)
     
@@ -184,59 +200,62 @@ def format_comparison_text(places: list, user_coords: dict = None) -> str:
             # Позначаємо найкращий та найгірший за рейтингом
             if best_rating and worst_rating:
                 if data == best_rating and data != worst_rating:
-                    rating_text += " <b>✅ (НАЙЛІПШИЙ)</b>"
+                    rating_text += f" <b>✅ ({i18n.get(user_id, 'rating_best', lang_code)})</b>"
                 elif data == worst_rating and data != best_rating:
-                    rating_text += " <b>❌ (НАЙГІРШИЙ)</b>"
+                    rating_text += f" <b>❌ ({i18n.get(user_id, 'rating_worst', lang_code)})</b>"
         else:
-            rating_text = "<i>Немає оцінок</i> ❌"
+            rating_text = f"<i>{i18n.get(user_id, 'no_ratings', lang_code)}</i> ❌"
         
-        lines.append(f"⭐ Рейтинг: {rating_text}")
+        lines.append(f"⭐ {i18n.get(user_id, 'rating_label', lang_code)}: {rating_text}")
         
         # Кількість відгуків
         reviews_marker = ""
         if most_reviews and least_reviews:
             if data == most_reviews and data != least_reviews:
-                reviews_marker = " <b>✅ (НАЙБІЛЬШЕ)</b>"
+                reviews_marker = f" <b>✅ ({i18n.get(user_id, 'reviews_most', lang_code)})</b>"
             elif data == least_reviews and data != most_reviews:
-                reviews_marker = " <b>❌ (НАЙМЕНШЕ)</b>"
+                reviews_marker = f" <b>❌ ({i18n.get(user_id, 'reviews_least', lang_code)})</b>"
         
-        lines.append(f"💬 Відгуків: <b>{data['reviews_count']}</b>{reviews_marker}")
+        lines.append(f"💬 {i18n.get(user_id, 'reviews_label', lang_code)}: <b>{data['reviews_count']}</b>{reviews_marker}")
         
         # Відстань
         distance_marker = ""
         if data['distance_km'] != float('inf') and closest and farthest:
             if data == closest and data != farthest:
-                distance_marker = " <b>✅ (НАЙБЛИЖЧЕ)</b>"
+                distance_marker = f" <b>✅ ({i18n.get(user_id, 'distance_closest', lang_code)})</b>"
             elif data == farthest and data != closest:
-                distance_marker = " <b>❌ (НАЙДАЛІ)</b>"
+                distance_marker = f" <b>❌ ({i18n.get(user_id, 'distance_farthest', lang_code)})</b>"
         
-        lines.append(f"📏 Відстань: <b>{data['distance_str']}</b>{distance_marker}")
+        lines.append(f"📏 {i18n.get(user_id, 'distance_label', lang_code)}: <b>{data['distance_str']}</b>{distance_marker}")
         
         # Статус
         if data['open_now'] is not None:
-            status = "🟢 Відчинено" if data['open_now'] else "🔴 Зачинено"
-            lines.append(f"🕒 Статус: {status}")
+            if data['open_now']:
+                status = f"🟢 {i18n.get(user_id, 'status_open', lang_code)}"
+            else:
+                status = f"🔴 {i18n.get(user_id, 'status_closed', lang_code)}"
+            lines.append(f"🕒 {i18n.get(user_id, 'status_label', lang_code)}: {status}")
         
         # Ціна
         if data['price_level']:
-            price_symbol = PRICE_LEVELS.get(data['price_level'], data['price_level'])
+            price_symbol = get_price_level_text(data['price_level'], user_id, lang_code)
             if price_symbol:
-                lines.append(f"💰 Ціна: {price_symbol}")
+                lines.append(f"💰 {i18n.get(user_id, 'price_label', lang_code)}: {price_symbol}")
     
     # Рекомендація
     
-    lines.append("<b>💡 ПОРІВНЯННЯ:</b>\n")
+    lines.append(f"<b>💡 {i18n.get(user_id, 'comparison_summary', lang_code)}:</b>\n")
     
     # Найкращий за рейтингом
     if best_rating:
-        lines.append(f"⭐ За рейтингом ЛІДЕР: <b>{best_rating['name']}</b> ({best_rating['rating']})")
+        lines.append(f"⭐ {i18n.get(user_id, 'rating_leader', lang_code)}: <b>{best_rating['name']}</b> ({best_rating['rating']})")
     
     # Найближче
     if closest and closest['distance_km'] != float('inf'):
-        lines.append(f"📍 Найближче до вас: <b>{closest['name']}</b> ({closest['distance_str']})")
+        lines.append(f"📍 {i18n.get(user_id, 'closest_to_you', lang_code)}: <b>{closest['name']}</b> ({closest['distance_str']})")
     
     # Найбільше відгуків
     if most_reviews:
-        lines.append(f"💬 Найбільше відгуків: <b>{most_reviews['name']}</b> ({most_reviews['reviews_count']})")
+        lines.append(f"💬 {i18n.get(user_id, 'most_reviews', lang_code)}: <b>{most_reviews['name']}</b> ({most_reviews['reviews_count']})")
     
     return "\n".join(lines)

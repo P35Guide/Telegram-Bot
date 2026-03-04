@@ -30,14 +30,31 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Налаштуйте змінні оточення (вже налаштовано)
+### 4. Налаштуйте змінні оточення
 
-Створіть файл `.env` у корені проекту та додайте свій токен бота:
+Створіть файл `.env` у корені проекту (скопіюйте `.env.example`):
+
+```bash
+# Windows
+copy .env.example .env
+
+# macOS/Linux
+cp .env.example .env
+```
+
+Відкрийте файл `.env` та додайте свій токен бота:
 
 ```ini
-BOT_TOKEN=ваш_токен_від_botfather
-API_BASE_URL=http://localhost:5000
+BOT_TOKEN=your_bot_token_here
+API_BASE_URL=https://localhost:5000
+ADD_PLACE_BOT_USERNAME=@YumMapAddPlace
 ```
+
+**Як отримати BOT_TOKEN:**
+1. Відкрийте Telegram і знайдіть [@BotFather](https://t.me/botfather)
+2. Відправте команду `/newbot`
+3. Слідуйте інструкціям для створення бота
+4. Скопіюйте отриманий токен у файл `.env`
 
 ### 5. Запустіть бота
 

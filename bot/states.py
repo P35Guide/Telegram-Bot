@@ -16,3 +16,10 @@ class BotState(StatesGroup):
     choosing_random_type = State()
     comparing_favorites = State()
     selecting_mood = State()
+
+
+class AddPlace(StatesGroup):
+    wait_for_title = State()
+    wait_for_discription = State()
+    wait_for_shor_adress = State()
+    wait_for_foto = State()
