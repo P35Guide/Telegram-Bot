@@ -117,7 +117,7 @@ def _coordinates_for_api(coord):
 def get_settings_payload_for_api(user_id):
     """Словник для POST /api/telegram-user/{id}/settings: id, language, radius, coordinates, ..."""
     s = get_user_settings(user_id)
-    payload = {"id": 0}
+    payload = {"id": user_id}
     for key in SETTINGS_API_KEYS:
         val = s.get(key)
         if key == "coordinates":
@@ -409,3 +409,10 @@ def update_radius(user_id, radius):
     settings["radius"] = radius
     user_settings[user_id] = settings
     return settings
+
+
+def update_mood(user_id: int, mood: str):
+    """Update user's mood setting."""
+    settings = get_user_settings(user_id)
+    settings["mood"] = mood
+    user_settings[user_id] = settings

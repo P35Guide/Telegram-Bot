@@ -85,28 +85,99 @@ async def set_language_callback(callback: CallbackQuery, session: aiohttp.Client
 
 @router.message(F.text.in_(["📏 Радіус", "📏 Radius", "📏 Rayon", "📏 Radio", "📏 Raggio", "📏 Promień", "📏 Raio", "📏 半径"]))
 async def radius_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) хоче змінити радіус")
+        f"Користувач {message.from_user.username}({user_id}) хоче змінити радіус")
     await state.set_state(BotState.selecting_radius)
     await message.answer(
-        "✏️ Введіть радіус пошуку в метрах (1-5000):",
+        i18n.get(user_id, 'enter_radius_prompt', lang_code),
         reply_markup=cancel_keyboard()
     )
 
 
 
-@router.message(F.text == "🍴 Вибрати категорії")
+
+
+@router.message(F.text.in_(["🎧 Вибрати за настроєм", "🎧 Select by mood", "🎧 Nach Stimmung auswählen", "🎧 Sélectionner par humeur", "🎧 Seleccionar por estado de ánimo", "🎧 Seleziona per umore", "🎧 Wybierz według nastroju", "🎧 Selecionar por humor", "🎧 気分で選択", "🎧 按心情选择"]))
+async def mood_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    builder = InlineKeyboardBuilder()
+    
+    moods = [
+        ("mood_work", "work"),
+        ("mood_date", "date"),
+        ("mood_company", "company"),
+        ("mood_breakfast", "breakfast"),
+    ]
+    
+    for mood_key, mood_code in moods:
+        builder.button(
+            text=i18n.get(user_id, mood_key, lang_code),
+            callback_data=f"set_mood:{mood_code}"
+        )
+    
+    builder.button(text=i18n.get(user_id, 'category_reset', lang_code),
+                   callback_data="clear_mood")
+    
+    builder.adjust(1)
+    
+    current_mood = settings.get("mood", "")
+    current_line = f"Current: {current_mood}\n\n" if current_mood else ""
+    
+    await message.answer(
+        i18n.get(user_id, 'choose_mood', lang_code, current=current_line),
+        parse_mode="HTML",
+        reply_markup=builder.as_markup()
+    )
+
+
+@router.callback_query(F.data.startswith("set_mood:"))
+async def set_mood_callback(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    mood = callback.data.split(":", 1)[1]
+    settings_service.update_mood(user_id, mood)
+    
+    await callback.answer(i18n.get(user_id, 'category_added', lang_code))
+    await callback.message.delete()
+    await send_settings_menu(callback.message, user_id=user_id)
+
+
+@router.callback_query(F.data == "clear_mood")
+async def clear_mood_callback(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    settings_service.update_mood(user_id, "")
+    
+    await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
+    await callback.message.delete()
+    await send_settings_menu(callback.message, user_id=user_id)
+
+
+@router.message(F.text.in_(["🍴 Вибрати категорії", "🍴 Select categories", "🍴 Kategorien auswählen", "🍴 Sélectionner les catégories", "🍴 Seleccionar categorías", "🍴 Seleziona categorie", "🍴 Wybierz kategorie", "🍴 Selecionar categorias", "🍴 カテゴリーを選択", "🍴 选择类别"]))
 async def included_types_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
     builder = InlineKeyboardBuilder()
 
-
     popular_types = [
-        ("🍕 Ресторан",  "restaurant"),
-        ("☕ Кав'ярня", "cafe"),
-        ("🍺 Бар", "bar"),
-        ("🍔 Фастфуд", "fast_food_restaurant"),
-        ("💊 Аптека", "pharmacy"),
-        ("🛒 Магазин", "store")
+        (i18n.get(user_id, 'category_restaurant', lang_code), "restaurant"),
+        (i18n.get(user_id, 'category_cafe', lang_code), "cafe"),
+        (i18n.get(user_id, 'category_bar', lang_code), "bar"),
+        (i18n.get(user_id, 'category_fastfood', lang_code), "fast_food_restaurant"),
+        (i18n.get(user_id, 'category_pharmacy', lang_code), "pharmacy"),
+        (i18n.get(user_id, 'category_store', lang_code), "store")
     ]
 
     for label, code in popular_types:
@@ -115,24 +186,19 @@ async def included_types_handler(message: Message, state: FSMContext):
             callback_data=f"add_included_type:{code}"
         )
 
-    builder.button(text="🧹 Скинути категорії",
+    builder.button(text=i18n.get(user_id, 'category_reset', lang_code),
                    callback_data="cancel_included_types")
 
     builder.adjust(2)
 
-
-    current_settings = get_user_settings(message.from_user.id)
-    included = current_settings.get("includedTypes", [])
-    current_line = f"Поточні: <code>{', '.join(included)}</code>\n\n" if included else ""
+    included = settings.get("includedTypes", [])
+    current_line = i18n.get(user_id, 'current_categories', lang_code, categories=', '.join(included)) if included else ""
 
     await message.answer(
-        "🔎 <b>Оберіть популярну категорію</b> зі списку нижче:\n\n"
-        f"{current_line}"
-        "✍️ <b>Або просто напишіть</b> свій варіант (наприклад: шаурма, кінотеатр, парк).",
+        i18n.get(user_id, 'choose_category', lang_code, current=current_line),
         parse_mode="HTML",
         reply_markup=builder.as_markup()
     )
-
 
     await state.set_state(BotState.waiting_for_category)
 
@@ -186,65 +252,79 @@ async def included_types_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("add_included_type:"))
-
-@router.callback_query(F.data.startswith("add_included_type:"))
 async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     type_code = callback.data.split(":")[1]
-    settings_service.add_included_type(callback.from_user.id, type_code)
-    await callback.answer("✅ Категорію додано!")
+    settings_service.add_included_type(user_id, type_code)
+    await callback.answer(i18n.get(user_id, 'category_added', lang_code))
     await state.clear()
-    await send_settings_menu(callback.message, user_id=callback.from_user.id)
+    await send_settings_menu(callback.message, user_id=user_id)
 
 @router.callback_query(F.data.startswith("add_included_list_type:"))
-
-async def add_list_included(callback:CallbackQuery,state:FSMContext):
+async def add_list_included(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     type_code = callback.data.split(":")[1]
-    settings_service.add_included_type(callback.from_user.id, type_code)
-
-    await callback.answer("✅ Категорії додані!")
+    settings_service.add_included_type(user_id, type_code)
+    await callback.answer(i18n.get(user_id, 'categories_added', lang_code))
     await state.clear()
-    await send_main_menu(callback.message, user_id=callback.from_user.id)
+    await send_main_menu(callback.message, user_id=user_id)
 
 @router.message(BotState.waiting_for_category)
 async def add_custom_category_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     user_text = (message.text or "").strip()
 
     if len(user_text) < 3:
-        await message.answer("⚠️ Занадто коротка назва. Спробуйте ще раз або оберіть кнопку.")
+        await message.answer(i18n.get(user_id, 'category_too_short', lang_code))
         return
 
-    settings_service.add_included_type(message.from_user.id, user_text)
-    await message.answer(f"✅ Прийнято! Шукаю нестандартну категорію: **{user_text}**")
+    settings_service.add_included_type(user_id, user_text)
+    await message.answer(i18n.get(user_id, 'custom_category_accepted', lang_code, category=user_text))
     await state.clear()
     await send_settings_menu(message)
 
 
 @router.callback_query(F.data == "cancel_included_types")
 async def clear_included_types_callback(callback: CallbackQuery, state: FSMContext):
-    settings_service.clear_included_types(callback.from_user.id)
-    await callback.answer("✅ Категорії скинуто!")
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    settings_service.clear_included_types(user_id)
+    await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
-    await send_settings_menu(callback.message, user_id=callback.from_user.id)
+    await send_settings_menu(callback.message, user_id=user_id)
 
 
 @router.message(F.text == "🧹 Скинути категорії", BotState.waiting_for_category)
 async def clear_included_types_handler(message: Message, state: FSMContext):
-    settings_service.clear_included_types(message.from_user.id)
-    await message.answer("✅ Категорії скинуто!")
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    settings_service.clear_included_types(user_id)
+    await message.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
     await send_settings_menu(message)
 
 
-@router.message(F.text == "🔢 Кількість")
+@router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
 async def max_result_count_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.set_state(BotState.selecting_max_result_count)
     await message.answer(
-        "✏️ Введіть максимальну кількість результатів (1-20):",
+        i18n.get(user_id, 'enter_count_prompt', lang_code),
         reply_markup=cancel_keyboard()
     )
 
 
-@router.message(F.text == "⭐ Сортування")
+@router.message(F.text.in_(["⭐ Сортування", "⭐ Sorting", "⭐ Sortierung", "⭐ Tri", "⭐ Ordenar", "⭐ Ordinamento", "⭐ Sortowanie", "⭐ Ordenação", "⭐ 並び替え", "⭐ 排序"]))
 async def rank_preference_handler(message: Message):
     current_settings = get_user_settings(message.from_user.id)
     current_rank = current_settings.get("rankPreference", "POPULARITY")
@@ -260,13 +340,13 @@ async def rank_preference_handler(message: Message):
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
                             BotState.selecting_included_types, BotState.selecting_excluded_types,
-                            BotState.selecting_max_result_count), F.text == "🔙 Скасувати")
+                            BotState.selecting_max_result_count), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
-    await send_settings_menu(message)
+    await send_settings_menu(message, user_id=message.from_user.id)
 
 
-@router.message(F.text == "⏰ Відкрите зараз")
+@router.message(F.text.in_(["⏰ Відкрите зараз", "⏰ Open now", "⏰ Jetzt geöffnet", "⏰ Ouvert maintenant", "⏰ Abierto ahora", "⏰ Aperto ora", "⏰ Otwarte teraz", "⏰ Aberto agora", "⏰ 営業中", "⏰ 现在营业"]))
 async def open_now_handler(message: Message):
     current_settings = get_user_settings(message.from_user.id)
     current_open_now = current_settings.get("openNow", False)
@@ -292,20 +372,23 @@ async def set_language_handler(message: Message, state: FSMContext):
 
 @router.message(BotState.selecting_radius)
 async def set_radius_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     radius = message.text.strip()
     if not radius.isdigit():
-        await message.answer("⚠️ Будь ласка, введіть число.")
+        await message.answer(i18n.get(user_id, 'enter_number_error', lang_code))
         return
     if not (1 <= int(radius) <= 5000):
-        await message.answer("⚠️ Будь ласка, введіть число від 1 до 5000.")
+        await message.answer(i18n.get(user_id, 'enter_radius_range_error', lang_code))
         return
 
     logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) змінив радіус на {radius}")
-    update_radius(message.from_user.id, radius)
+        f"Користувач {message.from_user.username}({user_id}) змінив радіус на {radius}")
+    update_radius(user_id, radius)
     await state.clear()
-    await send_settings_menu(message)
-    await send_settings_menu(message)
+    await send_settings_menu(message, user_id=user_id)
+    await send_settings_menu(message, user_id=user_id)
 
 
 @router.message(BotState.selecting_included_types)
@@ -340,13 +423,16 @@ async def set_excluded_types_handler(message: Message, state: FSMContext):
 
 @router.message(BotState.selecting_max_result_count)
 async def set_max_result_count_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     text = message.text.strip()
     if not text.isdigit() or not (1 <= int(text) <= 20):
-        await message.answer("⚠️ Будь ласка, введіть число від 1 до 20.")
+        await message.answer(i18n.get(user_id, 'enter_count_range_error', lang_code))
         return
 
-    update_max_result_count(message.from_user.id, int(text))
+    update_max_result_count(user_id, int(text))
     logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) змінив кількість результатів на {int(text)}")
+        f"Користувач {message.from_user.username}({user_id}) змінив кількість результатів на {int(text)}")
     await state.clear()
-    await send_settings_menu(message)
+    await send_settings_menu(message, user_id=user_id)

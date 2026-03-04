@@ -149,21 +149,30 @@ async def add_photo(message:Message,state:FSMContext,bot:Bot,session:aiohttp.Cli
 
     result = await add_custom_place(place,session)
 
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
     if(result == True):
-        await message.answer("Place added")
+        await message.answer(i18n.get(user_id, 'place_added_success', lang_code))
         await send_main_menu(message)
     else:
-        await message.answer("We got error")
+        await message.answer(i18n.get(user_id, 'place_added_error', lang_code))
         await send_main_menu(message)
 
 
 # Обробник кнопки "📍 Надіслати геолокацію" (показує вибір способу)
 @router.message(F.text == "📍 Надіслати геолокацію")
 async def choose_location_method(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
     await state.clear()
     await state.set_state(BotState.choosing_location_type)
+    msg_text = i18n.get(user_id, 'choose_location_method', lang_code)
     await message.answer(
-        "Оберіть спосіб передачі координат:",
+        msg_text,
         reply_markup=choose_location_type_keyboard()
     )
 
@@ -171,25 +180,40 @@ async def choose_location_method(message: Message, state: FSMContext):
 # Обробка вибору типу локації
 @router.message(BotState.choosing_location_type)
 async def handle_location_type_choice(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
     if message.text == "📍 Передати мою локацію":
-        await message.answer("Будь ласка, надішліть свою геолокацію через кнопку нижче.")
+        msg_text = i18n.get(user_id, 'send_location_request', lang_code)
+        await message.answer(msg_text)
     elif message.text == "🏙️ Знайти потрібне місто":
         await state.set_state(BotState.entering_coordinates)
-        await message.answer("Введіть назву міста, для якого потрібно знайти координати:")
+        msg_text = i18n.get(user_id, 'enter_city_name_prompt', lang_code)
+        await message.answer(msg_text)
     else:
-        await message.answer("Будь ласка, оберіть один із варіантів.", reply_markup=choose_location_type_keyboard())
+        msg_text = i18n.get(user_id, 'choose_variant', lang_code)
+        await message.answer(msg_text, reply_markup=choose_location_type_keyboard())
 
 
 # Команда /coordinates для отримання координат користувача
 @router.message(Command("coordinates"))
 async def show_user_coordinates(message: Message):
-    coords = get_user_settings(message.from_user.id).get("coordinates")
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    coords = settings.get("coordinates")
     if coords:
+        title = i18n.get(user_id, 'your_coordinates', lang_code)
+        lat_label = i18n.get(user_id, 'latitude_label', lang_code)
+        lon_label = i18n.get(user_id, 'longitude_label', lang_code)
         await message.answer(
-            f"Ваші координати:\nШирота: {coords['latitude']}\nДовгота: {coords['longitude']}"
+            f"{title}\n{lat_label} {coords['latitude']}\n{lon_label} {coords['longitude']}"
         )
     else:
-        await message.answer("Координати не встановлено. Спочатку оберіть місто або надішліть свою геолокацію.")
+        msg_text = i18n.get(user_id, 'coordinates_not_set', lang_code)
+        await message.answer(msg_text)
 
 
 def filter_open_now(places, open_now):
@@ -336,13 +360,13 @@ async def find_places_handler(message: Message, session: aiohttp.ClientSession):
         )
 
 
-@router.message(F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
+@router.message(StateFilter(None), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
 async def cancel_handler(message: Message,state:FSMContext):
     await state.clear()
     await send_main_menu(message)
 
 
-async def show_places_list(loading_msg, places, title: str = "Знайдено {count} місць"):
+async def show_places_list(loading_msg, places, title: str = "Знайдено {count} місць", user_id: int | None = None, lang_code: str = "uk"):
     """
     Оновлює повідомлення списком місць: клавіатура з назвами або текстовий fallback.
     title — рядок з плейсхолдером {count}.
@@ -360,16 +384,23 @@ async def show_places_list(loading_msg, places, title: str = "Знайдено {
             preview.append(
                 f"<b>{idx}.</b> {name}{rating_str}\n<code>{address}</code>")
         text = "\n\n".join(preview)
-        await loading_msg.edit_text(
-            f"✅ <b>{heading}:</b>\n\n{text}",
-            parse_mode="HTML"
-        )
+        try:
+            await loading_msg.edit_text(
+                f"✅ <b>{heading}:</b>\n\n{text}",
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            logger.warning(f"Could not edit loading message: {e}")
     else:
-        await loading_msg.edit_text(
-            f"✅ <b>{heading}:</b>\nОберіть місце, щоб відкрити його на карті:",
-            parse_mode="HTML",
-            reply_markup=kb
-        )
+        select_text = i18n.get(user_id, 'select_place', lang_code)
+        try:
+            await loading_msg.edit_text(
+                f"✅ <b>{heading}:</b>\n{select_text}",
+                parse_mode="HTML",
+                reply_markup=kb
+            )
+        except Exception as e:
+            logger.warning(f"Could not edit loading message: {e}")
 
 
 async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True):
@@ -396,8 +427,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         except Exception as e:
             logger.warning(f"Could not delete loading message: {e}")
         await message.answer(     
-            "❌ <b>Помилка:</b> Не встановлено геолокацію!\n"
-            "Оберіть спосіб передачі координат:",
+            i18n.get(user_id, 'no_location_set', lang_code),
             parse_mode="HTML",
             reply_markup=choose_location_type_keyboard(user_id, lang_code)
         )
@@ -407,11 +437,14 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         data = await get_places_with_mood(settings, message.from_user.id, session, message, loading_msg)
 
         if not data or "places" not in data:
-            await loading_msg.edit_text(
-                "⚠️ <b>Нічого не знайдено</b> або сервер не відповідає.",
-                parse_mode="HTML"
-            )
-            return
+            try:
+                await loading_msg.edit_text(
+                    i18n.get(user_id, 'places_error', lang_code),
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.warning(f"Could not edit loading message: {e}")
+            return loading_msg, None
 
         places = data["places"]
 
@@ -420,26 +453,35 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             places = filter_open_now(places, True)
 
         if not places:
-            await loading_msg.edit_text(
-                "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
-                "Спробуйте збільшити радіус пошуку.",
-                parse_mode="HTML"
-            )
-            return
+            try:
+                await loading_msg.edit_text(
+                    i18n.get(user_id, 'no_random_places', lang_code),
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.warning(f"Could not edit loading message: {e}")
+            return loading_msg, None
 
         if show_list:
-            await show_places_list(loading_msg, places)
+            user_id = message.from_user.id
+            settings = get_user_settings(user_id)
+            lang_code = settings.get("language", "uk")
+            await show_places_list(loading_msg, places, user_id=user_id, lang_code=lang_code)
 
         return loading_msg, places
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
         user_id = message.from_user.id
-        lang_code = message.from_user.language_code
-        await loading_msg.edit_text(
-            i18n.get(user_id, 'search_error', lang_code),
-            parse_mode="HTML"
-        )
+        lang_code = settings.get("language", "uk")
+        try:
+            await loading_msg.edit_text(
+                i18n.get(user_id, 'search_error', lang_code),
+                parse_mode="HTML"
+            )
+        except Exception as edit_error:
+            logger.warning(f"Could not edit loading message: {edit_error}")
+        return loading_msg, None
 
 
 async def send_place_info(
@@ -535,10 +577,12 @@ async def send_place_info(
 
 @router.message(F.text.in_(["🔍 Список", "🔍 List", "🔍 Liste", "🔍 Liste", "🔍 Lista", "🔍 Elenco", "🔍 Lista", "🔍 Lista", "🔍 リスト", "🔍 列表"]))
 async def find_places_handler(message: Message, session: aiohttp.ClientSession):
-    loading_msg, places = await perform_search(message, session)
-
-    if not places:
+    result = await perform_search(message, session)
+    
+    if result is None or result[1] is None:
         return
+    
+    loading_msg, places = result
 
 
 @router.message(F.text.in_(["🚀 Пошук маршрутів", "🚀 Search routes", "🚀 Routen suchen", "🚀 Rechercher des itinéraires", "🚀 Buscar rutas", "🚀 Cercare percorsi", "🚀 Szukaj tras", "🚀 Pesquisar rotas", "🚀 ルート検索", "🚀 搜索路线"]))
@@ -549,25 +593,25 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) запускає пошук маршрутів")
 
+    msg_text = i18n.get(user_id, 'choose_search_variant', lang_code)
     await message.answer(
-        "<b>Оберіть варіант пошуку:</b>\n"
-        "🚀 <b>Місця</b> - зручно оцінити місця\n"
-        "🔍 <b>Список</b> - переглянути список знайдених місць.\n",
-        
+        msg_text,
         parse_mode="HTML",
         reply_markup=search_keyboard(user_id, lang_code)
     )
 
 
-@router.message(StateFilter(None), F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
+@router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
 async def random_choice_menu_handler(message: Message, state: FSMContext):
     """Показує вибір: випадкове з пошуку чи з улюблених."""
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
+    await state.clear()
     await state.set_state(BotState.choosing_random_type)
+    msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
     await message.answer(
-        "🎲 <b>Оберіть джерело випадкового місця:</b>",
+        msg_text,
         parse_mode="HTML",
         reply_markup=random_choice_keyboard(user_id, lang_code),
     )
@@ -579,37 +623,39 @@ async def random_choice_back_handler(message: Message, state: FSMContext):
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     await state.clear()
-    await message.answer("🔙 Повернулись у меню пошуку.", reply_markup=search_keyboard(user_id, lang_code))
+    msg_text = i18n.get(user_id, 'back_to_search_menu', lang_code)
+    await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
 
 
-@router.message(F.text.in_(["🌟 Улюблені", "🌟 Favorites", "🌟 Favoriten", "🌟 Favoris", "🌟 Favoritos", "🌟 Preferiti", "🌟 Ulubieni", "🌟 Favoritos", "🌟 お気に入り", "🌟 收藏夹"]))
+@router.message(F.text.in_(["🌟 Улюблені", "🌟 Favorites", "🌟 Favoriten", "🌟 Favoris", "🌟 Favoritos", "🌟 Preferiti", "🌟 Ulubione", "🌟 Favoritos", "🌟 お気に入り", "🌟 收藏"]))
 async def favorite_menu_handler(message: Message, state: FSMContext):
     """Показує меню дій для улюблених місць."""
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) переглядає меню улюблених")
 
     favorites = get_favorite_places(user_id)
     if not favorites:
+        msg_text = i18n.get(user_id, 'no_favorites_yet', lang_code)
         await message.answer(
-            "🌟 <b>Улюблених місць поки немає</b>\n\n"
-            "Спочатку додайте улюблені місця через пошук! 🔍",
+            msg_text,
             parse_mode="HTML",
             reply_markup=search_keyboard(user_id, lang_code)
         )
         return
 
     await state.clear()
+    msg_text = i18n.get(user_id, 'favorites_count', lang_code, count=len(favorites))
     await message.answer(
-        f"🌟 <b>У вас {len(favorites)} улюблених місць</b>\n\n"
-        "Що ви хочете зробити?",
+        msg_text,
         parse_mode="HTML",
         reply_markup=favorites_action_keyboard(user_id, lang_code)
     )
 
 
-@router.message(F.text.in_(["🌟 Переглянути", "🌟 View", "🌟 Anzeigen", "🌟 Afficher", "🌟 Ver", "🌟 Visualizza", "🌟 Wyświetl", "🌟 Exibir", "🌟 表示", "🌟 查看"]))
+@router.message(F.text.in_(["🌟 Переглянути", "🌟 View", "🌟 Anzeigen", "🌟 Afficher", "🌟 Ver", "🌟 Visualizza", "🌟 Wyświetl", "🌟 Visualizar", "🌟 表示", "🌟 查看"]))
 async def view_favorite_places_handler(message: Message, session: aiohttp.ClientSession):
     """Показує список улюблених місць для перегляду."""
     logger.info(
@@ -625,17 +671,20 @@ async def view_favorite_places_handler(message: Message, session: aiohttp.Client
 
     places = [{"id": p["id"], "displayName": p["name"]} for p in favorites]
     loading_msg = await message.answer(i18n.get(user_id, 'loading_favorites', lang_code), parse_mode="HTML")
-    await show_places_list(loading_msg, places, "Улюблені місця ({count})")
+    title = i18n.get(user_id, 'favorites_list_title', lang_code, count=len(favorites))
+    await show_places_list(loading_msg, places, title, user_id=user_id, lang_code=lang_code)
 
 
-@router.message(StateFilter(BotState.choosing_random_type), F.text.in_(["❤️ Випадкове з улюблених", "❤️ Random from favorites", "❤️ Zufällig aus Favoriten", "❤️ Aléatoire des favoris", "❤️ Aleatorio de favoritos", "❤️ Casuale dai preferiti", "❤️ Losowe z ulubionych", "❤️ Aleatório dos favoritos", "❤️ お気に入りからランダム", "❤️ 从收藏中随机"]))
-async def random_from_favorites_handler(message: Message, session: aiohttp.ClientSession):
+@router.message(F.text.in_(["❤️ Випадкове з улюблених", "❤️ Random from favorites", "❤️ Zufällig aus Favoriten", "❤️ Aléatoire des favoris", "❤️ Aleatorio de favoritos", "❤️ Casuale dai preferiti", "❤️ Losowe z ulubionych", "❤️ Aleatório dos favoritos", "❤️ お気に入りからランダム", "❤️ 从收藏中随机"]))
+async def random_from_favorites_handler(message: Message, state: FSMContext):
     """Випадково обирає місце з улюблених."""
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) обирає випадкове місце з улюблених")
+    
+    await state.clear()
 
     favorites = get_favorite_places(user_id)
 
@@ -656,17 +705,19 @@ async def random_from_favorites_handler(message: Message, session: aiohttp.Clien
     chosen = random.choice(favorites)
     place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
 
+    title = i18n.get(user_id, 'random_from_favorites_title', lang_code)
+    select_text = i18n.get(user_id, 'select_place', lang_code)
     await loading_msg.edit_text(
-        "🎲 <b>Випадкове місце з улюблених:</b>\n"
-        "Оберіть місце, щоб відкрити його на карті:",
+        f"{title}\n{select_text}",
         parse_mode="HTML",
         reply_markup=places_keyboard(place_for_kb),
     )
 
 
-@router.message(StateFilter(BotState.choosing_random_type), F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
+@router.message(F.text.in_(["🔍 З результатів пошуку", "🔍 From search results", "🔍 Aus Suchergebnissen", "🔍 Des résultats de recherche", "🔍 De resultados de búsqueda", "🔍 Dai risultati di ricerca", "🔍 Z wyników wyszukiwania", "🔍 Dos resultados da pesquisa", "🔍 検索結果から", "🔍 从搜索结果"]))
 async def random_place_handler(message: Message, session: aiohttp.ClientSession, state: FSMContext):
     """Випадково обирає місце з результатів пошуку за поточними налаштуваннями."""
+    await state.clear()
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
@@ -691,8 +742,11 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
 
     if not places:
         await loading_msg.edit_text(
-            "⚠️ За поточними фільтрами місць не знайдено.",
+            i18n.get(user_id, 'no_places_with_filters', lang_code),
             parse_mode="HTML",
+        )
+        await message.answer(
+            i18n.get(user_id, 'back_to_search_menu', lang_code),
             reply_markup=search_keyboard(user_id, lang_code),
         )
         await state.clear()
@@ -702,11 +756,16 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
     chosen_id = chosen.get("id") or chosen.get("Id")
     chosen_name = chosen.get("displayName") or chosen.get("DisplayName") or chosen.get("name") or "Місце"
 
+    select_text = i18n.get(user_id, 'select_place', lang_code)
+    random_title = i18n.get(user_id, 'random_place_from_search', lang_code)
     await loading_msg.edit_text(
-        "🎲 <b>Випадкове місце з пошуку:</b>\n"
-        "Оберіть місце, щоб відкрити його на карті:",
+        f"🎲 <b>{random_title}</b>\n{select_text}",
         parse_mode="HTML",
         reply_markup=places_keyboard([{"id": chosen_id, "displayName": chosen_name}]),
+    )
+    await message.answer(
+        i18n.get(user_id, 'back_to_search_menu', lang_code),
+        reply_markup=search_keyboard(user_id, lang_code),
     )
     await state.clear()
 
@@ -728,10 +787,10 @@ async def start_comparison_handler(message: Message, state: FSMContext):
     await state.set_state(BotState.comparing_favorites)
     await state.update_data(selected_for_comparison=[])
 
-    kb = select_favorites_for_comparison_keyboard(favorites, [])
+    kb = select_favorites_for_comparison_keyboard(favorites, [], user_id, lang_code)
+    msg_text = i18n.get(user_id, 'comparison_select_places', lang_code)
     await message.answer(
-        "⚖️ <b>Обрати місця для порівняння:</b>\n\n"
-        "Натисніть на місце, щоб обрати його для порівняння (мінімум 2):",
+        msg_text,
         parse_mode="HTML",
         reply_markup=kb
     )
@@ -739,41 +798,44 @@ async def start_comparison_handler(message: Message, state: FSMContext):
 
 async def show_place_card(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     data = await state.get_data()
     places = data.get("places", [])
     index = data.get("current_index", 0)
 
     if not places:
-        await message.answer("⚠️ Список місць порожній.")
+        msg_text = i18n.get(user_id, 'places_list_empty', lang_code)
+        await message.answer(msg_text)
         await state.clear()
         return
 
     if index < 0:
         index = 0
     if index >= len(places):
-        await message.answer("✅ Це було останнє місце.")
+        msg_text = i18n.get(user_id, 'last_place_reached', lang_code)
+        await message.answer(msg_text)
         index = len(places) - 1
         await state.update_data(current_index=index)
 
     place_summary = places[index]
     place_id = place_summary.get("id") or place_summary.get("Id")
 
-    settings = get_user_settings(user_id)
-    language = settings.get("language", "uk")
-    lang_code = message.from_user.language_code
+    language = lang_code
 
     loading_msg = await message.answer(i18n.get(user_id, 'loading_info', lang_code))
 
     success = await send_place_info(message, session, place_id, language)
 
     if not success:
-        await loading_msg.edit_text("⚠️ Не вдалося отримати деталі місця.")
+        msg_text = i18n.get(user_id, 'place_details_error', lang_code)
+        await loading_msg.edit_text(msg_text)
         return
 
     await loading_msg.delete()
+    msg_text = i18n.get(user_id, 'place_index', lang_code, current=index + 1, total=len(places))
     await message.answer(
-        f"📍 <b>Місце {index + 1} з {len(places)}</b>",
+        msg_text,
         parse_mode="HTML",
         reply_markup=place_navigation_keyboard(user_id, lang_code)
     )
@@ -797,8 +859,11 @@ async def search_places_handler(message: Message, session: aiohttp.ClientSession
     await show_place_card(message, state, session)
 
 
-@router.message(BotState.browsing_places, F.text.in_(["➡️ Далі", "➡️ Next", "➡️ Weiter", "➡️ Suivant", "➡️ Siguiente", "➡️ Successivo", "➡️ Następny", "➡️ Próximo", "➡️ 次へ", "➡️ 下一步"]))
+@router.message(BotState.browsing_places, F.text.in_(["➡️ Далі", "➡️ Next", "➡️ Weiter", "➡️ Suivant", "➡️ Siguiente", "➡️ Avanti", "➡️ Dalej", "➡️ Próximo", "➡️ 次へ", "➡️ 下一个"]))
 async def next_place_handler(message: Message, state: FSMContext, session: aiohttp.ClientSession):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     data = await state.get_data()
     current_index = data.get("current_index", 0)
     places = data.get("places", [])
@@ -807,11 +872,15 @@ async def next_place_handler(message: Message, state: FSMContext, session: aioht
         await state.update_data(current_index=current_index + 1)
         await show_place_card(message, state, session)
     else:
-        await message.answer("✅ Це останнє місце у списку.")
+        msg_text = i18n.get(user_id, 'last_place', lang_code)
+        await message.answer(msg_text)
 
 
-@router.message(BotState.browsing_places, F.text.in_(["⬅️ Назад", "⬅️ Previous", "⬅️ Zurück", "⬅️ Précédent", "⬅️ Anterior", "⬅️ Precedente", "⬅️ Poprzedni", "⬅️ Anterior", "⬅️ 前へ", "⬅️ 上一步"]))
+@router.message(BotState.browsing_places, F.text.in_(["⬅️ Назад", "⬅️ Previous", "⬅️ Zurück", "⬅️ Précédent", "⬅️ Anterior", "⬅️ Precedente", "⬅️ Wstecz", "⬅️ Anterior", "⬅️ 前へ", "⬅️ 上一个"]))
 async def prev_place_handler(message: Message, state: FSMContext, session: aiohttp.ClientSession):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     data = await state.get_data()
     current_index = data.get("current_index", 0)
 
@@ -819,19 +888,36 @@ async def prev_place_handler(message: Message, state: FSMContext, session: aioht
         await state.update_data(current_index=current_index - 1)
         await show_place_card(message, state, session)
     else:
-        await message.answer("ℹ️ Це перше місце.")
+        msg_text = i18n.get(user_id, 'first_place', lang_code)
+        await message.answer(msg_text)
 
 
 @router.message(BotState.browsing_places, F.text.in_(["🛑 Стоп", "🛑 Stop", "🛑 Stopp", "🛑 Arrêt", "🛑 Parar", "🛑 Fermare", "🛑 Zatrzymaj", "🛑 Parar", "🛑  停止", "🛑 停止"]))
 async def stop_browsing_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.clear()
-    await message.answer("⏹ Перегляд завершено.", reply_markup=search_keyboard(user_id, lang_code))
+    msg_text = i18n.get(user_id, 'browsing_finished', lang_code)
+    await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
+
+
+@router.message(BotState.browsing_places)
+async def unhandled_browsing_message(message: Message, state: FSMContext):
+    """Обробляє невідповідні повідомлення під час переглядання місць."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    logger.warning(f"Невідповідне повідомлення для BotState.browsing_places: {message.text}")
+    msg_text = i18n.get(user_id, 'unknown_command', lang_code)
+    await message.answer(
+        msg_text,
+        reply_markup=place_navigation_keyboard(user_id, lang_code)
+    )
 
 
 @router.callback_query(F.data.startswith("place_view:"))
-async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession):
+async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession, state: FSMContext):
     """
     Обробляє натискання на кнопку місця зі списку.
     Отримує деталі місця та надсилає їх окремим повідомленням.
@@ -850,7 +936,11 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
     )
 
     if not success:
-        await callback.message.answer("⚠️ <b>Інформацію про це місце не знайдено.</b>", parse_mode="HTML")
+        user_id = callback.from_user.id
+        settings = get_user_settings(user_id)
+        lang_code = settings.get("language", "uk")
+        msg_text = i18n.get(user_id, 'place_not_found_message', lang_code)
+        await callback.message.answer(msg_text, parse_mode="HTML")
         return
 
 
@@ -859,24 +949,41 @@ async def fav_toggle_handler(callback: CallbackQuery, session: aiohttp.ClientSes
     """Додає або вилучає місце з улюблених (локально та на сервері)."""
     place_id = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
 
     if is_favorite_place(user_id, place_id):
         remove_favorite_place(user_id, place_id)
         await api_remove_favorite(user_id, place_id, session)
-        await callback.answer("❌ Вилучено з улюблених")
+        await callback.answer(i18n.get(user_id, 'removed_from_favorites', lang_code))
         return
 
-    name = _place_name_cache.get(place_id, "Без назви")
+    name = _place_name_cache.get(place_id, i18n.get(user_id, 'unnamed', lang_code))
     add_favorite_place(user_id, place_id, name)
     await api_add_favorite(user_id, place_id, name, session)
-    await callback.answer("✅ Додано до улюблених")
+    await callback.answer(i18n.get(user_id, 'added_to_favorites', lang_code))
 
 
-@router.callback_query(F.data.startswith("compare_toggle:"), BotState.comparing_favorites)
+@router.message(StateFilter(BotState.comparing_favorites), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
+async def comparison_cancel_handler(message: Message, state: FSMContext):
+    """Скасовує порівняння через кнопку."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    await state.clear()
+    msg_text = i18n.get(user_id, 'comparison_cancelled', lang_code)
+    await message.answer(msg_text)
+    back_text = i18n.get(user_id, 'back_to_main_menu', lang_code)
+    await message.answer(back_text, reply_markup=search_keyboard(user_id, lang_code))
+
+
+@router.callback_query(F.data.startswith("compare_toggle:"))
 async def compare_toggle_handler(callback: CallbackQuery, state: FSMContext):
     """Додає або видаляє місце із виділення для порівняння."""
     place_id = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
 
     data = await state.get_data()
     selected_ids = data.get("selected_for_comparison", [])
@@ -890,7 +997,7 @@ async def compare_toggle_handler(callback: CallbackQuery, state: FSMContext):
 
     # Оновлюємо клавіатуру
     favorites = get_favorite_places(user_id)
-    kb = select_favorites_for_comparison_keyboard(favorites, selected_ids)
+    kb = select_favorites_for_comparison_keyboard(favorites, selected_ids, user_id, lang_code)
 
     await callback.message.edit_reply_markup(reply_markup=kb)
 
@@ -901,7 +1008,7 @@ async def compare_toggle_handler(callback: CallbackQuery, state: FSMContext):
         await callback.answer(f"⚖️ {count} / 2")
 
 
-@router.callback_query(F.data == "perform_comparison", BotState.comparing_favorites)
+@router.callback_query(F.data == "perform_comparison")
 async def perform_comparison_handler(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession):
     """Виконує порівняння обраних місць."""
     user_id = callback.from_user.id
@@ -969,22 +1076,31 @@ async def perform_comparison_handler(callback: CallbackQuery, state: FSMContext,
         await state.clear()
 
 
-@router.callback_query(F.data == "cancel_comparison", BotState.comparing_favorites)
+@router.callback_query(F.data == "cancel_comparison")
 async def cancel_comparison_handler(callback: CallbackQuery, state: FSMContext):
     """Скасовує порівняння й повертається до меню."""
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.clear()
     await callback.answer()
+    msg_text = i18n.get(user_id, 'comparison_cancelled', lang_code)
     await callback.message.edit_text(
-        "❌ Порівняння скасовано.",
+        msg_text,
         parse_mode="HTML"
     )
-    await callback.message.answer("Повернулися до головного меню.", reply_markup=search_keyboard())
+    back_text = i18n.get(user_id, 'back_to_main_menu', lang_code)
+    await callback.message.answer(back_text, reply_markup=search_keyboard(user_id, lang_code))
 
 
-@router.callback_query(F.data == "comparison_help", BotState.comparing_favorites)
+@router.callback_query(F.data == "comparison_help")
 async def comparison_help_handler(callback: CallbackQuery):
     """Показує довідку про мінімальну кількість місць для порівняння."""
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    help_text = i18n.get(user_id, 'comparison_help_text', lang_code)
     await callback.answer(
-        "Обрати мінімум 2 місця для порівняння",
+        help_text,
         show_alert=False
     )

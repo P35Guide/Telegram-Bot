@@ -61,8 +61,12 @@ async def save_user_settings(
     try:
         async with session.post(url, json=settings, ssl=False) as response:
             logger.info(f"[API] POST {url} -> {response.status}")
-            if response.status != 200:
+            if response.status not in (200, 201, 204):
+                text = await response.text()
+                logger.error(f"[API] save_user_settings failed: status={response.status}, body={text[:500]}")
                 return None
+            if response.status == 204:
+                return {"success": True}
             return await _parse_json_response(response)
     except Exception as e:
         logger.error(f"API Request Error (save_user_settings): {e}")

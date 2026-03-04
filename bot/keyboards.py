@@ -167,14 +167,15 @@ def favorites_action_keyboard(user_id: int = None, lang_code: str = None):
     """Клавіатура для вибору дії з улюбленими місцями."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🌟 Переглянути"), KeyboardButton(text="⚖️ Порівняти")],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'favorites_view', lang_code)), 
+             KeyboardButton(text=i18n.get(user_id or 0, 'favorites_compare', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
 
 
-def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None):
+def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None, user_id: int = None, lang_code: str = None):
    
     if selected_ids is None:
         selected_ids = []
@@ -183,7 +184,7 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
     
     for favorite in favorites:
         place_id = favorite.get("id")
-        name = favorite.get("name", "Без назви")
+        name = favorite.get("name", i18n.get(user_id or 0, 'unnamed', lang_code) if lang_code else "Без назви")
         is_selected = place_id in selected_ids
         
         # Додаємо галочку якщо обрано
@@ -201,17 +202,17 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
     
     if len(selected_ids) >= 2:
         builder.button(
-            text="⚖️ Порівняти обрані",
+            text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
             callback_data="perform_comparison"
         )
     else:
         builder.button(
-            text="⚖️ Обрати мінімум 2 (обрано: {})".format(len(selected_ids)),
+            text=i18n.get(user_id or 0, 'comparison_select_min', lang_code, count=len(selected_ids)),
             callback_data="comparison_help"
         )
     
     builder.button(
-        text="🔙 Скасувати",
+        text=i18n.get(user_id or 0, 'menu_cancel', lang_code),
         callback_data="cancel_comparison"
     )
     

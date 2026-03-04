@@ -46,8 +46,8 @@ cp .env.example .env
 
 ```ini
 BOT_TOKEN=your_bot_token_here
-API_BASE_URL=http://localhost:5000
-ADD_PLACE_BOT_USERNAME=@YourAddPlaceBot
+API_BASE_URL=https://localhost:5000
+ADD_PLACE_BOT_USERNAME=@YumMapAddPlace
 ```
 
 **Як отримати BOT_TOKEN:**
