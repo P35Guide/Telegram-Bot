@@ -255,8 +255,6 @@ async def included_types_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("add_included_type:"))
-
-@router.callback_query(F.data.startswith("add_included_type:"))
 async def add_included_type_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
