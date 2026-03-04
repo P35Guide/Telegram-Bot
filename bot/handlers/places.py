@@ -249,115 +249,12 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
                 await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard(user_id, lang_code))
             return None
 
-        # Вибираємо випадкове місце
-        chosen = random.choice(places)
-        place_id = chosen.get("id") or chosen.get("Id")
-
-
-        if place_id:
-            language = settings.get("language", "uk")
-            if loading_msg:
-                await loading_msg.delete()
-
-
-            # Показуємо вибране місце
-            if message:
-                success = await send_place_info(message, session, place_id, language)
-
-
-                if not success:
-                    await message.answer(
-                        "⚠️ <b>Не вдалося отримати деталі місця.</b>",
-                        parse_mode="HTML"
-                    )
-        else:
-            if loading_msg:
-                await loading_msg.edit_text(
-                    "⚠️ <b>Помилка при виборі випадкового місця.</b>",
-                    parse_mode="HTML"
-                )
-
-        return data
+        # Повертаємо всі місця
+        return {"places": places}
 
     except Exception as e:
         logger.error(f"Error in get_places_with_mood: {e}")
-        lang_code = message.from_user.language_code if message and message.from_user else None
-        if loading_msg:
-            await loading_msg.edit_text(
-                i18n.get(user_id, 'search_error', lang_code),
-                parse_mode="HTML"
-            )
-        if message:
-            user_id = message.from_user.id
-            lang_code = message.from_user.language_code
-            await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard(user_id, lang_code))
         return None
-
-
-@router.message(F.text == "� Місця" or F.text == "🚀 Places" or F.text == "🚀 Orte" or F.text == "🚀 Lieux" or F.text == "🚀 Lugares" or F.text == "🚀 Luoghi" or F.text == "🚀 Miejsca" or F.text == "🚀 Locais" or F.text == "🚀 場所" or F.text == "🚀 地点")
-async def find_places_handler(message: Message, session: aiohttp.ClientSession):
-    user_id = message.from_user.id
-    lang_code = message.from_user.language_code
-    logger.info(
-        f"Користувач {message.from_user.username}({user_id}) шукає місця поруч")
-
-    loading_msg = await message.answer(
-        i18n.get(user_id, 'search_loading', lang_code),
-        parse_mode="HTML"
-    )
-
-    settings = get_user_settings(user_id)
-
-    if not settings.get("coordinates"):
-        await loading_msg.edit_text(
-            i18n.get(user_id, 'no_location_set', lang_code),
-            parse_mode="HTML"
-        )
-        return
-
-    try:
-        data = await get_places(settings, session)
-
-        if not data or "places" not in data:
-            await loading_msg.edit_text(
-                i18n.get(user_id, 'places_error', lang_code),
-                parse_mode="HTML"
-            )
-            await message.answer(
-                i18n.get(user_id, 'return_to_search', lang_code), 
-                reply_markup=search_keyboard(user_id, lang_code)
-            )
-            return
-
-        places = data["places"]
-        if not places:
-            await loading_msg.edit_text(
-                i18n.get(user_id, 'no_random_places', lang_code),
-                parse_mode="HTML"
-            )
-            await message.answer(
-                i18n.get(user_id, 'return_to_search', lang_code), 
-                reply_markup=search_keyboard(user_id, lang_code)
-            )
-            return
-
-        await loading_msg.edit_text(
-            f"✅ <b>{i18n.get(user_id, 'places_found', lang_code, count=len(places))}:</b>\n"
-            f"{i18n.get(user_id, 'select_place', lang_code)}",
-            parse_mode="HTML",
-            reply_markup=places_keyboard(places)
-        )
-
-    except Exception as e:
-        logger.error(f"Error in find_places_handler: {e}")
-        await loading_msg.edit_text(
-            i18n.get(user_id, 'search_error', lang_code),
-            parse_mode="HTML"
-        )
-        await message.answer(
-            i18n.get(user_id, 'return_to_search', lang_code), 
-            reply_markup=search_keyboard(user_id, lang_code)
-        )
 
 
 @router.message(StateFilter(None), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
@@ -366,13 +263,17 @@ async def cancel_handler(message: Message,state:FSMContext):
     await send_main_menu(message)
 
 
-async def show_places_list(loading_msg, places, title: str = "Знайдено {count} місць", user_id: int | None = None, lang_code: str = "uk"):
+async def show_places_list(loading_msg, places, title: str = None, user_id: int | None = None, lang_code: str = "uk"):
     """
     Оновлює повідомлення списком місць: клавіатура з назвами або текстовий fallback.
-    title — рядок з плейсхолдером {count}.
+    title — рядок з плейсхолдером {count}. Якщо None, використовуємо localized 'places_found'.
     """
     count = len(places)
-    heading = title.format(count=count)
+    if title is None:
+        title = i18n.get(user_id, 'places_found', lang_code, count=count)
+    else:
+        title = title.format(count=count)
+    heading = title
     kb = places_keyboard(places)
     if not kb.inline_keyboard or len(kb.inline_keyboard) == 0:
         preview = []
@@ -514,12 +415,7 @@ async def send_place_info(
                     elif isinstance(photo, dict):
                         photo_url = photo.get('photoUri') or photo.get(
                             'url') or photo.get('uri')
-                        photo_url = photo.get('photoUri') or photo.get(
-                            'url') or photo.get('uri')
                         if photo_url:
-                            media_group.append(
-                                InputMediaPhoto(media=photo_url))
-
                             media_group.append(
                                 InputMediaPhoto(media=photo_url))
 
@@ -527,8 +423,7 @@ async def send_place_info(
                     await message.answer_media_group(media_group)
                     logger.info(
                         f"Надіслано {len(media_group)} фото для місця {place_id}")
-                    logger.info(
-                        f"Надіслано {len(media_group)} фото для місця {place_id}")
+                    
             except Exception as e:
                 logger.error(
                     f"Failed to send photos for place {place_id}: {e}")
@@ -576,7 +471,8 @@ async def send_place_info(
 
 
 @router.message(F.text.in_(["🔍 Список", "🔍 List", "🔍 Liste", "🔍 Liste", "🔍 Lista", "🔍 Elenco", "🔍 Lista", "🔍 Lista", "🔍 リスト", "🔍 列表"]))
-async def find_places_handler(message: Message, session: aiohttp.ClientSession):
+async def list_places_handler(message: Message, session: aiohttp.ClientSession):
+    """Показує список усіх знайдених місць."""
     result = await perform_search(message, session)
     
     if result is None or result[1] is None:
