@@ -42,8 +42,6 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
             [
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_categories', lang_code)),
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_categories', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
             ],
             [
                 KeyboardButton(text=i18n.get(user_id or 0, 'settings_sorting', lang_code)),
@@ -55,7 +53,6 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
         ],
         resize_keyboard=True,
     )
-    return keyboard
 
 
 
@@ -75,12 +72,6 @@ def search_keyboard(user_id: int = None, lang_code: str = None):
              KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
-            
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)), 
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
@@ -94,22 +85,6 @@ def random_choice_keyboard(user_id: int = None, lang_code: str = None):
         keyboard=[
             [KeyboardButton(text=i18n.get(user_id or 0, 'random_from_search', lang_code)), 
              KeyboardButton(text=i18n.get(user_id or 0, 'random_from_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
-        ],
-        resize_keyboard=True
-    )
-
-
-
-
-
-def cancel_keyboard(user_id: int = None, lang_code: str = None):
-def random_choice_keyboard(user_id: int = None, lang_code: str = None):
-    """Клавіатура вибору типу випадкового місця (з пошуку чи з улюблених)."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)), 
-             KeyboardButton(text="❤️ " + i18n.get(user_id or 0, 'search_favorites', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
