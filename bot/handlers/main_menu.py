@@ -71,6 +71,7 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
         f"├ {i18n.get(user_id, 'settings_count_label', lang_code, count=s.get('maxResultCount', 20))}\n"
         f"├ {i18n.get(user_id, 'settings_rank_label', lang_code, rank=s.get('rankPreference', 'POPULARITY'))}\n"
         f"└ {i18n.get(user_id, 'settings_open_label', lang_code, status=open_status)}"
+        f"\n\n{i18n.get(user_id, 'settings_price_label', lang_code, price_level=s.get('priceLevel', 'ANY'))}"
     )
 
 

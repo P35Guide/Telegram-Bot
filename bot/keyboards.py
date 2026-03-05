@@ -49,6 +49,7 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
             ],
             [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_price_level', lang_code))]    ,
             [KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
         ],
         resize_keyboard=True,

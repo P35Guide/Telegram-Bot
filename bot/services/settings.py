@@ -19,6 +19,7 @@ DEFAULTS = {
     "rankPreference": "POPULARITY",
     "openNow": False,
     "favoritePlaces": [],
+    "priceLevel": "ANY",
 }
 
 user_settings = {
@@ -65,6 +66,7 @@ def apply_user_data_from_api(user_id: int, api_user: dict):
         "maxResultCount": server_settings.get("maxResultCount") or DEFAULTS["maxResultCount"],
         "rankPreference": server_settings.get("rankPreference") or DEFAULTS["rankPreference"],
         "openNow": server_settings.get("openNow") if server_settings.get("openNow") is not None else DEFAULTS["openNow"],
+        "priceLevel": server_settings.get("priceLevel") or DEFAULTS["priceLevel"],
         "favoritePlaces": [],
     }
     for p in server_favorites:
@@ -98,7 +100,7 @@ def get_user_settings(user_id):
 # Поля налаштувань для POST /api/telegram-user/{id}/settings (контракт API)
 SETTINGS_API_KEYS = (
     "language", "radius", "coordinates", "includedTypes", "excludedTypes",
-    "maxResultCount", "rankPreference", "openNow",
+    "maxResultCount", "rankPreference", "openNow", "priceLevel"
 )
 
 
@@ -417,3 +419,8 @@ def update_mood(user_id: int, mood: str):
     settings = get_user_settings(user_id)
     settings["mood"] = mood
     user_settings[user_id] = settings
+def update_price_level(user_id,price_level):
+    settings = get_user_settings(user_id)
+    settings["priceLevel"] = price_level
+    user_settings[user_id] = settings
+    return settings

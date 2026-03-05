@@ -142,7 +142,7 @@ async def get_places(settings, session: aiohttp.ClientSession):
 
     data_to_post = generate_request_object(settings)
     language = data_to_post.get("languageCode", "uk")
-    logger.info(f"[API] Searching places nearby, language: {language}, radius: {data_to_post.get('locationRestriction', {}).get('circle', {}).get('radius')}")
+    logger.info(f"[API] Searching places nearby, language: {language}, radius: {data_to_post.get('locationRestriction', {}).get('circle', {}).get('radius')}, priceLevel: {data_to_post.get('priceLevel')}")
 
     try:
         async with session.post(f"{API_BASE_URL}/api/place/google-maps-search-nearby", json=data_to_post, ssl=False) as response:
@@ -212,6 +212,7 @@ def generate_request_object(settings):
     max_result_count = int(settings.get("maxResultCount", 20))
     rank_preference = settings.get("rankPreference", "POPULARITY")
     language = settings.get("language", "uk")
+    price_level = settings.get("priceLevel", "ANY")
 
     return {
         "includedTypes": included_types,
@@ -219,6 +220,7 @@ def generate_request_object(settings):
         "maxResultCount": max_result_count,
         "rankPreference": rank_preference,
         "languageCode": language,
+        "priceLevel": price_level,
         "locationRestriction": {
             "circle": {
                 "center": {

@@ -12,6 +12,7 @@ from bot.utils.localization import i18n
 from bot.services import settings as settings_service
 from bot.config import ADD_PLACE_BOT_USERNAME
 from bot.services.api_client import save_user_settings
+
 import aiohttp
 
 router = Router()
@@ -206,6 +207,7 @@ async def included_types_handler(message: Message, state: FSMContext):
 
     await state.set_state(BotState.waiting_for_category)
 
+
 @router.message(F.text == "✅ Включити типи")
 async def included_types_handler(message: Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
@@ -253,6 +255,8 @@ async def included_types_handler(message: Message, state: FSMContext):
 
 
     await state.set_state(BotState.waiting_for_category)
+
+
 
 
 @router.callback_query(F.data.startswith("add_included_type:"))
@@ -363,6 +367,51 @@ async def open_now_handler(message: Message):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
     await send_main_menu(message)
+
+
+@router.message(F.text.in_(["💲 Ціна"]))
+async def price_level_handler(message: Message):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+
+    builder = InlineKeyboardBuilder()
+    options = [
+        ("Всі", "ANY"),
+        
+        (i18n.get(user_id, "price_inexpensive", lang_code), "💰"),
+        (i18n.get(user_id, "price_moderate", lang_code), "💰"),
+        (i18n.get(user_id, "price_expensive", lang_code), "💰💰💰"),
+        (i18n.get(user_id, "price_very_expensive", lang_code), "💰💰💰💰"),
+    ]
+
+    for label, value in options:
+        builder.button(text=label, callback_data=f"set_price_level:{value}")
+
+    builder.adjust(2)
+    current = settings.get("priceLevel", "ANY")
+
+    await message.answer(
+        i18n.get(user_id, "choose_price_level", lang_code, current=current),
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data.startswith("set_price_level:"))
+async def set_price_level_callback(callback: CallbackQuery, session: aiohttp.ClientSession):
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    value = callback.data.split(":", 1)[1]
+
+    settings_service.update_price_level(user_id, value)
+    payload = get_settings_payload_for_api(user_id)
+    await save_user_settings(user_id, payload, session)
+
+    await callback.answer(i18n.get(user_id, "settings_saved", lang_code))
+    await callback.message.delete()
+    await send_settings_menu(callback.message, user_id=user_id)
 
 
 @router.message(BotState.selecting_language)
