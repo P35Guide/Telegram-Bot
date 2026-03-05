@@ -1,11 +1,26 @@
 import asyncio
 import aiohttp
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 
 from bot.config import BOT_TOKEN
 from bot.handlers import main_menu, places, settings
 from bot.utils.logger import logger
+import os
 
+# Простий HTTP сервер щоб Render не вбивав процес через таймаут
+async def health(request):
+    return web.Response(text="OK")
+
+async def start_health_server():
+    port = int(os.environ.get("PORT", 8080))
+    app = web.Application()
+    app.router.add_get("/", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info(f"Health server запущено на порту {port}")
 
 async def main():
     bot = Bot(token=BOT_TOKEN)
@@ -16,6 +31,9 @@ async def main():
     dp.include_router(settings.router)
 
     logger.info("Бот запущено!")
+
+    # Запускаємо health server і polling паралельно
+    await start_health_server()
 
     async with aiohttp.ClientSession() as session:
         await dp.start_polling(bot, session=session)
