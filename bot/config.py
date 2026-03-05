@@ -9,4 +9,4 @@ PHOTO_MAX_HEIGHT = 1500
 PHOTO_MAX_WIDTH = 1500
 # Бот для додавання власних місць (username з @ або без)
 ADD_PLACE_BOT_USERNAME = os.getenv(
-    "ADD_PLACE_BOT_USERNAME", "YumMapAddPlace")
+    "ADD_PLACE_BOT_USERNAME", "YumMap_AddPlace_bot")
