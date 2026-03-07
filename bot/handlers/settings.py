@@ -212,7 +212,7 @@ async def included_types_handler(message: Message, state: FSMContext):
 
 
     popular_types = [
-        ("🍕 Ресторан",  "restaurant"),
+        ("🍝 Ресторан",  "restaurant"),
         ("☕ Кав'ярня", "cafe"),
         ("🍺 Бар", "bar"),
         ("🍔 Фастфуд", "fast_food_restaurant"),
@@ -341,6 +341,7 @@ async def rank_preference_handler(message: Message):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
     await send_settings_menu(message)
+    
 
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
