@@ -162,7 +162,7 @@ async def get_place_details(place_id, session: aiohttp.ClientSession, language_c
     Отримує деталі місця за його ID.
     """
     try:
-        url = f"{API_BASE_URL}/api/place/google-maps-details/{place_id}?languageCode={language_code}"
+        url = f"{API_BASE_URL}/api/place/google-maps-details/{place_id}?lang={language_code}"
         logger.info(f"[API] Getting place details: {place_id}, language: {language_code}")
         async with session.get(url, ssl=False) as response:
             if response.status == 200:
@@ -248,25 +248,25 @@ async def search_places_by_text(text_query: str, settings: dict, session: aiohtt
     language = settings.get("language", "uk")
     included_type = settings.get("includedTypes", [])
 
-    # Формуємо тіло запиту згідно з бекендом (PascalCase)
+    # Формуємо тіло запиту згідно з бекендом (camelCase)
     data_to_post = {
-        "TextQuery": text_query,
-        "MaxResultCount": max_result_count,
-        "LanguageCode": language,
-        "LocationBias": {
-            "Circle": {
-                "Center": {
-                    "Latitude": latitude,
-                    "Longitude": longitude
+        "textQuery": text_query,
+        "maxResultCount": max_result_count,
+        "languageCode": language,
+        "locationBias": {
+            "circle": {
+                "center": {
+                    "latitude": latitude,
+                    "longitude": longitude
                 },
-                "Radius": radius
+                "radius": radius
             }
         }
     }
 
-    # Додаємо IncludedType, якщо є (тільки один тип підтримується API)
+    # Додаємо includedType, якщо є (тільки один тип підтримується API)
     if included_type and len(included_type) > 0:
-        data_to_post["IncludedType"] = included_type[0]
+        data_to_post["includedType"] = included_type[0]
 
     logger.info(f"[API] Text search: query='{text_query}', language={language}, "
                 f"location=({latitude}, {longitude}), radius={radius}")
