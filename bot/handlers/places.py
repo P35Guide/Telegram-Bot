@@ -780,7 +780,6 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
         await message.answer(
             i18n.get(user_id, 'no_location_set', lang_code),
             parse_mode="HTML",
-            parse_mode="HTML",
             reply_markup=search_keyboard(user_id, lang_code),
         )
         await state.clear()
