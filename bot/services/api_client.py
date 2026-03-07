@@ -248,25 +248,25 @@ async def search_places_by_text(text_query: str, settings: dict, session: aiohtt
     language = settings.get("language", "uk")
     included_type = settings.get("includedTypes", [])
 
-    # Формуємо тіло запиту згідно з бекендом (camelCase)
+    # Формуємо тіло запиту згідно з бекендом (PascalCase)
     data_to_post = {
-        "textQuery": text_query,
-        "maxResultCount": max_result_count,
-        "languageCode": language,
-        "locationBias": {
-            "circle": {
-                "center": {
-                    "latitude": latitude,
-                    "longitude": longitude
+        "TextQuery": text_query,
+        "MaxResultCount": max_result_count,
+        "LanguageCode": language,
+        "LocationBias": {
+            "Circle": {
+                "Center": {
+                    "Latitude": latitude,
+                    "Longitude": longitude
                 },
-                "radius": radius
+                "Radius": radius
             }
         }
     }
 
-    # Додаємо includedType, якщо є (тільки один тип підтримується API)
+    # Додаємо IncludedType, якщо є (тільки один тип підтримується API)
     if included_type and len(included_type) > 0:
-        data_to_post["includedType"] = included_type[0]
+        data_to_post["IncludedType"] = included_type[0]
 
     logger.info(f"[API] Text search: query='{text_query}', language={language}, "
                 f"location=({latitude}, {longitude}), radius={radius}")

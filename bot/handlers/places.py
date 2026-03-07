@@ -17,6 +17,7 @@ from bot.keyboards import (
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
     cancel_keyboard,
+    cancel_keyboard,
 )
 from bot.services.api_client import (
     get_photos,
@@ -24,6 +25,7 @@ from bot.services.api_client import (
     get_place_details,
     api_add_favorite,
     api_remove_favorite,
+    search_places_by_text,
     search_places_by_text,
 )
 from bot.services.settings import (
@@ -370,23 +372,6 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
         places = data["places"]
         places_count = len(places)
         logger.info(f"[TextSearch] Found {places_count} places for query: '{query}'")
-        
-        # Якщо знайдено тільки 1 місце - показуємо повну інформацію
-        if places_count == 1:
-            place = places[0]
-            place_id = place.get("id") or place.get("place_id") or place.get("placeId")
-            if place_id:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-                await send_place_info(message, session, place_id, lang_code, user_id)
-                await state.clear()
-                await message.answer(
-                    i18n.get(user_id, 'return_to_search', lang_code),
-                    reply_markup=search_keyboard(user_id, lang_code)
-                )
-                return
         
         # Показуємо результати
         title = i18n.get(user_id, 'text_search_results', lang_code, query=query) + f" ({places_count})"
@@ -777,6 +762,7 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
     if not settings.get("coordinates"):
         await message.answer(
             i18n.get(user_id, 'no_location_set', lang_code),
+            parse_mode="HTML",
             parse_mode="HTML",
             reply_markup=search_keyboard(user_id, lang_code),
         )
