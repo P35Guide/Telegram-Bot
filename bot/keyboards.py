@@ -72,6 +72,7 @@ def search_keyboard(user_id: int = None, lang_code: str = None):
              KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_by_name', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True

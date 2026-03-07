@@ -229,3 +229,64 @@ def generate_request_object(settings):
             }
         }
     }
+
+
+async def search_places_by_text(text_query: str, settings: dict, session: aiohttp.ClientSession):
+    """
+    Пошук місць за текстовим запитом через Google Maps API (searchText).
+    Використовує textQuery для пошуку місць за назвою або асоціацією.
+    """
+    if not settings.get("coordinates"):
+        logger.warning("[API] Text search called without coordinates")
+        return None
+
+    coords = settings.get("coordinates", {})
+    latitude = float(coords.get("latitude", 0))
+    longitude = float(coords.get("longitude", 0))
+    radius = int(settings.get("radius", 1500))
+    max_result_count = int(settings.get("maxResultCount", 10))
+    language = settings.get("language", "uk")
+    included_type = settings.get("includedTypes", [])
+
+    # Формуємо тіло запиту згідно з бекендом (PascalCase)
+    data_to_post = {
+        "TextQuery": text_query,
+        "MaxResultCount": max_result_count,
+        "LanguageCode": language,
+        "LocationBias": {
+            "Circle": {
+                "Center": {
+                    "Latitude": latitude,
+                    "Longitude": longitude
+                },
+                "Radius": radius
+            }
+        }
+    }
+
+    # Додаємо IncludedType, якщо є (тільки один тип підтримується API)
+    if included_type and len(included_type) > 0:
+        data_to_post["IncludedType"] = included_type[0]
+
+    logger.info(f"[API] Text search: query='{text_query}', language={language}, "
+                f"location=({latitude}, {longitude}), radius={radius}")
+
+    try:
+        async with session.post(
+            f"{API_BASE_URL}/api/place/google-maps-search-by-text",
+            json=data_to_post,
+            ssl=False
+        ) as response:
+            logger.info(f"[API] POST google-maps-search-by-text -> {response.status}")
+            if response.status == 200:
+                data = await response.json()
+                places_count = len(data.get("places", [])) if isinstance(data, dict) else 0
+                logger.info(f"[API] Text search returned {places_count} places")
+                return data
+            else:
+                text = await response.text()
+                logger.warning(f"[API] Text search failed: status={response.status}, body={text[:200]}")
+                return None
+    except Exception as e:
+        logger.error(f"API Request Error (search_places_by_text): {e}")
+        return None
