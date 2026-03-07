@@ -11,7 +11,8 @@ def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
         keyboard=[
             [KeyboardButton(text=i18n.get(user_id or 0, 'send_location', lang_code),
                             request_location=True)],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'find_city', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'find_city', lang_code))],
         ],
         resize_keyboard=True,
         one_time_keyboard=True
@@ -22,8 +23,10 @@ def actions_keyboard(user_id: int = None, lang_code: str = None):
     """Головне меню: локація, пошук, налаштування, додати місце."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_routes', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'send_coordinates', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'search_routes', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
         ],
@@ -36,24 +39,30 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_language', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_radius', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_language', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_radius', lang_code)),
             ],
             [
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_categories', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_categories', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_mood', lang_code)),
             ],
             [
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_sorting', lang_code)),
-                KeyboardButton(text=i18n.get(user_id or 0, 'settings_open_now', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_sorting', lang_code)),
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_open_now', lang_code)),
             ],
             [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_back', lang_code))],
         ],
         resize_keyboard=True,
     )
-
 
 
 def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
@@ -68,12 +77,12 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
 def search_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)), 
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_by_name', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
@@ -84,9 +93,10 @@ def random_choice_keyboard(user_id: int = None, lang_code: str = None):
     """Клавіатура вибору типу випадкового місця (з пошуку чи з улюблених)."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'random_from_search', lang_code)), 
+            [KeyboardButton(text=i18n.get(user_id or 0, 'random_from_search', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'random_from_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
@@ -94,14 +104,15 @@ def random_choice_keyboard(user_id: int = None, lang_code: str = None):
 
 def cancel_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
+        keyboard=[
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
         resize_keyboard=True
     )
     return keyboard
 
 
 def places_keyboard(places):
-   
+
     builder = InlineKeyboardBuilder()
 
     for place in places:
@@ -109,7 +120,6 @@ def places_keyboard(places):
         if place_id:
             name = place.get("displayName") or place.get(
                 "DisplayName") or place.get("name") or place.get("Name") or place.get("NameOfPlace")
-
 
             # Додаємо статус відчинено/зачинено
             open_now = place.get("openNow") or place.get("OpenNow")
@@ -134,14 +144,16 @@ def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callba
     builder = InlineKeyboardBuilder()
 
     if place_url:
-        builder.button(text="🌍 " + i18n.get(user_id or 0, 'official_website', lang_code), url=place_url)
+        builder.button(text="🌍 " + i18n.get(user_id or 0,
+                       'official_website', lang_code), url=place_url)
 
     if google_maps_url:
         builder.button(text="📍 Map", url=google_maps_url)
 
     if favorite_callback:
         builder.button(
-            text=i18n.get(user_id or 0, 'add_to_favorites', lang_code) if not is_favorite else i18n.get(user_id or 0, 'remove_from_favorites', lang_code),
+            text=i18n.get(user_id or 0, 'add_to_favorites', lang_code) if not is_favorite else i18n.get(
+                user_id or 0, 'remove_from_favorites', lang_code),
             callback_data=favorite_callback
         )
 
@@ -151,9 +163,10 @@ def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callba
 def place_navigation_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_prev', lang_code)), 
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_dislike', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'menu_next', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_stop', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_stop', lang_code))],
         ],
         resize_keyboard=True
     )
@@ -165,39 +178,39 @@ def favorites_action_keyboard(user_id: int = None, lang_code: str = None):
     """Клавіатура для вибору дії з улюбленими місцями."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'favorites_view', lang_code)), 
+            [KeyboardButton(text=i18n.get(user_id or 0, 'favorites_view', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'favorites_compare', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
 
 
 def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = None, user_id: int = None, lang_code: str = None):
-   
+
     if selected_ids is None:
         selected_ids = []
-    
+
     builder = InlineKeyboardBuilder()
-    
+
     for favorite in favorites:
         place_id = favorite.get("id")
-        name = favorite.get("name", i18n.get(user_id or 0, 'unnamed', lang_code) if lang_code else "Без назви")
+        name = favorite.get("name", i18n.get(
+            user_id or 0, 'unnamed', lang_code) if lang_code else "Без назви")
         is_selected = place_id in selected_ids
-        
+
         # Додаємо галочку якщо обрано
         checkbox = "✅" if is_selected else "⬜"
         display_name = f"{checkbox} {name}"
-        
+
         builder.button(
             text=display_name,
             callback_data=f"compare_toggle:{place_id}"
         )
-    
-   
+
     builder.adjust(1)
-    
-    
+
     if len(selected_ids) >= 2:
         builder.button(
             text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
@@ -205,13 +218,14 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
         )
     else:
         builder.button(
-            text=i18n.get(user_id or 0, 'comparison_select_min', lang_code, count=len(selected_ids)),
+            text=i18n.get(user_id or 0, 'comparison_select_min',
+                          lang_code, count=len(selected_ids)),
             callback_data="comparison_help"
         )
-    
+
     builder.button(
         text=i18n.get(user_id or 0, 'menu_cancel', lang_code),
         callback_data="cancel_comparison"
     )
-    
+
     return builder.as_markup()
