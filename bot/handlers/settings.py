@@ -394,7 +394,7 @@ async def set_radius_handler(message: Message, state: FSMContext):
     update_radius(user_id, radius)
     await state.clear()
     await send_settings_menu(message, user_id=user_id)
-    await send_settings_menu(message, user_id=user_id)
+    
 
 
 @router.message(BotState.selecting_included_types)

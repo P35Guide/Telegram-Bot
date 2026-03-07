@@ -524,20 +524,20 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     )
 
 
-@router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
-async def random_choice_menu_handler(message: Message, state: FSMContext):
-    """Показує вибір: випадкове з пошуку чи з улюблених."""
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
-    lang_code = settings.get("language", "uk")
-    await state.clear()
-    await state.set_state(BotState.choosing_random_type)
-    msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
-    await message.answer(
-        msg_text,
-        parse_mode="HTML",
-        reply_markup=random_choice_keyboard(user_id, lang_code),
-    )
+# @router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
+# async def random_choice_menu_handler(message: Message, state: FSMContext):
+#     """Показує вибір: випадкове з пошуку чи з улюблених."""
+#     user_id = message.from_user.id
+#     settings = get_user_settings(user_id)
+#     lang_code = settings.get("language", "uk")
+#     await state.clear()
+#     await state.set_state(BotState.choosing_random_type)
+#     msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
+#     await message.answer(
+#         msg_text,
+#         parse_mode="HTML",
+#         reply_markup=random_choice_keyboard(user_id, lang_code),
+#     )
 
 
 @router.message(StateFilter(BotState.choosing_random_type), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
