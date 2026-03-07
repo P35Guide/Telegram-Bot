@@ -102,7 +102,7 @@
 	"no_location_set": "❌ <b>Erro:</b> Localização não configurada!\nClique no botão '📍 Enviar coordenadas' para configurar a localização.",
 	"places_error": "⚠️ <b>Nada encontrado</b> ou o servidor não responde.",
 	"select_place": "Selecione um local para abri-lo no mapa:",
-	"return_to_search": "Voltar para a busca.",
+	"return_to_search": "🔙 Voltamos ao menu de busca.",
 	"no_random_places": "📭 <b>Infelizmente, nenhum local encontrado próximo.</b>\nTente aumentar seu raio de busca.",
 	"search_error": "❌ <b>Ocorreu um erro ao processar a solicitação.</b>",
 	"random_choice_type": "🎲 Local aleatório",

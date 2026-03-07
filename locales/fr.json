@@ -102,7 +102,7 @@
 	"no_location_set": "❌ <b>Erreur:</b> Localisation non définie!\nVeuillez cliquer sur le bouton '📍 Envoyer les coordonnées' pour définir la localisation.",
 	"places_error": "⚠️ <b>Rien trouvé</b> ou le serveur ne répond pas.",
 	"select_place": "Sélectionnez un lieu pour l'ouvrir sur la carte:",
-	"return_to_search": "Retour à la recherche.",
+	"return_to_search": "🔙 Retour au menu de recherche.",
 	"no_random_places": "📭 <b>Malheureusement, aucun lieu trouvé à proximité.</b>\nEssayez d'augmenter votre rayon de recherche.",
 	"search_error": "❌ <b>Une erreur s'est produite lors du traitement de la requête.</b>",
 	"random_choice_type": "🎲 Lieu aléatoire",

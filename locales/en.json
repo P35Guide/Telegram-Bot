@@ -102,7 +102,7 @@
 	"no_location_set": "❌ <b>Error:</b> Location not set!\nPlease click '📍 Send coordinates' button to set location.",
 	"places_error": "⚠️ <b>Nothing found</b> or server is not responding.",
 	"select_place": "Select a place to open on map:",
-	"return_to_search": "Return to search.",
+	"return_to_search": "🔙 Returned to search menu.",
 	"no_random_places": "📭 <b>Unfortunately, no places found nearby.</b>\nTry increasing your search radius.",
 	"search_error": "❌ <b>An error occurred while processing the request.</b>",
 	"random_choice_type": "🎲 Random place",

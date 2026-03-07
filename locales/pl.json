@@ -102,7 +102,7 @@
 	"no_location_set": "❌ <b>Błąd:</b> Lokalizacja nie ustawiona!\nKliknij przycisk '📍 Wyślij współrzędne' aby ustawić lokalizację.",
 	"places_error": "⚠️ <b>Nic nie znaleziono</b> lub serwer nie odpowiada.",
 	"select_place": "Wybierz miejsce, aby otworzyć je na mapie:",
-	"return_to_search": "Powróć do wyszukiwania.",
+	"return_to_search": "🔙 Powróciliśmy do menu wyszukiwania.",
 	"no_random_places": "📭 <b>Niestety, nie znaleziono miejsc w pobliżu.</b>\nSpróbuj zwiększyć twój promień wyszukiwania.",
 	"search_error": "❌ <b>Wystąpił błąd podczas przetwarzania Żądania.</b>",
 	"random_choice_type": "🎲 Losowe miejsce",

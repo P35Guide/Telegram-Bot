@@ -102,7 +102,7 @@
 	"no_location_set": "❌ <b>Fehler:</b> Standort nicht gesetzt!\nBitte klicken Sie auf die Schaltfläche '📍 Koordinaten senden' um den Standort zu setzen.",
 	"places_error": "⚠️ <b>Nichts gefunden</b> oder Server antwortet nicht.",
 	"select_place": "Wählen Sie einen Ort aus, um ihn auf der Karte zu öffnen:",
-	"return_to_search": "Zurück zur Suche.",
+	"return_to_search": "🔙 Zurück zum Suchmenü.",
 	"no_random_places": "📭 <b>Leider keine Orte in der Nähe gefunden.</b>\nVersuchen Sie, Ihren Suchradius zu vergrößern.",
 	"search_error": "❌ <b>Ein Fehler bei der Verarbeitung der Anfrage ist aufgetreten.</b>",
 	"random_choice_type": "🎲 Zufälliger Ort",
