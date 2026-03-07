@@ -16,6 +16,7 @@ class BotState(StatesGroup):
     choosing_random_type = State()
     comparing_favorites = State()
     selecting_mood = State()
+    waiting_for_text_search = State()
 
 
 class AddPlace(StatesGroup):
