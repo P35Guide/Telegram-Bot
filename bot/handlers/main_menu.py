@@ -9,6 +9,12 @@ from bot.keyboards import (
     actions_keyboard,
     choose_location_type_keyboard,
     settings_keyboard,
+    settings_more_keyboard,
+    filters_keyboard,
+    filters_what_keyboard,
+    filters_how_keyboard,
+    profile_keyboard,
+    search_menu_keyboard,
 )
 from bot.services.settings import (
     save_coordinates,
@@ -108,8 +114,106 @@ async def send_settings_menu(message: Message, user_id: int | None = None, teleg
 
 
 @router.message(F.text.in_(["⚙️ Налаштування", "⚙️ Settings", "⚙️ Einstellungen", "⚙️ Paramètres", "⚙️ Ajustes", "⚙️ Impostazioni", "⚙️ Ustawienia", "⚙️ Configurações", "⚙️ 設定", "⚙️ 设置"]))
-async def show_settings_menu(message: Message):
+async def show_settings_menu(message: Message, state: FSMContext):
+    await state.update_data(previous_menu='main')
     await send_settings_menu(message)
+
+
+@router.message(F.text.in_(["🔍 Пошук", "🔍 Search", "🔍 Suche", "🔍 Recherche", "🔍 Búsqueda", "🔍 Cerca", "🔍 Szukaj", "🔍 Pesquisa", "🔍 検索", "🔍 搜索"]))
+async def show_search_menu(message: Message, state: FSMContext):
+    """Відкриває підменю пошуку."""
+    user_id = message.from_user.id
+    s = get_user_settings(user_id)
+    lang_code = s.get('language', 'uk')
+    await state.update_data(previous_menu='main', current_menu='search')
+    await message.answer(
+        i18n.get(user_id, 'choose_search_variant', lang_code),
+        parse_mode="HTML",
+        reply_markup=search_menu_keyboard(user_id, lang_code),
+    )
+
+
+async def send_search_menu(message: Message, user_id: int | None = None):
+    """Допоміжна функція для показу меню пошуку."""
+    target_user_id = user_id or message.from_user.id
+    s = get_user_settings(target_user_id)
+    lang_code = s.get('language', 'uk')
+    await message.answer(
+        i18n.get(target_user_id, 'choose_search_variant', lang_code),
+        parse_mode="HTML",
+        reply_markup=search_menu_keyboard(target_user_id, lang_code),
+    )
+
+
+async def send_filters_menu(message: Message, user_id: int | None = None):
+    """Показує підменю фільтрів."""
+    target_user_id = user_id or message.from_user.id
+    s = get_user_settings(target_user_id)
+    lang_code = s.get('language', 'uk')
+    await message.answer(
+        settings_text(target_user_id, lang_code),
+        parse_mode="HTML",
+        reply_markup=filters_keyboard(target_user_id, lang_code),
+    )
+
+
+@router.message(F.text.in_(["🎛️ Фільтри", "🎛️ Filters", "🎛️ Filter", "🎛️ Filtres", "🎛️ Filtros", "🎛️ Filtri", "🎛️ Filtry", "🎛️ フィルター", "🎛️ 筛选"]))
+async def show_filters_menu(message: Message, state: FSMContext):
+    """Відкриває підменю фільтрів."""
+    user_id = message.from_user.id
+    await state.update_data(previous_menu='settings')
+    await send_filters_menu(message, user_id)
+
+
+@router.message(F.text.in_(["⚙️ Більше...", "⚙️ More...", "⚙️ Mehr...", "⚙️ Plus...", "⚙️ Más...", "⚙️ Altro...", "⚙️ Więcej...", "⚙️ Mais...", "⚙️ もっと...", "⚙️ 更多..."]))
+async def show_settings_more_menu(message: Message, state: FSMContext):
+    """Відкриває розширені налаштування."""
+    user_id = message.from_user.id
+    s = get_user_settings(user_id)
+    lang_code = s.get('language', 'uk')
+    await state.update_data(previous_menu='settings', current_menu='settings_more')
+    await message.answer(
+        settings_text(user_id, lang_code),
+        parse_mode="HTML",
+        reply_markup=settings_more_keyboard(user_id, lang_code),
+    )
+
+
+async def send_profile_menu(message: Message, user_id: int | None = None):
+    """Показує підменю профілю."""
+    target_user_id = user_id or message.from_user.id
+    s = get_user_settings(target_user_id)
+    lang_code = s.get('language', 'uk')
+    coords = s.get("coordinates")
+    coords_text = ""
+    if coords:
+        coords_text = f"\n{i18n.get(target_user_id, 'coordinates_label', lang_code, latitude=coords.get('latitude', '?'), longitude=coords.get('longitude', '?'))}"
+    await message.answer(
+        f"{i18n.get(target_user_id, 'settings_lang_label', lang_code, language=s.get('language', 'uk'))}{coords_text}",
+        parse_mode="HTML",
+        reply_markup=profile_keyboard(target_user_id, lang_code),
+    )
+
+
+@router.message(F.text.in_(["👤 Профіль", "👤 Profile", "👤 Profil", "👤 Perfil", "👤 Profilo", "👤 プロフィール", "👤 个人资料"]))
+async def show_profile_menu(message: Message, state: FSMContext):
+    """Відкриває підменю профілю."""
+    user_id = message.from_user.id
+    await state.update_data(previous_menu='settings')
+    await send_profile_menu(message, user_id)
+
+
+@router.message(F.text.in_(["📍 Геолокація", "📍 Geolocation", "📍 Geolokation", "📍 Géolocalisation", "📍 Geolocalización", "📍 Geolocalizzazione", "📍 Geolokacja", "📍 Geolocalização", "📍 位置情報", "📍 地理位置"]))
+async def show_geolocation_choice_from_profile(message: Message, state: FSMContext):
+    """Показує вибір способу передачі координат з налаштувань."""
+    user_id = message.from_user.id
+    s = get_user_settings(user_id)
+    lang_code = s.get('language', 'uk')
+    await state.update_data(previous_menu='settings')
+    await message.answer(
+        i18n.get(user_id, 'choose_location_type', lang_code),
+        reply_markup=choose_location_type_keyboard(user_id, lang_code)
+    )
 
 
 @router.message(F.text.in_(["💾 Зберегти на сервер", "💾 Save to server", "💾 Auf Server speichern", "💾 Sauvegarder sur le serveur", "💾 Guardar en servidor", "💾 Salva sul server", "💾 Zapisz na serwerze", "💾 Salvar no servidor", "💾 サーバーに保存", "💾 保存到服务器"]))
@@ -127,8 +231,30 @@ async def settings_save_handler(message: Message, session: aiohttp.ClientSession
 
 
 @router.message(F.text.in_(["🔙 Назад", "🔙 Back", "🔙 Zurück", "🔙 Retour", "🔙 Atrás", "🔙 Indietro", "🔙 Wstecz", "🔙 Voltar", "🔙 戻る", "🔙 返回"]))
-async def back_to_main_menu(message: Message):
-    await send_main_menu(message)
+async def back_handler(message: Message, state: FSMContext):
+    """Контекстний обробник кнопки Назад."""
+    user_id = message.from_user.id
+    data = await state.get_data()
+    previous_menu = data.get('previous_menu', 'main')
+    
+    if previous_menu == 'settings':
+        await send_settings_menu(message, user_id)
+    elif previous_menu == 'profile':
+        await send_profile_menu(message, user_id)
+    elif previous_menu == 'filters':
+        await send_filters_menu(message, user_id)
+    elif previous_menu == 'search':
+        s = get_user_settings(user_id)
+        lang_code = s.get('language', 'uk')
+        await message.answer(
+            i18n.get(user_id, 'choose_search_variant', lang_code),
+            parse_mode="HTML",
+            reply_markup=search_menu_keyboard(user_id, lang_code),
+        )
+    else:
+        await send_main_menu(message)
+    
+    await state.update_data(previous_menu='main')
 
 
 @router.message(CommandStart())
@@ -205,8 +331,17 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
 async def start_continue_callback(callback: CallbackQuery):
     """Продовжити з автоматично визначеною мовою"""
     user_id = callback.from_user.id
+    s = get_user_settings(user_id)
+    lang_code = s.get('language', 'uk')
     await callback.answer()
     await callback.message.delete()
+    
+    # Показуємо інструкцію як користуватись ботом
+    await callback.message.answer(
+        i18n.get(user_id, 'how_to_use_bot', lang_code),
+        parse_mode="HTML"
+    )
+    
     await send_main_menu(callback.message, user_id=user_id)
 
 
@@ -254,6 +389,13 @@ async def start_set_language_callback(callback: CallbackQuery, session: aiohttp.
         lang_name = i18n.get_available_languages().get(lang_code, lang_code)
         await callback.answer(f"✅ {lang_name}")
         await callback.message.delete()
+        
+        # Показуємо інструкцію як користуватись ботом
+        await callback.message.answer(
+            i18n.get(user_id, 'how_to_use_bot', lang_code),
+            parse_mode="HTML"
+        )
+        
         # Показуємо головне меню
         await send_main_menu(callback.message, user_id=user_id, telegram_lang_code=lang_code)
     else:

@@ -20,46 +20,76 @@ def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def actions_keyboard(user_id: int = None, lang_code: str = None):
-    """Головне меню: локація, пошук, налаштування, додати місце."""
+    """Головне меню: пошук, улюблені, налаштування (3 кнопки)."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(
-                user_id or 0, 'send_coordinates', lang_code))],
-            [KeyboardButton(text=i18n.get(
-                user_id or 0, 'search_routes', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_search', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code))],
         ],
         resize_keyboard=True,
     )
 
 
 def settings_keyboard(user_id: int = None, lang_code: str = None):
-    """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
+    """Об'єднане меню налаштувань: категорії, радіус, мова, геолокація, більше, назад."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_language', lang_code)),
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_radius', lang_code)),
-            ],
-            [
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_categories', lang_code)),
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_mood', lang_code)),
-            ],
-            [
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_sorting', lang_code)),
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_open_now', lang_code)),
-            ],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
-            [KeyboardButton(text=i18n.get(
-                user_id or 0, 'menu_back', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_categories', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'settings_radius', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_language', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'profile_geolocation', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_more', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def settings_more_keyboard(user_id: int = None, lang_code: str = None):
+    """Розширені налаштування: настрій, кількість, сортування, відкрите, додати місце."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_sorting', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'settings_open_now', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def filters_keyboard(user_id: int = None, lang_code: str = None):
+    """Застаріла - використовуйте settings_keyboard."""
+    return settings_keyboard(user_id, lang_code)
+
+
+def filters_what_keyboard(user_id: int = None, lang_code: str = None):
+    """Застаріла - використовуйте settings_keyboard."""
+    return settings_keyboard(user_id, lang_code)
+
+
+def filters_how_keyboard(user_id: int = None, lang_code: str = None):
+    """Застаріла - використовуйте settings_more_keyboard."""
+    return settings_more_keyboard(user_id, lang_code)
+
+
+def profile_keyboard(user_id: int = None, lang_code: str = None):
+    """Застаріла - використовуйте settings_keyboard."""
+    return settings_keyboard(user_id, lang_code)
+
+
+def search_menu_keyboard(user_id: int = None, lang_code: str = None):
+    """Підменю пошуку: місця, список, за назвою, випадкове, назад."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_by_name', lang_code)),
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code))],
         ],
         resize_keyboard=True,
     )
@@ -75,18 +105,8 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def search_keyboard(user_id: int = None, lang_code: str = None):
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_by_name', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))],
-        ],
-        resize_keyboard=True
-    )
-    return keyboard
+    """Застаріла клавіатура - використовуйте search_menu_keyboard."""
+    return search_menu_keyboard(user_id, lang_code)
 
 
 def random_choice_keyboard(user_id: int = None, lang_code: str = None):
@@ -194,6 +214,20 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
 
     builder = InlineKeyboardBuilder()
 
+    # Спочатку кнопка порівняння/вибору
+    if len(selected_ids) >= 2:
+        builder.button(
+            text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
+            callback_data="perform_comparison"
+        )
+    else:
+        builder.button(
+            text=i18n.get(user_id or 0, 'comparison_select_min',
+                          lang_code, count=len(selected_ids)),
+            callback_data="comparison_help"
+        )
+
+    # Потім список місць
     for favorite in favorites:
         place_id = favorite.get("id")
         name = favorite.get("name", i18n.get(
@@ -210,22 +244,5 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
         )
 
     builder.adjust(1)
-
-    if len(selected_ids) >= 2:
-        builder.button(
-            text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
-            callback_data="perform_comparison"
-        )
-    else:
-        builder.button(
-            text=i18n.get(user_id or 0, 'comparison_select_min',
-                          lang_code, count=len(selected_ids)),
-            callback_data="comparison_help"
-        )
-
-    builder.button(
-        text=i18n.get(user_id or 0, 'menu_cancel', lang_code),
-        callback_data="cancel_comparison"
-    )
 
     return builder.as_markup()

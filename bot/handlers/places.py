@@ -2,7 +2,7 @@ import aiohttp
 import random
 import base64
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command, StateFilter
 
@@ -653,20 +653,30 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     )
 
 
-# @router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
-# async def random_choice_menu_handler(message: Message, state: FSMContext):
-#     """Показує вибір: випадкове з пошуку чи з улюблених."""
-#     user_id = message.from_user.id
-#     settings = get_user_settings(user_id)
-#     lang_code = settings.get("language", "uk")
-#     await state.clear()
-#     await state.set_state(BotState.choosing_random_type)
-#     msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
-#     await message.answer(
-#         msg_text,
-#         parse_mode="HTML",
-#         reply_markup=random_choice_keyboard(user_id, lang_code),
-#     )
+@router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
+async def random_choice_menu_handler(message: Message, state: FSMContext):
+    """Показує вибір: випадкове з пошуку чи з улюблених."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    # Перевіряємо наявність координат перед пошуком
+    if not settings.get("coordinates"):
+        await message.answer(
+            i18n.get(user_id, 'provide_coordinates_first', lang_code),
+            parse_mode="HTML",
+            reply_markup=choose_location_type_keyboard(user_id, lang_code)
+        )
+        return
+    
+    await state.clear()
+    await state.set_state(BotState.choosing_random_type)
+    msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
+    await message.answer(
+        msg_text,
+        parse_mode="HTML",
+        reply_markup=random_choice_keyboard(user_id, lang_code),
+    )
 
 
 @router.message(StateFilter(BotState.choosing_random_type), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
@@ -1023,23 +1033,44 @@ async def place_details_handler(callback: CallbackQuery, session: aiohttp.Client
 
 @router.callback_query(F.data.startswith("fav_toggle:"))
 async def fav_toggle_handler(callback: CallbackQuery, session: aiohttp.ClientSession):
-    """Додає або вилучає місце з улюблених (локально та на сервері)."""
+    """Додає або вилучає місце з улюблених (локально та на сервері) і оновлює кнопку."""
     place_id = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
 
-    if is_favorite_place(user_id, place_id):
+    was_favorite = is_favorite_place(user_id, place_id)
+    
+    if was_favorite:
         remove_favorite_place(user_id, place_id)
         await api_remove_favorite(user_id, place_id, session)
         await callback.answer(i18n.get(user_id, 'removed_from_favorites', lang_code))
-        return
-
-    name = _place_name_cache.get(
-        place_id, i18n.get(user_id, 'unnamed', lang_code))
-    add_favorite_place(user_id, place_id, name)
-    await api_add_favorite(user_id, place_id, name, session)
-    await callback.answer(i18n.get(user_id, 'added_to_favorites', lang_code))
+    else:
+        name = _place_name_cache.get(
+            place_id, i18n.get(user_id, 'unnamed', lang_code))
+        add_favorite_place(user_id, place_id, name)
+        await api_add_favorite(user_id, place_id, name, session)
+        await callback.answer(i18n.get(user_id, 'added_to_favorites', lang_code))
+    
+    # Оновлюємо клавіатуру - змінюємо кнопку улюблених
+    try:
+        old_markup = callback.message.reply_markup
+        if old_markup:
+            new_keyboard = []
+            for row in old_markup.inline_keyboard:
+                new_row = []
+                for button in row:
+                    if button.callback_data and button.callback_data.startswith("fav_toggle:"):
+                        # Змінюємо текст кнопки на протилежний
+                        new_text = i18n.get(user_id, 'add_to_favorites', lang_code) if was_favorite else i18n.get(user_id, 'remove_from_favorites', lang_code)
+                        new_row.append(InlineKeyboardButton(text=new_text, callback_data=button.callback_data))
+                    else:
+                        new_row.append(button)
+                new_keyboard.append(new_row)
+            
+            await callback.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=new_keyboard))
+    except Exception as e:
+        logger.warning(f"Could not update favorite button: {e}")
 
 
 @router.message(StateFilter(BotState.comparing_favorites), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
