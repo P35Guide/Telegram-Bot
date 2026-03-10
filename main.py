@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 from aiohttp import web
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand
 
 from bot.config import BOT_TOKEN
 from bot.handlers import main_menu, places, settings
@@ -22,6 +23,15 @@ async def start_health_server():
     await site.start()
     logger.info(f"Health server запущено на порту {port}")
 
+COMMANDS = [
+    BotCommand(command="start", description="Запустити бота"),
+    BotCommand(command="menu", description="Головне меню"),
+    BotCommand(command="coordinates", description="Передати координати"),
+    BotCommand(command="place_list", description="Список місць"),
+    BotCommand(command="rand_place", description="Випадкове місце"),
+]
+
+
 async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
@@ -30,6 +40,7 @@ async def main():
     dp.include_router(places.router)
     dp.include_router(settings.router)
 
+    await bot.set_my_commands(COMMANDS)
     logger.info("Бот запущено!")
 
     # Запускаємо health server і polling паралельно

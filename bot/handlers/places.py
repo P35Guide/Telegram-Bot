@@ -297,9 +297,10 @@ async def start_text_search(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    
-    logger.info(f"[TextSearch] User {message.from_user.username} ({user_id}) started text search")
-    
+
+    logger.info(
+        f"[TextSearch] User {message.from_user.username} ({user_id}) started text search")
+
     # Перевіряємо, чи є координати
     if not settings.get("coordinates"):
         logger.warning(f"[TextSearch] User {user_id} has no coordinates set")
@@ -309,7 +310,7 @@ async def start_text_search(message: Message, state: FSMContext):
             reply_markup=choose_location_type_keyboard(user_id, lang_code)
         )
         return
-    
+
     await state.set_state(BotState.waiting_for_text_search)
     await message.answer(
         i18n.get(user_id, 'enter_search_query', lang_code),
@@ -334,47 +335,53 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     query = message.text.strip()
-    
+
     # Валідація запиту
     if not query or len(query) < 2:
-        logger.warning(f"[TextSearch] User {user_id} entered too short query: '{query}'")
+        logger.warning(
+            f"[TextSearch] User {user_id} entered too short query: '{query}'")
         await message.answer(
             i18n.get(user_id, 'category_too_short', lang_code),
             parse_mode="HTML"
         )
         return
-    
-    logger.info(f"[TextSearch] User {message.from_user.username} ({user_id}) searching for: '{query}'")
-    
+
+    logger.info(
+        f"[TextSearch] User {message.from_user.username} ({user_id}) searching for: '{query}'")
+
     # Відправляємо повідомлення про завантаження
     loading_msg = await message.answer(
         i18n.get(user_id, 'searching_places', lang_code, query=query),
         parse_mode="HTML"
     )
-    
+
     try:
         # Виконуємо пошук через API
         data = await search_places_by_text(query, settings, session)
-        
+
         if not data or "places" not in data or not data["places"]:
             logger.info(f"[TextSearch] No results found for query: '{query}'")
             try:
                 await loading_msg.edit_text(
-                    i18n.get(user_id, 'text_search_no_results', lang_code, query=query),
+                    i18n.get(user_id, 'text_search_no_results',
+                             lang_code, query=query),
                     parse_mode="HTML"
                 )
             except Exception as e:
-                logger.warning(f"[TextSearch] Could not edit loading message: {e}")
+                logger.warning(
+                    f"[TextSearch] Could not edit loading message: {e}")
             await state.clear()
             await send_main_menu(message)
             return
-        
+
         places = data["places"]
         places_count = len(places)
-        logger.info(f"[TextSearch] Found {places_count} places for query: '{query}'")
+        logger.info(
+            f"[TextSearch] Found {places_count} places for query: '{query}'")
 
         # Показуємо повідомлення про кількість знайдених
-        title = i18n.get(user_id, 'text_search_results', lang_code, query=query) + f" ({places_count})"
+        title = i18n.get(user_id, 'text_search_results',
+                         lang_code, query=query) + f" ({places_count})"
         try:
             await loading_msg.edit_text(f"✅ <b>{title}</b>", parse_mode="HTML")
         except Exception:
@@ -384,7 +391,7 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
         await state.set_state(BotState.browsing_places)
         await state.update_data(places=places, current_index=0)
         await show_place_card(message, state, session)
-        
+
     except Exception as e:
         logger.error(f"[TextSearch] Error during search for '{query}': {e}")
         try:
@@ -393,7 +400,8 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
                 parse_mode="HTML"
             )
         except Exception as edit_error:
-            logger.warning(f"[TextSearch] Could not edit loading message: {edit_error}")
+            logger.warning(
+                f"[TextSearch] Could not edit loading message: {edit_error}")
         await state.clear()
         await send_main_menu(message)
 
@@ -610,7 +618,7 @@ async def send_place_info(
         return False, []
 
 
-@router.message(F.text.in_(["🔍 Список", "🔍 List", "🔍 Liste", "🔍 Liste", "🔍 Lista", "🔍 Elenco", "🔍 Lista", "🔍 Lista", "🔍 リスト", "🔍 列表"]))
+@router.message(Command("place_list"))
 async def list_places_handler(message: Message, session: aiohttp.ClientSession):
     """Показує список усіх знайдених місць."""
     result = await perform_search(message, session)
@@ -638,20 +646,20 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     )
 
 
-# @router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
-# async def random_choice_menu_handler(message: Message, state: FSMContext):
-#     """Показує вибір: випадкове з пошуку чи з улюблених."""
-#     user_id = message.from_user.id
-#     settings = get_user_settings(user_id)
-#     lang_code = settings.get("language", "uk")
-#     await state.clear()
-#     await state.set_state(BotState.choosing_random_type)
-#     msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
-#     await message.answer(
-#         msg_text,
-#         parse_mode="HTML",
-#         reply_markup=random_choice_keyboard(user_id, lang_code),
-#     )
+@router.message(Command("rand_place"))
+async def random_choice_menu_handler(message: Message, state: FSMContext):
+    """Показує вибір: випадкове з пошуку чи з улюблених."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    await state.clear()
+    await state.set_state(BotState.choosing_random_type)
+    msg_text = i18n.get(user_id, 'choose_random_source', lang_code)
+    await message.answer(
+        msg_text,
+        parse_mode="HTML",
+        reply_markup=random_choice_keyboard(user_id, lang_code),
+    )
 
 
 @router.message(StateFilter(BotState.choosing_random_type), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
