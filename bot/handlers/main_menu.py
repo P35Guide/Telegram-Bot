@@ -1,9 +1,8 @@
 import aiohttp
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message
 from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot.states import BotState
 from bot.keyboards import (
     actions_keyboard,
@@ -42,10 +41,12 @@ async def cmd_menu(message: Message):
 @router.message(F.text.in_(["📍 Передати координати", "📍 Надіслати геолокацію", "📍 Send coordinates", "📍 Envoyer les coordonnées", "📍 Koordinaten senden", "📍 Enviar coordenadas", "📍 Invia coordinate", "📍 Wyślij współrzędne", "📍 Enviar coordenadas", "📍 座標を送信", "📍 发送坐标"]))
 async def show_location_choice_menu(message: Message, state: FSMContext):
     user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.clear()
     await message.answer(
-        i18n.get(user_id, 'choose_location_type', message.from_user.language_code),
-        reply_markup=choose_location_type_keyboard(user_id)
+        i18n.get(user_id, 'choose_location_type', lang_code),
+        reply_markup=choose_location_type_keyboard(user_id, lang_code)
     )
 
 
@@ -89,7 +90,6 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
     await message.answer(
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
         f"{settings_text(target_user_id, lang_code)}",
-        parse_mode="HTML",
         reply_markup=reply_kb,
     )
 
@@ -102,7 +102,6 @@ async def send_settings_menu(message: Message, user_id: int | None = None, teleg
     lang_code = s.get('language', 'uk')
     await message.answer(
         settings_text(target_user_id, lang_code),
-        parse_mode="HTML",
         reply_markup=settings_keyboard(target_user_id, lang_code),
     )
 
@@ -165,119 +164,52 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
     else:
         # Використовуємо мову з сервера
         detected_lang = current_language
+        i18n.set_user_language(user_id, detected_lang)
         logger.info(f"Using language from server: {current_language}")
 
-    # Показуємо запит про зміну мови (двома мовами: detected + English)
-    lang_name = i18n.get_available_languages().get(detected_lang, detected_lang)
-    
-    # Формуємо повідомлення двома мовами - використовуємо метод get_translation
-    prompt_detected = i18n.get_translation(detected_lang, 'language_prompt')
-    prompt_en = i18n.get_translation('en', 'language_prompt')
-    
-    # Якщо мова не англійська, показуємо обидві
-    if detected_lang != 'en':
-        message_text = f"{prompt_detected}\n{prompt_en}"
-    else:
-        message_text = prompt_en
-    
-    # Кнопки - використовуємо метод get_translation
-    builder = InlineKeyboardBuilder()
-    continue_text_detected = i18n.get_translation(detected_lang, 'continue_with_language', language=lang_name)
-    change_text_detected = i18n.get_translation(detected_lang, 'change_language_btn')
-    
-    builder.button(
-        text=continue_text_detected,
-        callback_data="start_continue"
-    )
-    builder.button(
-        text=change_text_detected,
-        callback_data="start_change_lang"
-    )
-    builder.adjust(1)
-    
-    await message.answer(
-        message_text,
-        reply_markup=builder.as_markup()
-    )
-
-
-@router.callback_query(F.data == "start_continue")
-async def start_continue_callback(callback: CallbackQuery):
-    """Продовжити з автоматично визначеною мовою"""
-    user_id = callback.from_user.id
-    await callback.answer()
-    await callback.message.delete()
-    await send_main_menu(callback.message, user_id=user_id)
-
-
-@router.callback_query(F.data == "start_change_lang")
-async def start_change_lang_callback(callback: CallbackQuery):
-    """Показати вибір мови"""
-    user_id = callback.from_user.id
-    lang_code = callback.from_user.language_code
-    
-    # Показуємо доступні мови через inline клавіатуру
-    builder = InlineKeyboardBuilder()
-    
-    for code, name in i18n.get_available_languages().items():
-        builder.button(
-            text=name,
-            callback_data=f"start_set_lang:{code}"
+    # Одразу показуємо головне меню (вибір мови лише в налаштуваннях)
+    # Якщо координат немає - спочатку просимо їх надати
+    settings = get_user_settings(user_id)
+    if not settings.get("coordinates"):
+        await message.answer(
+            i18n.get(user_id, 'how_to_use_bot', detected_lang),
+            parse_mode="HTML",
+            reply_markup=choose_location_type_keyboard(user_id, detected_lang),
         )
-    
-    builder.adjust(2)
-    
-    await callback.answer()
-    await callback.message.edit_text(
-        i18n.get(user_id, 'select_language', lang_code),
-        reply_markup=builder.as_markup()
-    )
-
-
-@router.callback_query(F.data.startswith("start_set_lang:"))
-async def start_set_language_callback(callback: CallbackQuery, session: aiohttp.ClientSession):
-    """Обробка вибору мови при старті"""
-    user_id = callback.from_user.id
-    lang_code = callback.data.split(":")[1]
-    
-    # Встановлюємо мову в системі локалізації (user_languages)
-    if i18n.set_user_language(user_id, lang_code):
-        # Оновлюємо мову в user_settings
-        settings = get_user_settings(user_id)
-        settings["language"] = lang_code
-        
-        # Зберігаємо налаштування на сервер
-        payload = get_settings_payload_for_api(user_id)
-        await api_save_user_settings(user_id, payload, session)
-        logger.info(f"Language saved to server at start: {lang_code} for user {user_id}")
-        
-        lang_name = i18n.get_available_languages().get(lang_code, lang_code)
-        await callback.answer(f"✅ {lang_name}")
-        await callback.message.delete()
-        # Показуємо головне меню
-        await send_main_menu(callback.message, user_id=user_id, telegram_lang_code=lang_code)
     else:
-        await callback.answer("❌ Error")
+        await send_main_menu(message, user_id=user_id, telegram_lang_code=detected_lang)
 
 
 @router.message(F.location)
 async def handle_location_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     lat, lon = message.location.latitude, message.location.longitude
     logger.info(f"Користувач {message.from_user.username}({user_id}) надіслав локацію: {lat}, {lon}")
     await _save_coordinates_and_sync(user_id, lat, lon, session)
     await state.clear()
+    
+    # Показуємо повідомлення про отримання локації
     await message.answer(
         i18n.get(user_id, 'location_received', lang_code),
         reply_markup=actions_keyboard(user_id, lang_code),
+    )
+    
+    # Показуємо координати українською
+    title = i18n.get(user_id, 'your_coordinates', lang_code)
+    lat_label = i18n.get(user_id, 'latitude_label', lang_code)
+    lon_label = i18n.get(user_id, 'longitude_label', lang_code)
+    await message.answer(
+        f"{title}\n{lat_label} {lat}\n{lon_label} {lon}",
     )
 
 
 @router.message(F.text.in_(["🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden", "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città", "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市"]))
 async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.set_state(BotState.entering_coordinates)
     await message.answer(
         i18n.get(user_id, 'enter_city_name', lang_code)
@@ -288,12 +220,11 @@ async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
 async def handle_city_input_main_menu(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     text = message.text.strip()
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
     settings = get_user_settings(user_id)
-    language = settings.get("language", "uk")
+    lang_code = settings.get("language", "uk")
     
     await message.answer(i18n.get(user_id, 'searching_city', lang_code, city=text))
-    coords = await get_city_coordinates(text, session, language)
+    coords = await get_city_coordinates(text, session, lang_code)
     if coords and coords.get("latitude") is not None and coords.get("longitude") is not None:
         await _save_coordinates_and_sync(
             user_id, coords["latitude"], coords["longitude"], session
@@ -302,6 +233,15 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         await message.answer(
             i18n.get(user_id, 'city_found', lang_code, city=text)
         )
+        
+        # Показуємо координати
+        title = i18n.get(user_id, 'your_coordinates', lang_code)
+        lat_label = i18n.get(user_id, 'latitude_label', lang_code)
+        lon_label = i18n.get(user_id, 'longitude_label', lang_code)
+        await message.answer(
+            f"{title}\n{lat_label} {coords['latitude']}\n{lon_label} {coords['longitude']}",
+        )
+        
         await send_main_menu(message, telegram_lang_code=lang_code)
     else:
         await message.answer(
