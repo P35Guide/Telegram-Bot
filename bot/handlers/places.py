@@ -372,34 +372,18 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
         places = data["places"]
         places_count = len(places)
         logger.info(f"[TextSearch] Found {places_count} places for query: '{query}'")
-        
-        # Якщо знайдено тільки 1 місце - показуємо повну інформацію
-        if places_count == 1:
-            place = places[0]
-            place_id = place.get("id") or place.get("place_id") or place.get("placeId")
-            if place_id:
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-                await send_place_info(message, session, place_id, lang_code, user_id)
-                await state.clear()
-                await message.answer(
-                    i18n.get(user_id, 'return_to_search', lang_code),
-                    reply_markup=search_keyboard(user_id, lang_code)
-                )
-                return
-        
-        # Показуємо результати
+
+        # Показуємо повідомлення про кількість знайдених
         title = i18n.get(user_id, 'text_search_results', lang_code, query=query) + f" ({places_count})"
-        await show_places_list(loading_msg, places, title=title, user_id=user_id, lang_code=lang_code)
-        
-        # Очищуємо стан та показуємо клавіатуру пошуку
-        await state.clear()
-        await message.answer(
-            i18n.get(user_id, 'return_to_search', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code)
-        )
+        try:
+            await loading_msg.edit_text(f"✅ <b>{title}</b>", parse_mode="HTML")
+        except Exception:
+            pass
+
+        # Зберігаємо місця в стан і запускаємо навігацію по 1 закладу
+        await state.set_state(BotState.browsing_places)
+        await state.update_data(places=places, current_index=0)
+        await show_place_card(message, state, session)
         
     except Exception as e:
         logger.error(f"[TextSearch] Error during search for '{query}': {e}")
