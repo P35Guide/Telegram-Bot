@@ -1,6 +1,6 @@
 import aiohttp
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from bot.states import BotState
@@ -136,6 +136,7 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
     await message.answer(
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
         f"{settings_text(target_user_id, lang_code)}",
+        parse_mode="HTML",
         reply_markup=reply_kb,
     )
 
@@ -148,6 +149,7 @@ async def send_settings_menu(message: Message, user_id: int | None = None, teleg
     lang_code = s.get('language', 'uk')
     await message.answer(
         settings_text(target_user_id, lang_code),
+        parse_mode="HTML",
         reply_markup=settings_keyboard(target_user_id, lang_code),
     )
 
@@ -267,12 +269,13 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         reply_markup=actions_keyboard(user_id, lang_code),
     )
     
-    # Показуємо координати українською
+    # Показуємо координати у форматі поточної мови інтерфейсу
     title = i18n.get(user_id, 'your_coordinates', lang_code)
     lat_label = i18n.get(user_id, 'latitude_label', lang_code)
     lon_label = i18n.get(user_id, 'longitude_label', lang_code)
     await message.answer(
         f"{title}\n{lat_label} {lat}\n{lon_label} {lon}",
+        parse_mode="HTML",
     )
 
 

@@ -208,6 +208,19 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
 
     builder = InlineKeyboardBuilder()
 
+    # Спочатку показуємо кнопку порівняння
+    if len(selected_ids) >= 2:
+        builder.button(
+            text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
+            callback_data="perform_comparison"
+        )
+    else:
+        builder.button(
+            text=i18n.get(user_id or 0, 'comparison_select_min',
+                          lang_code, count=len(selected_ids)),
+            callback_data="comparison_help"
+        )
+
     for favorite in favorites:
         place_id = favorite.get("id")
         name = favorite.get("name", i18n.get(
@@ -223,23 +236,11 @@ def select_favorites_for_comparison_keyboard(favorites, selected_ids: list = Non
             callback_data=f"compare_toggle:{place_id}"
         )
 
-    builder.adjust(1)
-
-    if len(selected_ids) >= 2:
-        builder.button(
-            text=i18n.get(user_id or 0, 'comparison_selected', lang_code),
-            callback_data="perform_comparison"
-        )
-    else:
-        builder.button(
-            text=i18n.get(user_id or 0, 'comparison_select_min',
-                          lang_code, count=len(selected_ids)),
-            callback_data="comparison_help"
-        )
-
     builder.button(
         text=i18n.get(user_id or 0, 'menu_cancel', lang_code),
         callback_data="cancel_comparison"
     )
+
+    builder.adjust(1)
 
     return builder.as_markup()

@@ -1004,6 +1004,22 @@ async def unhandled_browsing_message(message: Message, state: FSMContext):
     )
 
 
+@router.message(F.text.in_([
+    "🛑 Стоп", "🛑️ Стоп", "🔴 Стоп",
+    "🛑 Stop", "🛑️ Stop", "🔴 Stop",
+    "🛑 Stopp", "🛑️ Stopp", "🔴 Stopp",
+    "🛑 Arrêt", "🛑️ Arrêt", "🔴 Arrêt",
+    "🛑 Parar", "🛑️ Parar", "🔴 Parar",
+    "🛑 Fermare", "🛑️ Fermare", "🔴 Fermare",
+    "🛑 Zatrzymaj", "🛑️ Zatrzymaj", "🔴 Zatrzymaj",
+    "🛑 停止", "🛑️ 停止", "🔴 停止",
+]))
+async def global_stop_fallback(message: Message, state: FSMContext):
+    """Fallback: stop should always return user to a stable menu even if FSM state was lost."""
+    await state.clear()
+    await send_main_menu(message)
+
+
 @router.callback_query(F.data.startswith("place_view:"))
 async def place_details_handler(callback: CallbackQuery, session: aiohttp.ClientSession, state: FSMContext):
     """
