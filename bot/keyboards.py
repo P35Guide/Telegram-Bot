@@ -152,9 +152,10 @@ def place_details_keyboard(place_url=None, google_maps_url=None, favorite_callba
         builder.button(text="📍 Map", url=google_maps_url)
 
     if favorite_callback:
+        # Динамічно змінюємо напис кнопки залежно від is_favorite
+        button_text = i18n.get(user_id or 0, 'remove_from_favorites', lang_code) if is_favorite else i18n.get(user_id or 0, 'add_to_favorites', lang_code)
         builder.button(
-            text=i18n.get(user_id or 0, 'add_to_favorites', lang_code) if not is_favorite else i18n.get(
-                user_id or 0, 'remove_from_favorites', lang_code),
+            text=button_text,
             callback_data=favorite_callback
         )
 

@@ -98,6 +98,7 @@
 	"open_yes": "Так",
 	"open_no": "Ні",
 	"language_changed": "✅ Мову змінено на {language}",
+	"coordinates_prompt": "Координати не встановлено. Спочатку оберіть місто або надішліть свою геолокацію.",
 	"select_language": "Оберіть мову інтерфейсу:",
 	"language_prompt": "Оберіть мову інтерфейсу:",
 	"continue_with_language": "✅ Продовжити з {language}",

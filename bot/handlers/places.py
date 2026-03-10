@@ -225,10 +225,9 @@ async def show_user_coordinates(message: Message):
     coords = settings.get("coordinates")
     if coords:
         title = i18n.get(user_id, 'your_coordinates', lang_code)
-        lat_label = i18n.get(user_id, 'latitude_label', lang_code)
-        lon_label = i18n.get(user_id, 'longitude_label', lang_code)
         await message.answer(
-            f"{title}\n{lat_label} {coords['latitude']}\n{lon_label} {coords['longitude']}"
+            f"<b>{title}</b>\nLatitude: {coords['latitude']}\nLongitude: {coords['longitude']}",
+            parse_mode="HTML"
         )
     else:
         msg_text = i18n.get(user_id, 'coordinates_not_set', lang_code)
@@ -758,7 +757,9 @@ async def random_from_favorites_handler(message: Message, state: FSMContext):
     )
 
     chosen = random.choice(favorites)
-    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
+    chosen_id = chosen["id"]
+    chosen_name = chosen["name"]
+    place_for_kb = [{"id": chosen_id, "displayName": chosen_name}]
 
     title = i18n.get(user_id, 'random_from_favorites_title', lang_code)
     select_text = i18n.get(user_id, 'select_place', lang_code)
