@@ -82,17 +82,13 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
     coords = s.get("coordinates")
 
     if coords:
-        location_line = i18n.get(target_user_id, 'coordinates_label', lang_code, 
-                                  latitude=coords['latitude'], longitude=coords['longitude'])
         reply_kb = actions_keyboard(target_user_id, lang_code)
     else:
-        location_line = i18n.get(target_user_id, 'choose_location_type', lang_code)
         reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
 
     await message.answer(
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
-        f"{settings_text(target_user_id, lang_code)}\n\n"
-        f"{location_line}",
+        f"{settings_text(target_user_id, lang_code)}",
         parse_mode="HTML",
         reply_markup=reply_kb,
     )
