@@ -645,7 +645,8 @@ async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) запускає пошук маршрутів")
 
-    msg_text = i18n.get(user_id, 'choose_search_variant', lang_code)
+    # Telegram rejects empty/invisible-only text, so use a minimal visible marker.
+    msg_text = "🔎"
     await message.answer(
         msg_text,
         parse_mode="HTML",

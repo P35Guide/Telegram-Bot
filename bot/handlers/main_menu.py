@@ -28,9 +28,27 @@ from bot.utils.localization import i18n
 router = Router()
 
 
-async def _save_coordinates_and_sync(user_id: int, latitude: float, longitude: float, session: aiohttp.ClientSession):
-    """Зберігає координати локально та відправляє налаштування на сервер."""
+def _format_language_display(lang_code: str) -> str:
+    """Повертає назву мови з прапорцем у форматі: Українська 🇺🇦."""
+    value = i18n.get_available_languages().get(lang_code, lang_code)
+    parts = value.split(" ", 1)
+    if len(parts) == 2:
+        flag, name = parts[0], parts[1]
+        return f"{name} {flag}"
+    return value
+
+
+async def _save_coordinates_and_sync(
+    user_id: int,
+    latitude: float,
+    longitude: float,
+    session: aiohttp.ClientSession,
+    city_name: str | None = None,
+):
+    """Зберігає координати, локальний підпис локації та відправляє налаштування на сервер."""
     save_coordinates(user_id, latitude, longitude)
+    settings = get_user_settings(user_id)
+    settings["location_city"] = city_name.strip() if city_name else None
     await api_save_user_settings(user_id, get_settings_payload_for_api(user_id), session)
 
 
@@ -53,23 +71,22 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     s = get_user_settings(user_id)
     # Використовуємо мову з налаштувань користувача
     lang_code = s.get('language', 'uk')
+    language_display = _format_language_display(lang_code)
+    rank_code = (s.get("rankPreference") or "POPULARITY").upper()
+    rank_display = i18n.get(user_id, 'rank_distance', lang_code) if rank_code == "DISTANCE" else i18n.get(user_id, 'rank_popularity', lang_code)
 
-    included = ", ".join(s.get("includedTypes", [])) if s.get(
+    categories = ", ".join(s.get("includedTypes", [])) if s.get(
         "includedTypes") else i18n.get(user_id, 'all', lang_code)
-    excluded = ", ".join(s.get("excludedTypes", [])) if s.get(
-        "excludedTypes") else i18n.get(user_id, 'none', lang_code)
-    
+
     open_now = s.get("openNow", False)
-    open_status = i18n.get(user_id, 'yes', lang_code) if open_now else i18n.get(user_id, 'no', lang_code)
+    open_status = i18n.get(user_id, 'open_yes', lang_code) if open_now else i18n.get(user_id, 'open_no', lang_code)
 
     return (
         f"{i18n.get(user_id, 'settings_title', lang_code)}\n"
-        f"├ {i18n.get(user_id, 'settings_lang_label', lang_code, language=s.get('language', 'uk'))}\n"
+        f"├ {i18n.get(user_id, 'settings_lang_label', lang_code, language=language_display)}\n"
         f"├ {i18n.get(user_id, 'settings_radius_label', lang_code, radius=s.get('radius', 1000))}\n"
-        f"├ {i18n.get(user_id, 'settings_included_label', lang_code, included=included)}\n"
-        f"├ {i18n.get(user_id, 'settings_excluded_label', lang_code, excluded=excluded)}\n"
-        f"├ {i18n.get(user_id, 'settings_count_label', lang_code, count=s.get('maxResultCount', 20))}\n"
-        f"├ {i18n.get(user_id, 'settings_rank_label', lang_code, rank=s.get('rankPreference', 'POPULARITY'))}\n"
+        f"├ {i18n.get(user_id, 'settings_categories_compact', lang_code, categories=categories)}\n"
+        f"├ {i18n.get(user_id, 'settings_rank_label', lang_code, rank=rank_display)}\n"
         f"└ {i18n.get(user_id, 'settings_open_label', lang_code, status=open_status)}"
     )
 
@@ -82,6 +99,11 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
     coords = s.get("coordinates")
 
     if coords:
+        location_city = (s.get("location_city") or "").strip()
+        if location_city:
+            location_line = f"📍 Локація: {location_city}"
+        else:
+            location_line = "📍 Локація: Визначено за GPS"
         reply_kb = actions_keyboard(target_user_id, lang_code)
     else:
         reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
@@ -112,7 +134,7 @@ async def show_settings_menu(message: Message):
     await send_settings_menu(message)
 
 
-@router.message(F.text.in_(["💾 Зберегти на сервер", "💾 Save to server", "💾 Auf Server speichern", "💾 Sauvegarder sur le serveur", "💾 Guardar en servidor", "💾 Salva sul server", "💾 Zapisz na serwerze", "💾 Salvar no servidor", "💾 サーバーに保存", "💾 保存到服务器"]))
+@router.message(F.text.in_(["💾 Зберегти налаштування", "💾 Save settings", "💾 Einstellungen speichern", "💾 Enregistrer les paramètres", "💾 Guardar configuración", "💾 Salva impostazioni", "💾 Zapisz ustawienia", "💾 Salvar configurações", "💾 設定を保存", "💾 保存设置"]))
 async def settings_save_handler(message: Message, session: aiohttp.ClientSession):
     """Обробник кнопки «Зберегти на сервер» — відправляє поточні налаштування на API."""
     user_id = message.from_user.id
@@ -166,6 +188,8 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
         # Використовуємо мову з сервера
         detected_lang = current_language
         logger.info(f"Using language from server: {current_language}")
+
+    await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
 
     # Показуємо запит про зміну мови (двома мовами: detected + English)
     lang_name = i18n.get_available_languages().get(detected_lang, detected_lang)
@@ -296,7 +320,7 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
     coords = await get_city_coordinates(text, session, language)
     if coords and coords.get("latitude") is not None and coords.get("longitude") is not None:
         await _save_coordinates_and_sync(
-            user_id, coords["latitude"], coords["longitude"], session
+            user_id, coords["latitude"], coords["longitude"], session, city_name=text
         )
         await state.clear()
         await message.answer(
