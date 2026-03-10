@@ -16,6 +16,8 @@ from bot.keyboards import (
     choose_location_type_keyboard,
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
+    cancel_keyboard,
+    cancel_keyboard,
 )
 from bot.services.api_client import (
     get_photos,
@@ -23,6 +25,8 @@ from bot.services.api_client import (
     get_place_details,
     api_add_favorite,
     api_remove_favorite,
+    search_places_by_text,
+    search_places_by_text,
 )
 from bot.services.settings import (
     add_favorite_place,
@@ -261,7 +265,7 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
             if message:
                 user_id = message.from_user.id
                 lang_code = message.from_user.language_code
-                await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard(user_id, lang_code))
+                await message.answer("🔙 Повернулись у меню пошуку.", reply_markup=search_keyboard(user_id, lang_code))
             return None
 
         # Повертаємо всі місця
@@ -283,6 +287,131 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
     await send_main_menu(message)
+
+
+# ----- Text Search Handlers (Пошук за назвою) -----
+
+@router.message(F.text.in_(["🔎 Пошук за назвою", "🔎 Search by name", "🔎 Nach Name suchen", "🔎 Rechercher par nom", "🔎 Buscar por nombre", "🔎 Cerca per nome", "🔎 Szukaj po nazwie", "🔎 Pesquisar por nome", "🔎 名前で検索", "🔎 按名称搜索"]))
+async def start_text_search(message: Message, state: FSMContext):
+    """Обробник кнопки 'Пошук за назвою' — запускає стан очікування тексту."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    
+    logger.info(f"[TextSearch] User {message.from_user.username} ({user_id}) started text search")
+    
+    # Перевіряємо, чи є координати
+    if not settings.get("coordinates"):
+        logger.warning(f"[TextSearch] User {user_id} has no coordinates set")
+        await message.answer(
+            i18n.get(user_id, 'no_location_set', lang_code),
+            parse_mode="HTML",
+            reply_markup=choose_location_type_keyboard(user_id, lang_code)
+        )
+        return
+    
+    await state.set_state(BotState.waiting_for_text_search)
+    await message.answer(
+        i18n.get(user_id, 'enter_search_query', lang_code),
+        parse_mode="HTML",
+        reply_markup=cancel_keyboard(user_id, lang_code)
+    )
+
+
+@router.message(BotState.waiting_for_text_search, F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
+async def cancel_text_search(message: Message, state: FSMContext):
+    """Скасовує пошук за назвою та повертає до головного меню."""
+    user_id = message.from_user.id
+    logger.info(f"[TextSearch] User {user_id} cancelled text search")
+    await state.clear()
+    await send_main_menu(message)
+
+
+@router.message(BotState.waiting_for_text_search)
+async def process_text_search(message: Message, state: FSMContext, session: aiohttp.ClientSession):
+    """Обробляє текстовий запит пошуку місць."""
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    query = message.text.strip()
+    
+    # Валідація запиту
+    if not query or len(query) < 2:
+        logger.warning(f"[TextSearch] User {user_id} entered too short query: '{query}'")
+        await message.answer(
+            i18n.get(user_id, 'category_too_short', lang_code),
+            parse_mode="HTML"
+        )
+        return
+    
+    logger.info(f"[TextSearch] User {message.from_user.username} ({user_id}) searching for: '{query}'")
+    
+    # Відправляємо повідомлення про завантаження
+    loading_msg = await message.answer(
+        i18n.get(user_id, 'searching_places', lang_code, query=query),
+        parse_mode="HTML"
+    )
+    
+    try:
+        # Виконуємо пошук через API
+        data = await search_places_by_text(query, settings, session)
+        
+        if not data or "places" not in data or not data["places"]:
+            logger.info(f"[TextSearch] No results found for query: '{query}'")
+            try:
+                await loading_msg.edit_text(
+                    i18n.get(user_id, 'text_search_no_results', lang_code, query=query),
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.warning(f"[TextSearch] Could not edit loading message: {e}")
+            await state.clear()
+            await send_main_menu(message)
+            return
+        
+        places = data["places"]
+        places_count = len(places)
+        logger.info(f"[TextSearch] Found {places_count} places for query: '{query}'")
+        
+        # Якщо знайдено тільки 1 місце - показуємо повну інформацію
+        if places_count == 1:
+            place = places[0]
+            place_id = place.get("id") or place.get("place_id") or place.get("placeId")
+            if place_id:
+                try:
+                    await loading_msg.delete()
+                except Exception:
+                    pass
+                await send_place_info(message, session, place_id, lang_code, user_id)
+                await state.clear()
+                await message.answer(
+                    i18n.get(user_id, 'return_to_search', lang_code),
+                    reply_markup=search_keyboard(user_id, lang_code)
+                )
+                return
+        
+        # Показуємо результати
+        title = i18n.get(user_id, 'text_search_results', lang_code, query=query) + f" ({places_count})"
+        await show_places_list(loading_msg, places, title=title, user_id=user_id, lang_code=lang_code)
+        
+        # Очищуємо стан та показуємо клавіатуру пошуку
+        await state.clear()
+        await message.answer(
+            i18n.get(user_id, 'return_to_search', lang_code),
+            reply_markup=search_keyboard(user_id, lang_code)
+        )
+        
+    except Exception as e:
+        logger.error(f"[TextSearch] Error during search for '{query}': {e}")
+        try:
+            await loading_msg.edit_text(
+                i18n.get(user_id, 'text_search_error', lang_code),
+                parse_mode="HTML"
+            )
+        except Exception as edit_error:
+            logger.warning(f"[TextSearch] Could not edit loading message: {edit_error}")
+        await state.clear()
+        await send_main_menu(message)
 
 
 async def show_places_list(loading_msg, places, title: str = None, user_id: int | None = None, lang_code: str = "uk"):
@@ -651,6 +780,7 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
     if not settings.get("coordinates"):
         await message.answer(
             i18n.get(user_id, 'no_location_set', lang_code),
+            parse_mode="HTML",
             reply_markup=search_keyboard(user_id, lang_code),
         )
         await state.clear()
