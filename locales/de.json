@@ -190,7 +190,7 @@
 	"place_added_error": "❌ Fehler beim Hinzufügen des Ortes",
 	"no_places_with_filters": "⚠️ Keine Orte mit aktuellen Filtern gefunden.",
 	"custom_category_accepted": "✅ Akzeptiert! Suche nach benutzerdefinierter Kategorie: **{category}**",
-	"how_to_use_bot": "📖 <b>So verwenden Sie den Bot:</b>\n\n🔍 <b>Suche</b> — finden Sie Orte in der Nähe nach Kategorien\n🎲 <b>Zufällig</b> — erhalten Sie einen zufälligen Ort\n🌟 <b>Favoriten</b> — Ihre gespeicherten Orte\n⚙️ <b>Einstellungen</b> — Filter und Profil\n\n📍 Geben Sie zuerst Ihre Koordinaten an, um mit der Suche zu beginnen!",
+	"how_to_use_bot": "📖 <b>So verwenden Sie den Bot:</b>\n\n🔍 <b>Suche</b> — finden Sie Orte in der Nähe nach Kategorien\n <b>Favoriten</b> — Ihre gespeicherten Orte\n⚙️ <b>Einstellungen</b> — Filter und Profil\n\n📍 Geben Sie zuerst Ihre Koordinaten an, um mit der Suche zu beginnen!",
 	"provide_coordinates_first": "📍 <b>Bitte geben Sie Ihre Koordinaten an</b>\n\nUm nach Orten zu suchen, müssen Sie zuerst Ihren Standort festlegen:",
 	"filters_what": "🍴 Was suchen",
 	"filters_how": "⚙️ Wie suchen",

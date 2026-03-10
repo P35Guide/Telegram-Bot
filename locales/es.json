@@ -190,7 +190,7 @@
 	"place_added_error": "❌ Error al añadir lugar",
 	"no_places_with_filters": "⚠️ No se encontraron lugares con los filtros actuales.",
 	"custom_category_accepted": "✅ ¡Aceptado! Buscando categoría personalizada: **{category}**",
-	"how_to_use_bot": "📖 <b>Cómo usar el bot:</b>\n\n🔍 <b>Búsqueda</b> — encuentra lugares cercanos por categorías\n🎲 <b>Aleatorio</b> — obtén un lugar aleatorio\n🌟 <b>Favoritos</b> — tus lugares guardados\n⚙️ <b>Ajustes</b> — filtros y perfil\n\n📍 ¡Primero, proporciona tus coordenadas para comenzar a buscar!",
+	"how_to_use_bot": "📖 <b>Cómo usar el bot:</b>\n\n🔍 <b>Búsqueda</b> — encuentra lugares cercanos por categorías\n <b>Favoritos</b> — tus lugares guardados\n⚙️ <b>Ajustes</b> — filtros y perfil\n\n📍 ¡Primero, proporciona tus coordenadas para comenzar a buscar!",
 	"provide_coordinates_first": "📍 <b>Por favor, proporciona tus coordenadas</b>\n\nPara buscar lugares, primero debes establecer tu ubicación:",
 	"filters_what": "🍴 Qué buscar",
 	"filters_how": "⚙️ Cómo buscar",

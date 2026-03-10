@@ -190,7 +190,7 @@
 	"place_added_error": "❌ Error adding place",
 	"no_places_with_filters": "⚠️ No places found with current filters.",
 	"custom_category_accepted": "✅ Accepted! Searching for custom category: **{category}**",
-	"how_to_use_bot": "📖 <b>How to use the bot:</b>\n\n🔍 <b>Search</b> — find nearby places by categories\n🎲 <b>Random</b> — get a random place\n🌟 <b>Favorites</b> — your saved places\n⚙️ <b>Settings</b> — filters and profile\n\n📍 First, provide your coordinates to start searching!",
+	"how_to_use_bot": "📖 <b>How to use the bot:</b>\n\n🔍 <b>Search</b> — find nearby places by categories\n <b>Favorites</b> — your saved places\n⚙️ <b>Settings</b> — filters and profile\n\n📍 First, provide your coordinates to start searching!",
 	"provide_coordinates_first": "📍 <b>Please provide your coordinates</b>\n\nTo search for places, you need to set your location first:",
 	"filters_what": "🍴 What to search",
 	"filters_how": "⚙️ How to search",

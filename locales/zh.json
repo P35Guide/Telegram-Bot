@@ -190,7 +190,7 @@
 	"place_added_error": "❌ 添加地点错误",
 	"no_places_with_filters": "⚠️ 使用当前过滤器未找到地点。",
 	"custom_category_accepted": "✅ 已接受！搜索自定义类别：**{category}**",
-	"how_to_use_bot": "📖 <b>如何使用机器人:</b>\n\n🔍 <b>搜索</b> — 按类别查找附近的地点\n🎲 <b>随机</b> — 获取随机地点\n🌟 <b>收藏</b> — 您保存的地点\n⚙️ <b>设置</b> — 筛选器和个人资料\n\n📍 首先，请提供您的坐标以开始搜索！",
+	"how_to_use_bot": "📖 <b>如何使用机器人:</b>\n\n🔍 <b>搜索</b> — 按类别查找附近的地点\n <b>收藏</b> — 您保存的地点\n⚙️ <b>设置</b> — 筛选器和个人资料\n\n📍 首先，请提供您的坐标以开始搜索！",
 	"provide_coordinates_first": "📍 <b>请提供您的坐标</b>\n\n要搜索地点，您需要先设置您的位置:",
 	"filters_what": "🍴 搜索什么",
 	"filters_how": "⚙️ 如何搜索",
