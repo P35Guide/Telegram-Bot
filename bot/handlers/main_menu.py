@@ -3,6 +3,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot.states import BotState
 from bot.keyboards import (
     actions_keyboard,
@@ -24,6 +25,7 @@ from bot.services.api_client import (
 )
 from bot.utils.logger import logger
 from bot.utils.localization import i18n
+from bot.model.types_dict import SearchTypes
 
 router = Router()
 
@@ -62,7 +64,8 @@ async def show_location_choice_menu(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    await state.clear()
+    # Keep FSM data (e.g., first_start flag) and only switch state.
+    await state.set_state(BotState.choosing_location_type)
     await message.answer(
         i18n.get(user_id, 'choose_location_type', lang_code),
         reply_markup=choose_location_type_keyboard(user_id, lang_code)
@@ -86,6 +89,15 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     }
     included_types = s.get("includedTypes", [])
     mood_key = mood_key_map.get(mood_code)
+    if not mood_key and included_types:
+        included_set = set(included_types)
+        reverse_mood_code_map = {v: k for k, v in SearchTypes.mood_code_map.items()}
+        for mood_label, mood_types in SearchTypes.mood_types.items():
+            if included_set == set(mood_types):
+                inferred_mood_code = reverse_mood_code_map.get(mood_label)
+                mood_key = mood_key_map.get(inferred_mood_code)
+                if mood_key:
+                    break
     if mood_key:
         # Якщо обраний настрій — показуємо його назву
         categories = i18n.get(user_id, mood_key, lang_code)
@@ -252,16 +264,26 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     await state.clear()
 
     if first_start:
-        from bot.handlers.places import perform_search, show_place_card
-        loading_msg, places = await perform_search(message, session, show_list=False)
-        if places:
-            await state.set_state(BotState.browsing_places)
-            await state.update_data(places=places, current_index=0, first_start=True)
-            try:
-                await loading_msg.delete()
-            except Exception:
-                pass
-            await show_place_card(message, state, session)
+        # First start flow: coordinates -> mood -> search.
+        await state.update_data(first_start=True)
+        builder = InlineKeyboardBuilder()
+        moods = [
+            ("mood_work", "work"),
+            ("mood_date", "date"),
+            ("mood_company", "company"),
+            ("mood_breakfast", "breakfast"),
+        ]
+        for mood_key, mood_code in moods:
+            builder.button(
+                text=i18n.get(user_id, mood_key, lang_code),
+                callback_data=f"set_mood:{mood_code}"
+            )
+        builder.adjust(1)
+        await message.answer(
+            i18n.get(user_id, 'choose_mood', lang_code, current=""),
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
         return
 
     await message.answer(
@@ -313,16 +335,26 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         )
 
         if first_start:
-            from bot.handlers.places import perform_search, show_place_card
-            loading_msg, places = await perform_search(message, session, show_list=False)
-            if places:
-                await state.set_state(BotState.browsing_places)
-                await state.update_data(places=places, current_index=0, first_start=True)
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-                await show_place_card(message, state, session)
+            # First start flow: coordinates -> mood -> search.
+            await state.update_data(first_start=True)
+            builder = InlineKeyboardBuilder()
+            moods = [
+                ("mood_work", "work"),
+                ("mood_date", "date"),
+                ("mood_company", "company"),
+                ("mood_breakfast", "breakfast"),
+            ]
+            for mood_key, mood_code in moods:
+                builder.button(
+                    text=i18n.get(user_id, mood_key, lang_code),
+                    callback_data=f"set_mood:{mood_code}"
+                )
+            builder.adjust(1)
+            await message.answer(
+                i18n.get(user_id, 'choose_mood', lang_code, current=""),
+                parse_mode="HTML",
+                reply_markup=builder.as_markup()
+            )
             return
 
         await send_main_menu(message, telegram_lang_code=lang_code)

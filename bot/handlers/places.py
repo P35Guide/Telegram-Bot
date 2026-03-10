@@ -455,28 +455,28 @@ async def show_places_list(loading_msg, places, title: str = None, user_id: int 
             logger.warning(f"Could not edit loading message: {e}")
 
 
-async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True):
+async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True, user_id: int | None = None):
     """
     Логіка пошуку місць поруч.
     Повертає (loading_msg, places) кортеж.
     У разі помилки обробляє UI оновлення та повертає (loading_msg, None).
     """
+    start_user_id = user_id if user_id is not None else message.from_user.id
     logger.info(
-        f"Користувач {message.from_user.username}({message.from_user.id}) шукає місця поруч")
+        f"Користувач {message.from_user.username}({start_user_id}) шукає місця поруч")
 
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
+    settings = get_user_settings(start_user_id)
     # Мова з налаштувань користувача
     lang_code = settings.get("language", "uk")
 
     loading_msg = await message.answer(
-        i18n.get(user_id, 'search_loading', lang_code),
+        i18n.get(start_user_id, 'search_loading', lang_code),
         parse_mode="HTML"
     )
 
-    at_night = decode_included_types(message.from_user.id)
+    at_night = decode_included_types(start_user_id)
 
-    settings = get_user_settings(message.from_user.id)
+    settings = get_user_settings(start_user_id)
 
     if not settings or not settings.get("coordinates"):
         try:
@@ -484,19 +484,19 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         except Exception as e:
             logger.warning(f"Could not delete loading message: {e}")
         await message.answer(
-            i18n.get(user_id, 'no_location_set', lang_code),
+            i18n.get(start_user_id, 'no_location_set', lang_code),
             parse_mode="HTML",
-            reply_markup=choose_location_type_keyboard(user_id, lang_code)
+            reply_markup=choose_location_type_keyboard(start_user_id, lang_code)
         )
         return loading_msg, None
 
     try:
-        data = await get_places_with_mood(settings, message.from_user.id, session, message, loading_msg)
+        data = await get_places_with_mood(settings, start_user_id, session, message, loading_msg)
 
         if not data or "places" not in data:
             try:
                 await loading_msg.edit_text(
-                    i18n.get(user_id, 'places_error', lang_code),
+                    i18n.get(start_user_id, 'places_error', lang_code),
                     parse_mode="HTML"
                 )
             except Exception as e:
@@ -508,7 +508,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         if not places:
             try:
                 await loading_msg.edit_text(
-                    i18n.get(user_id, 'no_random_places', lang_code),
+                    i18n.get(start_user_id, 'no_random_places', lang_code),
                     parse_mode="HTML"
                 )
             except Exception as e:
@@ -516,7 +516,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             return loading_msg, None
 
         if show_list:
-            user_id = message.from_user.id
+            user_id = start_user_id
             settings = get_user_settings(user_id)
             lang_code = settings.get("language", "uk")
             await show_places_list(loading_msg, places, user_id=user_id, lang_code=lang_code)
@@ -525,7 +525,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
-        user_id = message.from_user.id
+        user_id = start_user_id
         lang_code = settings.get("language", "uk")
         try:
             await loading_msg.edit_text(
@@ -858,16 +858,16 @@ async def start_comparison_handler(message: Message, state: FSMContext):
     )
 
 
-async def show_place_card(message: Message, state: FSMContext, session: aiohttp.ClientSession):
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
+async def show_place_card(message: Message, state: FSMContext, session: aiohttp.ClientSession, user_id: int | None = None):
+    start_user_id = user_id if user_id is not None else message.from_user.id
+    settings = get_user_settings(start_user_id)
     lang_code = settings.get("language", "uk")
     data = await state.get_data()
     places = data.get("places", [])
     index = data.get("current_index", 0)
 
     if not places:
-        msg_text = i18n.get(user_id, 'places_list_empty', lang_code)
+        msg_text = i18n.get(start_user_id, 'places_list_empty', lang_code)
         await message.answer(msg_text)
         await state.clear()
         return
@@ -875,7 +875,7 @@ async def show_place_card(message: Message, state: FSMContext, session: aiohttp.
     if index < 0:
         index = 0
     if index >= len(places):
-        msg_text = i18n.get(user_id, 'last_place_reached', lang_code)
+        msg_text = i18n.get(start_user_id, 'last_place_reached', lang_code)
         await message.answer(msg_text)
         index = len(places) - 1
         await state.update_data(current_index=index)
@@ -885,22 +885,22 @@ async def show_place_card(message: Message, state: FSMContext, session: aiohttp.
 
     language = lang_code
 
-    loading_msg = await message.answer(i18n.get(user_id, 'loading_info', lang_code))
+    loading_msg = await message.answer(i18n.get(start_user_id, 'loading_info', lang_code))
 
-    success, place_msg_ids = await send_place_info(message, session, place_id, language)
+    success, place_msg_ids = await send_place_info(message, session, place_id, language, user_id=start_user_id)
 
     if not success:
-        msg_text = i18n.get(user_id, 'place_details_error', lang_code)
+        msg_text = i18n.get(start_user_id, 'place_details_error', lang_code)
         await loading_msg.edit_text(msg_text)
         return
 
     await loading_msg.delete()
-    msg_text = i18n.get(user_id, 'place_index', lang_code,
+    msg_text = i18n.get(start_user_id, 'place_index', lang_code,
                         current=index + 1, total=len(places))
     index_msg = await message.answer(
         msg_text,
         parse_mode="HTML",
-        reply_markup=place_navigation_keyboard(user_id, lang_code)
+        reply_markup=place_navigation_keyboard(start_user_id, lang_code)
     )
     all_place_msg_ids = place_msg_ids + [index_msg.message_id]
     await state.update_data(last_place_message_ids=all_place_msg_ids)

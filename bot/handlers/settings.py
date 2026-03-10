@@ -149,7 +149,7 @@ async def mood_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("set_mood:"))
-async def set_mood_callback(callback: CallbackQuery, state: FSMContext):
+async def set_mood_callback(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
@@ -164,12 +164,26 @@ async def set_mood_callback(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     
     if first_start:
-        # Keep first_start=True in FSM data so the location handler can read it
-        await state.set_state(BotState.choosing_location_type)
-        await callback.message.answer(
-            i18n.get(user_id, 'choose_location_type', lang_code),
-            reply_markup=choose_location_type_keyboard(user_id)
-        )
+        # First start flow:
+        # - if coords already exist, go straight to search;
+        # - otherwise ask for coordinates.
+        if settings.get("coordinates"):
+            from bot.handlers.places import perform_search, show_place_card
+            loading_msg, places = await perform_search(callback.message, session, show_list=False, user_id=user_id)
+            if places:
+                await state.set_state(BotState.browsing_places)
+                await state.update_data(places=places, current_index=0, first_start=True)
+                try:
+                    await loading_msg.delete()
+                except Exception:
+                    pass
+                await show_place_card(callback.message, state, session, user_id=user_id)
+        else:
+            await state.set_state(BotState.choosing_location_type)
+            await callback.message.answer(
+                i18n.get(user_id, 'choose_location_type', lang_code),
+                reply_markup=choose_location_type_keyboard(user_id)
+            )
     else:
         await send_settings_menu(callback.message, user_id=user_id)
 
@@ -321,7 +335,8 @@ async def clear_included_types_callback(callback: CallbackQuery, state: FSMConte
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    settings_service.clear_included_types(user_id)
+    # Reset both manual categories and mood preset to avoid stale mood label in settings.
+    settings_service.update_mood(user_id, "")
     await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
     await send_settings_menu(callback.message, user_id=user_id)
@@ -332,7 +347,8 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    settings_service.clear_included_types(user_id)
+    # Reset both manual categories and mood preset to avoid stale mood label in settings.
+    settings_service.update_mood(user_id, "")
     await message.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
     await send_main_menu(message)
