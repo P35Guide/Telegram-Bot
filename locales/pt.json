@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Enviar coordenadas",
 	"search_routes": "🚀 Pesquisar rotas",
 	"settings": "⚙️ Configurações",
+	"profile": "👤 Perfil",
 	"add_place": "🔗 Adicionar local",
 	"menu_back": "🔙 Voltar",
 	"menu_cancel": "🔙 Cancelar",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Aberto agora",
 	"settings_save": "💾 Salvar no servidor",
 	"settings_count": "🔢 Quantidade",
+	"settings_search_settings": "🔍 Configurações de pesquisa",
+	"search_settings_title": "🔍 <b>Configurações de pesquisa:</b>",
 	"location_received": "✅ Localização recebida! Você voltou ao menu principal.",
 	"choose_location_type": "Escolha como enviar coordenadas:",
 	"enter_city_name": "Digite o nome da cidade (ex.: Lisboa, Porto, Coimbra)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Local adicionado com sucesso!",
 	"place_added_error": "❌ Erro ao adicionar local",
 	"no_places_with_filters": "⚠️ Nenhum local encontrado com os filtros atuais.",
-	"custom_category_accepted": "✅ Aceito! Procurando categoria personalizada: **{category}**"
+	"custom_category_accepted": "✅ Aceito! Procurando categoria personalizada: **{category}**",
+	"profile_title": "👤 <b>Seu perfil</b>",
+	"main_description": "Este bot ajuda você a encontrar lugares interessantes perto de você com base no raio, nas categorias e no seu humor. Use os botões abaixo para iniciar a busca, ajustar as configurações ou abrir o seu perfil."
 }

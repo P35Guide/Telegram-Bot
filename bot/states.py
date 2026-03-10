@@ -2,6 +2,8 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class BotState(StatesGroup):
+    viewing_settings = State()
+    viewing_search_settings = State()
     selecting_language = State()
     selecting_radius = State()
     selecting_included_types = State()

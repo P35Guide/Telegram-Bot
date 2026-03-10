@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Wyślij współrzędne",
 	"search_routes": "🚀 Szukaj tras",
 	"settings": "⚙️ Ustawienia",
+	"profile": "👤 Profil",
 	"add_place": "🔗 Dodaj miejsce",
 	"menu_back": "🔙 Wstecz",
 	"menu_cancel": "🔙 Anuluj",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Otwarte teraz",
 	"settings_save": "💾 Zapisz na serwerze",
 	"settings_count": "🔢 Liczba",
+	"settings_search_settings": "🔍 Ustawienia wyszukiwania",
+	"search_settings_title": "🔍 <b>Ustawienia wyszukiwania:</b>",
 	"location_received": "✅ Lokalizacja otrzymana! Wróciłeś do menu głównego.",
 	"choose_location_type": "Wybierz sposób wysłania współrzędnych:",
 	"enter_city_name": "Wprowadź nazwę miasta (np.: Warszawa, Kraków, Gdańsk)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Miejsce dodane pomyślnie!",
 	"place_added_error": "❌ Błąd dodawania miejsca",
 	"no_places_with_filters": "⚠️ Nie znaleziono miejsc z aktualnymi filtrami.",
-	"custom_category_accepted": "✅ Zaakceptowano! Szukam niestandardowej kategorii: **{category}**"
+	"custom_category_accepted": "✅ Zaakceptowano! Szukam niestandardowej kategorii: **{category}**",
+	"profile_title": "👤 <b>Twój profil</b>",
+	"main_description": "Ten bot pomaga znajdować ciekawe miejsca w pobliżu na podstawie promienia, kategorii i nastroju. Użyj przycisków poniżej, aby rozpocząć wyszukiwanie, zmienić ustawienia lub otworzyć profil."
 }

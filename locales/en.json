@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Send coordinates",
 	"search_routes": "🚀 Search routes",
 	"settings": "⚙️ Settings",
+	"profile": "👤 Profile",
 	"add_place": "🔗 Add place",
 	"menu_back": "🔙 Back",
 	"menu_cancel": "🔙 Cancel",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Open now",
 	"settings_save": "💾 Save to server",
 	"settings_count": "🔢 Count",
+	"settings_search_settings": "🔍 Search settings",
+	"search_settings_title": "🔍 <b>Search settings:</b>",
 	"location_received": "✅ Location received! You're back to the main menu.",
 	"choose_location_type": "Choose how to send coordinates:",
 	"enter_city_name": "Enter city name (e.g.: London, Paris, Berlin)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Place added successfully!",
 	"place_added_error": "❌ Error adding place",
 	"no_places_with_filters": "⚠️ No places found with current filters.",
-	"custom_category_accepted": "✅ Accepted! Searching for custom category: **{category}**"
+	"custom_category_accepted": "✅ Accepted! Searching for custom category: **{category}**",
+	"profile_title": "👤 <b>Your profile</b>",
+	"main_description": "This bot helps you discover interesting places nearby based on your radius, categories and mood. Use the buttons below to start searching, adjust settings or open your profile."
 }

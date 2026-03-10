@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Koordinaten senden",
 	"search_routes": "🚀 Routen suchen",
 	"settings": "⚙️ Einstellungen",
+	"profile": "👤 Profil",
 	"add_place": "🔗 Ort hinzufügen",
 	"menu_back": "🔙 Zurück",
 	"menu_cancel": "🔙 Abbrechen",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Jetzt geöffnet",
 	"settings_save": "💾 Auf Server speichern",
 	"settings_count": "🔢 Anzahl",
+	"settings_search_settings": "🔍 Sucheinstellungen",
+	"search_settings_title": "🔍 <b>Sucheinstellungen:</b>",
 	"location_received": "✅ Standort erhalten! Sie sind zurück im Hauptmenü.",
 	"choose_location_type": "Wählen Sie, wie Sie Koordinaten senden möchten:",
 	"enter_city_name": "Geben Sie den Stadtnamen ein (z.B.: Berlin, München, Hamburg)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Ort erfolgreich hinzugefügt!",
 	"place_added_error": "❌ Fehler beim Hinzufügen des Ortes",
 	"no_places_with_filters": "⚠️ Keine Orte mit aktuellen Filtern gefunden.",
-	"custom_category_accepted": "✅ Akzeptiert! Suche nach benutzerdefinierter Kategorie: **{category}**"
+	"custom_category_accepted": "✅ Akzeptiert! Suche nach benutzerdefinierter Kategorie: **{category}**",
+	"profile_title": "👤 <b>Ihr Profil</b>",
+	"main_description": "Dieser Bot hilft Ihnen, interessante Orte in Ihrer Nähe zu finden – nach Radius, Kategorien und Stimmung. Verwenden Sie die Schaltflächen unten, um die Suche zu starten, Einstellungen zu ändern oder Ihr Profil zu öffnen."
 }

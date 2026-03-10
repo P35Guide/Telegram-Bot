@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Envoyer les coordonnées",
 	"search_routes": "🚀 Rechercher des itinéraires",
 	"settings": "⚙️ Paramètres",
+	"profile": "👤 Profil",
 	"add_place": "🔗 Ajouter un lieu",
 	"menu_back": "🔙 Retour",
 	"menu_cancel": "🔙 Annuler",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Ouvert maintenant",
 	"settings_save": "💾 Sauvegarder sur le serveur",
 	"settings_count": "🔢 Nombre",
+	"settings_search_settings": "🔍 Paramètres de recherche",
+	"search_settings_title": "🔍 <b>Paramètres de recherche:</b>",
 	"location_received": "✅ Position reçue! Vous êtes de retour au menu principal.",
 	"choose_location_type": "Choisissez comment envoyer les coordonnées:",
 	"enter_city_name": "Entrez le nom de la ville (par ex.: Paris, Lyon, Marseille)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Lieu ajouté avec succès!",
 	"place_added_error": "❌ Erreur lors de l'ajout du lieu",
 	"no_places_with_filters": "⚠️ Aucun lieu trouvé avec les filtres actuels.",
-	"custom_category_accepted": "✅ Accepté! Recherche de catégorie personnalisée: **{category}**"
+	"custom_category_accepted": "✅ Accepté! Recherche de catégorie personnalisée: **{category}**",
+	"profile_title": "👤 <b>Votre profil</b>",
+	"main_description": "Ce bot vous aide à trouver des lieux intéressants près de vous en fonction du rayon, des catégories et de votre humeur. Utilisez les boutons ci‑dessous pour lancer une recherche, ajuster les paramètres ou ouvrir votre profil."
 }

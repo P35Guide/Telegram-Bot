@@ -20,44 +20,60 @@ def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def actions_keyboard(user_id: int = None, lang_code: str = None):
-    """Головне меню: локація, пошук, налаштування, додати місце."""
+    """Головне меню: пошук та профіль (налаштування лише в профілі)."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=i18n.get(
-                user_id or 0, 'send_coordinates', lang_code))],
-            [KeyboardButton(text=i18n.get(
                 user_id or 0, 'search_routes', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'profile', lang_code))],
         ],
         resize_keyboard=True,
     )
 
 
 def settings_keyboard(user_id: int = None, lang_code: str = None):
-    """Меню налаштувань пошуку (відкривається по кнопці «Налаштування»)."""
+    """Головне меню налаштувань: координати, мова, налаштування пошуку, зберегти, назад."""
     return ReplyKeyboardMarkup(
         keyboard=[
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'send_coordinates', lang_code))],
             [
                 KeyboardButton(text=i18n.get(
                     user_id or 0, 'settings_language', lang_code)),
                 KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_radius', lang_code)),
+                    user_id or 0, 'settings_search_settings', lang_code)),
             ],
             [
+                KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
+            ],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_back', lang_code))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def search_settings_keyboard(user_id: int = None, lang_code: str = None):
+    """Підменю «Налаштування пошуку»: радіус, категорії, настрій, сортування, відкрите зараз, кількість, назад."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_radius', lang_code)),
                 KeyboardButton(text=i18n.get(
                     user_id or 0, 'settings_categories', lang_code)),
-                KeyboardButton(text=i18n.get(
-                    user_id or 0, 'settings_mood', lang_code)),
             ],
             [
                 KeyboardButton(text=i18n.get(
+                    user_id or 0, 'settings_mood', lang_code)),
+                KeyboardButton(text=i18n.get(
                     user_id or 0, 'settings_sorting', lang_code)),
+            ],
+            [
                 KeyboardButton(text=i18n.get(
                     user_id or 0, 'settings_open_now', lang_code)),
+                KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),
             ],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
             [KeyboardButton(text=i18n.get(
                 user_id or 0, 'menu_back', lang_code))],
         ],
@@ -75,18 +91,36 @@ def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def search_keyboard(user_id: int = None, lang_code: str = None):
+    """Меню пошуку маршрутів: тільки «Місця» та «Випадкове місце»."""
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'search_places', lang_code)),
+             KeyboardButton(text=i18n.get(
+                 user_id or 0, 'search_random', lang_code))],
             [KeyboardButton(text=i18n.get(
                 user_id or 0, 'menu_cancel', lang_code))],
         ],
         resize_keyboard=True
     )
     return keyboard
+
+
+def profile_keyboard(user_id: int = None, lang_code: str = None):
+    """Меню профілю: улюблені, додати місце, налаштування."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'search_favorites', lang_code)),
+             KeyboardButton(text=i18n.get(
+                 user_id or 0, 'add_place', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'settings', lang_code))],
+            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'menu_back', lang_code))],
+        ],
+        resize_keyboard=True,
+    )
 
 
 def random_choice_keyboard(user_id: int = None, lang_code: str = None):

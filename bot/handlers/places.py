@@ -9,13 +9,13 @@ from aiogram.filters import Command, StateFilter
 from bot.handlers.main_menu import send_main_menu
 from bot.keyboards import (
     place_navigation_keyboard,
-    search_keyboard,
     random_choice_keyboard,
     places_keyboard,
     place_details_keyboard,
     choose_location_type_keyboard,
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
+    actions_keyboard,
 )
 from bot.services.api_client import (
     get_photos,
@@ -261,7 +261,7 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
             if message:
                 user_id = message.from_user.id
                 lang_code = message.from_user.language_code
-                await message.answer("Повернутися до пошуку.", reply_markup=search_keyboard(user_id, lang_code))
+                await message.answer("Повернутися до пошуку.", reply_markup=actions_keyboard(user_id, lang_code))
             return None
 
         # Повертаємо всі місця
@@ -275,7 +275,7 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
         )
         await message.answer(
             i18n.get(user_id, 'return_to_search', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code)
+            reply_markup=actions_keyboard(user_id, lang_code)
         )
 
 
@@ -509,19 +509,22 @@ async def list_places_handler(message: Message, session: aiohttp.ClientSession):
 
 
 @router.message(F.text.in_(["🚀 Пошук маршрутів", "🚀 Search routes", "🚀 Routen suchen", "🚀 Rechercher des itinéraires", "🚀 Buscar rutas", "🚀 Cercare percorsi", "🚀 Szukaj tras", "🚀 Pesquisar rotas", "🚀 ルート検索", "🚀 搜索路线"]))
-async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
-    lang_code = settings.get("language", "uk")
-    logger.info(
-        f"Користувач {message.from_user.username}({user_id}) запускає пошук маршрутів")
+async def search_menu_handler(message: Message, session: aiohttp.ClientSession, state: FSMContext):
+    """Головна кнопка: одразу запускає пошук місць (без проміжного меню)."""
+    loading_msg, places = await perform_search(message, session, show_list=False)
 
-    msg_text = i18n.get(user_id, 'choose_search_variant', lang_code)
-    await message.answer(
-        msg_text,
-        parse_mode="HTML",
-        reply_markup=search_keyboard(user_id, lang_code)
-    )
+    if not places:
+        return
+
+    await state.set_state(BotState.browsing_places)
+    await state.update_data(places=places, current_index=0)
+
+    try:
+        await loading_msg.delete()
+    except Exception as e:
+        logger.warning(f"Could not delete loading message: {e}")
+
+    await show_place_card(message, state, session)
 
 
 @router.message(F.text.in_(["🎲 Випадкове місце", "🎲 Random place", "🎲 Zufälliger Ort", "🎲 Lieu aléatoire", "🎲 Lugar aleatorio", "🎲 Luogo casuale", "🎲 Losowe miejsce", "🎲 Local aleatório", "🎲 ランダムな場所", "🎲 随机地点"]))
@@ -547,7 +550,7 @@ async def random_choice_back_handler(message: Message, state: FSMContext):
     lang_code = settings.get("language", "uk")
     await state.clear()
     msg_text = i18n.get(user_id, 'back_to_search_menu', lang_code)
-    await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
+    await message.answer(msg_text, reply_markup=actions_keyboard(user_id, lang_code))
 
 
 @router.message(F.text.in_(["🌟 Улюблені", "🌟 Favorites", "🌟 Favoriten", "🌟 Favoris", "🌟 Favoritos", "🌟 Preferiti", "🌟 Ulubione", "🌟 Favoritos", "🌟 お気に入り", "🌟 收藏"]))
@@ -565,7 +568,7 @@ async def favorite_menu_handler(message: Message, state: FSMContext):
         await message.answer(
             msg_text,
             parse_mode="HTML",
-            reply_markup=search_keyboard(user_id, lang_code)
+            reply_markup=actions_keyboard(user_id, lang_code)
         )
         return
 
@@ -616,7 +619,7 @@ async def random_from_favorites_handler(message: Message, state: FSMContext):
     if not favorites:
         await message.answer(
             i18n.get(user_id, 'comparison_no_favorites', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code),
+            reply_markup=actions_keyboard(user_id, lang_code),
         )
         return
 
@@ -639,9 +642,8 @@ async def random_from_favorites_handler(message: Message, state: FSMContext):
     )
 
 
-@router.message(F.text.in_(["🔍 З результатів пошуку", "🔍 From search results", "🔍 Aus Suchergebnissen", "🔍 Des résultats de recherche", "🔍 De resultados de búsqueda", "🔍 Dai risultati di ricerca", "🔍 Z wyników wyszukiwania", "🔍 Dos resultados da pesquisa", "🔍 検索結果から", "🔍 从搜索结果"]))
-async def random_place_handler(message: Message, session: aiohttp.ClientSession, state: FSMContext):
-    """Випадково обирає місце з результатів пошуку за поточними налаштуваннями."""
+async def _run_random_place_from_search(message: Message, session: aiohttp.ClientSession, state: FSMContext, reply_markup):
+    """Спільна логіка: випадкове місце з пошуку. reply_markup — клавіатура після відповіді."""
     await state.clear()
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
@@ -650,9 +652,8 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
     if not settings.get("coordinates"):
         await message.answer(
             i18n.get(user_id, 'no_location_set', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code),
+            reply_markup=reply_markup,
         )
-        await state.clear()
         return
 
     await message.answer_dice(emoji="🎲")
@@ -672,9 +673,8 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
         )
         await message.answer(
             i18n.get(user_id, 'back_to_search_menu', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code),
+            reply_markup=reply_markup,
         )
-        await state.clear()
         return
 
     chosen = random.choice(places)
@@ -692,9 +692,19 @@ async def random_place_handler(message: Message, session: aiohttp.ClientSession,
     )
     await message.answer(
         i18n.get(user_id, 'back_to_search_menu', lang_code),
-        reply_markup=search_keyboard(user_id, lang_code),
+        reply_markup=reply_markup,
     )
-    await state.clear()
+
+
+@router.message(Command("rand_place"))
+async def cmd_rand_place(message: Message, session: aiohttp.ClientSession, state: FSMContext):
+    """Команда /rand_place — випадкове місце з результатів пошуку."""
+    user_id = message.from_user.id
+    lang_code = get_user_settings(user_id).get("language", "uk")
+    await _run_random_place_from_search(
+        message, session, state,
+        reply_markup=actions_keyboard(user_id, lang_code),
+    )
 
 
 @router.message(F.text.in_(["⚖️ Порівняти", "⚖️ Compare", "⚖️ Vergleichen", "⚖️ Comparer", "⚖️ Comparar", "⚖️ Confronta", "⚖️ Porównaj", "⚖️ Comparar", "⚖️ 比較", "⚖️ 比较"]))
@@ -845,7 +855,7 @@ async def stop_browsing_handler(message: Message, state: FSMContext):
     lang_code = settings.get("language", "uk")
     await state.clear()
     msg_text = i18n.get(user_id, 'browsing_finished', lang_code)
-    await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
+    await message.answer(msg_text, reply_markup=actions_keyboard(user_id, lang_code))
 
 
 @router.message(BotState.browsing_places)
@@ -922,7 +932,7 @@ async def comparison_cancel_handler(message: Message, state: FSMContext):
     msg_text = i18n.get(user_id, 'comparison_cancelled', lang_code)
     await message.answer(msg_text)
     back_text = i18n.get(user_id, 'back_to_main_menu', lang_code)
-    await message.answer(back_text, reply_markup=search_keyboard(user_id, lang_code))
+    await message.answer(back_text, reply_markup=actions_keyboard(user_id, lang_code))
 
 
 @router.callback_query(F.data.startswith("compare_toggle:"))
@@ -1040,7 +1050,7 @@ async def cancel_comparison_handler(callback: CallbackQuery, state: FSMContext):
         parse_mode="HTML"
     )
     back_text = i18n.get(user_id, 'back_to_main_menu', lang_code)
-    await callback.message.answer(back_text, reply_markup=search_keyboard(user_id, lang_code))
+    await callback.message.answer(back_text, reply_markup=actions_keyboard(user_id, lang_code))
 
 
 @router.callback_query(F.data == "comparison_help")

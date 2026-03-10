@@ -7,7 +7,7 @@ from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
 from bot.utils.logger import logger
-from bot.handlers.main_menu import send_settings_menu,send_main_menu
+from bot.handlers.main_menu import send_settings_menu, send_search_settings_menu, send_main_menu
 from bot.utils.localization import i18n
 from bot.services import settings as settings_service
 from bot.config import ADD_PLACE_BOT_USERNAME
@@ -58,7 +58,7 @@ async def language_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("set_lang:"))
-async def set_language_callback(callback: CallbackQuery, session: aiohttp.ClientSession):
+async def set_language_callback(callback: CallbackQuery, session: aiohttp.ClientSession, state: FSMContext):
     """Обробка вибору мови"""
     user_id = callback.from_user.id
     lang_code = callback.data.split(":")[1]
@@ -79,8 +79,8 @@ async def set_language_callback(callback: CallbackQuery, session: aiohttp.Client
         await callback.message.edit_text(
             i18n.get(user_id, 'language_changed', lang_code, language=lang_name)
         )
-        # Показуємо оновлене меню налаштувань
-        await send_settings_menu(callback.message, user_id=user_id)
+        # Показуємо оновлене меню налаштувань (мова — у головних налаштуваннях)
+        await send_settings_menu(callback.message, user_id=user_id, state=state)
     else:
         await callback.answer("❌ Error")
 
@@ -151,11 +151,11 @@ async def set_mood_callback(callback: CallbackQuery):
     
     await callback.answer(i18n.get(user_id, 'category_added', lang_code))
     await callback.message.delete()
-    await send_settings_menu(callback.message, user_id=user_id)
+    await send_search_settings_menu(callback.message, user_id=user_id, state=state)
 
 
 @router.callback_query(F.data == "clear_mood")
-async def clear_mood_callback(callback: CallbackQuery):
+async def clear_mood_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
@@ -164,7 +164,7 @@ async def clear_mood_callback(callback: CallbackQuery):
     
     await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await callback.message.delete()
-    await send_settings_menu(callback.message, user_id=user_id)
+    await send_search_settings_menu(callback.message, user_id=user_id, state=state)
 
 
 @router.message(F.text.in_(["🍴 Вибрати категорії", "🍴 Select categories", "🍴 Kategorien auswählen", "🍴 Sélectionner les catégories", "🍴 Seleccionar categorías", "🍴 Seleziona categorie", "🍴 Wybierz kategorie", "🍴 Selecionar categorias", "🍴 カテゴリーを選択", "🍴 选择类别"]))
@@ -266,7 +266,7 @@ async def add_included_type_callback(callback: CallbackQuery, state: FSMContext)
     settings_service.add_included_type(user_id, type_code)
     await callback.answer(i18n.get(user_id, 'category_added', lang_code))
     await state.clear()
-    await send_settings_menu(callback.message, user_id=user_id)
+    await send_search_settings_menu(callback.message, user_id=user_id, state=state)
 
 @router.callback_query(F.data.startswith("add_included_list_type:"))
 async def add_list_included(callback: CallbackQuery, state: FSMContext):
@@ -293,7 +293,7 @@ async def add_custom_category_handler(message: Message, state: FSMContext):
     settings_service.add_included_type(user_id, user_text)
     await message.answer(i18n.get(user_id, 'custom_category_accepted', lang_code, category=user_text))
     await state.clear()
-    await send_main_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.callback_query(F.data == "cancel_included_types")
@@ -304,7 +304,7 @@ async def clear_included_types_callback(callback: CallbackQuery, state: FSMConte
     settings_service.clear_included_types(user_id)
     await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
-    await send_settings_menu(callback.message, user_id=user_id)
+    await send_search_settings_menu(callback.message, user_id=user_id, state=state)
 
 
 @router.message(F.text == "🧹 Скинути категорії", BotState.waiting_for_category)
@@ -315,7 +315,7 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     settings_service.clear_included_types(user_id)
     await message.answer(i18n.get(user_id, 'categories_reset', lang_code))
     await state.clear()
-    await send_main_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
@@ -331,7 +331,7 @@ async def max_result_count_handler(message: Message, state: FSMContext):
 
 
 @router.message(F.text.in_(["⭐ Сортування", "⭐ Sorting", "⭐ Sortierung", "⭐ Tri", "⭐ Ordenar", "⭐ Ordinamento", "⭐ Sortowanie", "⭐ Ordenação", "⭐ 並び替え", "⭐ 排序"]))
-async def rank_preference_handler(message: Message):
+async def rank_preference_handler(message: Message, state: FSMContext):
     current_settings = get_user_settings(message.from_user.id)
     current_rank = current_settings.get("rankPreference", "POPULARITY")
 
@@ -340,8 +340,7 @@ async def rank_preference_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив сортування на {new_rank}")
-    await send_settings_menu(message)
-    await send_settings_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.message(StateFilter(BotState.selecting_language, BotState.selecting_radius,
@@ -349,11 +348,11 @@ async def rank_preference_handler(message: Message):
                             BotState.selecting_max_result_count), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
-    await send_settings_menu(message, user_id=message.from_user.id)
+    await send_settings_menu(message, user_id=message.from_user.id, state=state)
 
 
 @router.message(F.text.in_(["⏰ Відкрите зараз", "⏰ Open now", "⏰ Jetzt geöffnet", "⏰ Ouvert maintenant", "⏰ Abierto ahora", "⏰ Aperto ora", "⏰ Otwarte teraz", "⏰ Aberto agora", "⏰ 営業中", "⏰ 现在营业"]))
-async def open_now_handler(message: Message):
+async def open_now_handler(message: Message, state: FSMContext):
     current_settings = get_user_settings(message.from_user.id)
     current_open_now = current_settings.get("openNow", False)
 
@@ -362,7 +361,7 @@ async def open_now_handler(message: Message):
 
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив налаштування 'відкрите зараз' на {new_open_now}")
-    await send_main_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.message(BotState.selecting_language)
@@ -372,8 +371,7 @@ async def set_language_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив мову на {lang}")
     update_language(message.from_user.id, lang)
     await state.clear()
-    await send_settings_menu(message)
-    await send_settings_menu(message)
+    await send_settings_menu(message, state=state)
 
 
 @router.message(BotState.selecting_radius)
@@ -393,8 +391,7 @@ async def set_radius_handler(message: Message, state: FSMContext):
         f"Користувач {message.from_user.username}({user_id}) змінив радіус на {radius}")
     update_radius(user_id, radius)
     await state.clear()
-    await send_settings_menu(message, user_id=user_id)
-    await send_settings_menu(message, user_id=user_id)
+    await send_search_settings_menu(message, user_id=user_id, state=state)
 
 
 @router.message(BotState.selecting_included_types)
@@ -408,8 +405,7 @@ async def set_included_types_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив включені типи на {types}")
     await state.clear()
-    await send_settings_menu(message)
-    await send_settings_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.message(BotState.selecting_excluded_types)
@@ -423,8 +419,7 @@ async def set_excluded_types_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({message.from_user.id}) змінив виключені типи на {types}")
     await state.clear()
-    await send_settings_menu(message)
-    await send_settings_menu(message)
+    await send_search_settings_menu(message, state=state)
 
 
 @router.message(BotState.selecting_max_result_count)
@@ -441,4 +436,4 @@ async def set_max_result_count_handler(message: Message, state: FSMContext):
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) змінив кількість результатів на {int(text)}")
     await state.clear()
-    await send_settings_menu(message, user_id=user_id)
+    await send_search_settings_menu(message, user_id=user_id, state=state)

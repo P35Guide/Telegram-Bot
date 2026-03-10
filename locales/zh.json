@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 发送坐标",
 	"search_routes": "🚀 搜索路线",
 	"settings": "⚙️ 设置",
+	"profile": "👤 个人资料",
 	"add_place": "🔗 添加地点",
 	"menu_back": "🔙 返回",
 	"menu_cancel": "🔙 取消",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ 现在营业",
 	"settings_save": "💾 保存到服务器",
 	"settings_count": "🔢 数量",
+	"settings_search_settings": "🔍 搜索设置",
+	"search_settings_title": "🔍 <b>搜索设置:</b>",
 	"location_received": "✅ 已收到位置！您已返回主菜单。",
 	"choose_location_type": "选择如何发送坐标:",
 	"enter_city_name": "输入城市名称（例如：北京、上海、广州）",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ 地点添加成功！",
 	"place_added_error": "❌ 添加地点错误",
 	"no_places_with_filters": "⚠️ 使用当前过滤器未找到地点。",
-	"custom_category_accepted": "✅ 已接受！搜索自定义类别：**{category}**"
+	"custom_category_accepted": "✅ 已接受！搜索自定义类别：**{category}**",
+	"profile_title": "👤 <b>您的个人资料</b>",
+	"main_description": "这个机器人可以根据半径、类别和心情，帮您发现附近有趣的地点。使用下方按钮开始搜索、调整设置或打开个人资料。"
 }

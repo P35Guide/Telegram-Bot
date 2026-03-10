@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Enviar coordenadas",
 	"search_routes": "🚀 Buscar rutas",
 	"settings": "⚙️ Ajustes",
+	"profile": "👤 Perfil",
 	"add_place": "🔗 Añadir lugar",
 	"menu_back": "🔙 Atrás",
 	"menu_cancel": "🔙 Cancelar",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Abierto ahora",
 	"settings_save": "💾 Guardar en servidor",
 	"settings_count": "🔢 Cantidad",
+	"settings_search_settings": "🔍 Ajustes de búsqueda",
+	"search_settings_title": "🔍 <b>Ajustes de búsqueda:</b>",
 	"location_received": "✅ ¡Ubicación recibida! Has vuelto al menú principal.",
 	"choose_location_type": "Elige cómo enviar coordenadas:",
 	"enter_city_name": "Ingresa el nombre de la ciudad (ej.: Madrid, Barcelona, Valencia)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ ¡Lugar añadido con éxito!",
 	"place_added_error": "❌ Error al añadir lugar",
 	"no_places_with_filters": "⚠️ No se encontraron lugares con los filtros actuales.",
-	"custom_category_accepted": "✅ ¡Aceptado! Buscando categoría personalizada: **{category}**"
+	"custom_category_accepted": "✅ ¡Aceptado! Buscando categoría personalizada: **{category}**",
+	"profile_title": "👤 <b>Tu perfil</b>",
+	"main_description": "Este bot te ayuda a encontrar lugares interesantes cerca de ti según el radio, las categorías y tu estado de ánimo. Usa los botones de abajo para empezar la búsqueda, ajustar la configuración o abrir tu perfil."
 }

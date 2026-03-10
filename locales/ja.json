@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 座標を送信",
 	"search_routes": "🚀 ルートを検索",
 	"settings": "⚙️ 設定",
+	"profile": "👤 プロフィール",
 	"add_place": "🔗 場所を追加",
 	"menu_back": "🔙 戻る",
 	"menu_cancel": "🔙 キャンセル",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ 営業中",
 	"settings_save": "💾 サーバーに保存",
 	"settings_count": "🔢 件数",
+	"settings_search_settings": "🔍 検索設定",
+	"search_settings_title": "🔍 <b>検索設定:</b>",
 	"location_received": "✅ 位置情報を受信しました！メインメニューに戻りました。",
 	"choose_location_type": "座標の送信方法を選んでください:",
 	"enter_city_name": "都市名を入力してください（例：東京、大阪、京都）",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ 場所が正常に追加されました！",
 	"place_added_error": "❌ 場所の追加エラー",
 	"no_places_with_filters": "⚠️ 現在のフィルターで場所が見つかりませんでした。",
-	"custom_category_accepted": "✅ 承認！カスタムカテゴリーを検索中: **{category}**"
+	"custom_category_accepted": "✅ 承認！カスタムカテゴリーを検索中: **{category}**",
+	"profile_title": "👤 <b>あなたのプロフィール</b>",
+	"main_description": "このボットは、半径・カテゴリー・気分に合わせて近くのスポットを見つけるお手伝いをします。下のボタンから検索を始めるか、設定を変えるか、プロフィールを開いてください。"
 }

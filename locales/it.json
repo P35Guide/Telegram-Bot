@@ -6,6 +6,7 @@
 	"send_coordinates": "📍 Invia coordinate",
 	"search_routes": "🚀 Cerca percorsi",
 	"settings": "⚙️ Impostazioni",
+	"profile": "👤 Profilo",
 	"add_place": "🔗 Aggiungi luogo",
 	"menu_back": "🔙 Indietro",
 	"menu_cancel": "🔙 Annulla",
@@ -21,6 +22,8 @@
 	"settings_open_now": "⏰ Aperto ora",
 	"settings_save": "💾 Salva sul server",
 	"settings_count": "🔢 Quantità",
+	"settings_search_settings": "🔍 Impostazioni di ricerca",
+	"search_settings_title": "🔍 <b>Impostazioni di ricerca:</b>",
 	"location_received": "✅ Posizione ricevuta! Sei tornato al menu principale.",
 	"choose_location_type": "Scegli come inviare le coordinate:",
 	"enter_city_name": "Inserisci il nome della città (es.: Roma, Milano, Napoli)",
@@ -179,5 +182,7 @@
 	"place_added_success": "✅ Luogo aggiunto con successo!",
 	"place_added_error": "❌ Errore nell'aggiunta del luogo",
 	"no_places_with_filters": "⚠️ Nessun luogo trovato con i filtri attuali.",
-	"custom_category_accepted": "✅ Accettato! Cercando categoria personalizzata: **{category}**"
+	"custom_category_accepted": "✅ Accettato! Cercando categoria personalizzata: **{category}**",
+	"profile_title": "👤 <b>Il tuo profilo</b>",
+	"main_description": "Questo bot ti aiuta a trovare posti interessanti vicino a te in base a raggio, categorie e umore. Usa i pulsanti qui sotto per avviare la ricerca, modificare le impostazioni o aprire il profilo."
 }
