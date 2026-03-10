@@ -3,7 +3,6 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot.states import BotState
 from bot.keyboards import (
     actions_keyboard,
@@ -156,10 +155,12 @@ async def back_to_main_menu(message: Message):
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: aiohttp.ClientSession):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
-    
-    # Автоматично визначаємо мову користувача
-    detected_lang = i18n.get_user_language(user_id, lang_code)
+    telegram_lang_code = (message.from_user.language_code or "").lower()
+    mapped_lang = i18n.LANGUAGE_MAPPING.get(telegram_lang_code, telegram_lang_code)
+    detected_lang = i18n.LANGUAGE_CODES.get(mapped_lang, mapped_lang)
+    if detected_lang not in i18n.get_available_languages():
+        detected_lang = 'en'
+
     logger.info(f"/start: user_id={user_id}, detected_lang={detected_lang}")
 
     # Отримуємо дані користувача з API
@@ -171,58 +172,18 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
         if created is not None:
             apply_user_data_from_api(user_id, created)
     
-    # Встановлюємо визначену мову з Telegram, якщо у налаштуваннях ще не встановлена
     settings = get_user_settings(user_id)
     current_language = settings.get("language")
-    
-    # Якщо мова не була збережена на сервері (None, порожній рядок), встановлюємо detected_lang
-    if not current_language:
-        settings["language"] = detected_lang
-        i18n.set_user_language(user_id, detected_lang)
-        
-        # Зберігаємо налаштування на сервер
+    settings["language"] = detected_lang
+    i18n.set_user_language(user_id, detected_lang)
+
+    if current_language != detected_lang:
         payload = get_settings_payload_for_api(user_id)
         await api_save_user_settings(user_id, payload, session)
-        logger.info(f"Set user language to detected and saved to server: {detected_lang}")
-    else:
-        # Використовуємо мову з сервера
-        detected_lang = current_language
-        logger.info(f"Using language from server: {current_language}")
+        logger.info(f"Set user language from Telegram and saved to server: {detected_lang}")
 
     await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
-
-    # Показуємо запит про зміну мови (двома мовами: detected + English)
-    lang_name = i18n.get_available_languages().get(detected_lang, detected_lang)
-    
-    # Формуємо повідомлення двома мовами - використовуємо метод get_translation
-    prompt_detected = i18n.get_translation(detected_lang, 'language_prompt')
-    prompt_en = i18n.get_translation('en', 'language_prompt')
-    
-    # Якщо мова не англійська, показуємо обидві
-    if detected_lang != 'en':
-        message_text = f"{prompt_detected}\n{prompt_en}"
-    else:
-        message_text = prompt_en
-    
-    # Кнопки - використовуємо метод get_translation
-    builder = InlineKeyboardBuilder()
-    continue_text_detected = i18n.get_translation(detected_lang, 'continue_with_language', language=lang_name)
-    change_text_detected = i18n.get_translation(detected_lang, 'change_language_btn')
-    
-    builder.button(
-        text=continue_text_detected,
-        callback_data="start_continue"
-    )
-    builder.button(
-        text=change_text_detected,
-        callback_data="start_change_lang"
-    )
-    builder.adjust(1)
-    
-    await message.answer(
-        message_text,
-        reply_markup=builder.as_markup()
-    )
+    await send_main_menu(message, user_id=user_id, telegram_lang_code=detected_lang)
 
 
 @router.callback_query(F.data == "start_continue")

@@ -98,8 +98,6 @@
 	"open_yes": "Так",
 	"open_no": "Ні",
 	"language_changed": "✅ Мову змінено на {language}",
-	"select_language": "Оберіть мову інтерфейсу:",
-	"language_prompt": "Оберіть мову інтерфейсу:",
 	"continue_with_language": "✅ Продовжити з {language}",
 	"change_language_btn": "🌐 Змінити мову",
 	"add_place_title": "📌 <b>Додавання власних місць</b>\n\nУ цьому боті можна лише <b>шукати</b> місця поруч.\nЩоб <b>додати та переглядати свої місця</b> на карті, скористайтесь окремим ботом:\n\n👉 {username}",
