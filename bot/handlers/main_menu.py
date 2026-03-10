@@ -8,6 +8,7 @@ from bot.keyboards import (
     actions_keyboard,
     choose_location_type_keyboard,
     settings_keyboard,
+    test_keyboard,
 )
 from bot.services.settings import (
     save_coordinates,
@@ -76,11 +77,33 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     rank_code = (s.get("rankPreference") or "POPULARITY").upper()
     rank_display = i18n.get(user_id, 'rank_distance', lang_code) if rank_code == "DISTANCE" else i18n.get(user_id, 'rank_popularity', lang_code)
 
-    categories = ", ".join(s.get("includedTypes", [])) if s.get(
-        "includedTypes") else i18n.get(user_id, 'all', lang_code)
+    mood_code = (s.get("mood") or "").strip().lower()
+    mood_key_map = {
+        "work": "mood_work",
+        "date": "mood_date",
+        "company": "mood_company",
+        "breakfast": "mood_breakfast",
+    }
+    included_types = s.get("includedTypes", [])
+    mood_key = mood_key_map.get(mood_code)
+    if mood_key:
+        # Якщо обраний настрій — показуємо його назву
+        categories = i18n.get(user_id, mood_key, lang_code)
+    elif included_types:
+        # Якщо вручну обрані категорії — показуємо їх
+        categories = ", ".join(included_types)
+    else:
+        categories = i18n.get(user_id, 'all', lang_code)
 
     open_now = s.get("openNow", False)
     open_status = i18n.get(user_id, 'open_yes', lang_code) if open_now else i18n.get(user_id, 'open_no', lang_code)
+    location_city = (s.get("location_city") or "").strip()
+    if location_city:
+        location_value = location_city
+    elif s.get("coordinates"):
+        location_value = "GPS"
+    else:
+        location_value = i18n.get(user_id, 'none', lang_code)
 
     return (
         f"{i18n.get(user_id, 'settings_title', lang_code)}\n"
@@ -88,6 +111,7 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
         f"├ {i18n.get(user_id, 'settings_radius_label', lang_code, radius=s.get('radius', 1000))}\n"
         f"├ {i18n.get(user_id, 'settings_categories_compact', lang_code, categories=categories)}\n"
         f"├ {i18n.get(user_id, 'settings_rank_label', lang_code, rank=rank_display)}\n"
+        f"├ {i18n.get(user_id, 'settings_location_label', lang_code, location=location_value)}\n"
         f"└ {i18n.get(user_id, 'settings_open_label', lang_code, status=open_status)}"
     )
 
@@ -153,7 +177,7 @@ async def back_to_main_menu(message: Message):
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, session: aiohttp.ClientSession):
+async def cmd_start(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     user_id = message.from_user.id
     telegram_lang_code = (message.from_user.language_code or "").lower()
     mapped_lang = i18n.LANGUAGE_MAPPING.get(telegram_lang_code, telegram_lang_code)
@@ -180,12 +204,24 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
     if current_language != detected_lang:
         payload = get_settings_payload_for_api(user_id)
         await api_save_user_settings(user_id, payload, session)
-        logger.info(f"Set user language to detected and saved to server: {detected_lang}")
-    else:
-        # Використовуємо мову з сервера
-        detected_lang = current_language
-        i18n.set_user_language(user_id, detected_lang)
-        logger.info(f"Using language from server: {current_language}")
+        logger.info(f"Set user language from Telegram and saved to server: {detected_lang}")
+
+    await state.update_data(first_start=True)
+    await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
+    await message.answer(
+        i18n.get(user_id, 'choose_action', detected_lang),
+        reply_markup=test_keyboard(user_id, detected_lang),
+    )
+
+
+@router.callback_query(F.data == "start_continue")
+async def start_continue_callback(callback: CallbackQuery):
+    """Продовжити з автоматично визначеною мовою"""
+    user_id = callback.from_user.id
+    await callback.answer()
+    await callback.message.delete()
+    await send_main_menu(callback.message, user_id=user_id)
+
 
     # Одразу показуємо головне меню (вибір мови лише в налаштуваннях)
     # Якщо координат немає - спочатку просимо їх надати
@@ -208,9 +244,24 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     lat, lon = message.location.latitude, message.location.longitude
     logger.info(f"Користувач {message.from_user.username}({user_id}) надіслав локацію: {lat}, {lon}")
     await _save_coordinates_and_sync(user_id, lat, lon, session)
+
+    fsm_data = await state.get_data()
+    first_start = fsm_data.get("first_start", False)
     await state.clear()
-    
-    # Показуємо повідомлення про отримання локації
+
+    if first_start:
+        from bot.handlers.places import perform_search, show_place_card
+        loading_msg, places = await perform_search(message, session, show_list=False)
+        if places:
+            await state.set_state(BotState.browsing_places)
+            await state.update_data(places=places, current_index=0, first_start=True)
+            try:
+                await loading_msg.delete()
+            except Exception:
+                pass
+            await show_place_card(message, state, session)
+        return
+
     await message.answer(
         i18n.get(user_id, 'location_received', lang_code),
         reply_markup=actions_keyboard(user_id, lang_code),
@@ -249,19 +300,28 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         await _save_coordinates_and_sync(
             user_id, coords["latitude"], coords["longitude"], session, city_name=text
         )
+
+        fsm_data = await state.get_data()
+        first_start = fsm_data.get("first_start", False)
         await state.clear()
+
         await message.answer(
             i18n.get(user_id, 'city_found', lang_code, city=text)
         )
-        
-        # Показуємо координати
-        title = i18n.get(user_id, 'your_coordinates', lang_code)
-        lat_label = i18n.get(user_id, 'latitude_label', lang_code)
-        lon_label = i18n.get(user_id, 'longitude_label', lang_code)
-        await message.answer(
-            f"{title}\n{lat_label} {coords['latitude']}\n{lon_label} {coords['longitude']}",
-        )
-        
+
+        if first_start:
+            from bot.handlers.places import perform_search, show_place_card
+            loading_msg, places = await perform_search(message, session, show_list=False)
+            if places:
+                await state.set_state(BotState.browsing_places)
+                await state.update_data(places=places, current_index=0, first_start=True)
+                try:
+                    await loading_msg.delete()
+                except Exception:
+                    pass
+                await show_place_card(message, state, session)
+            return
+
         await send_main_menu(message, telegram_lang_code=lang_code)
     else:
         await message.answer(

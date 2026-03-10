@@ -413,7 +413,13 @@ def update_radius(user_id, radius):
 
 
 def update_mood(user_id: int, mood: str):
-    """Update user's mood setting."""
+    """Update user's mood setting and populate includedTypes accordingly."""
     settings = get_user_settings(user_id)
     settings["mood"] = mood
+    # Clear manual includedTypes so mood types take effect
+    settings["includedTypes"] = []
+    if mood:
+        mood_label = SearchTypes.mood_code_map.get(mood)
+        if mood_label:
+            settings["includedTypes"] = list(SearchTypes.mood_types.get(mood_label, []))
     user_settings[user_id] = settings

@@ -1,6 +1,6 @@
 {
 	"welcome": "👋 <b>YumMap</b>",
-	"start_intro": "YumMap est votre guide dans l'univers du goût et du confort !\nJe vous aiderai à trouver rapidement les meilleurs lieux selon votre besoin.\n\nCe que je peux faire :\n\n📍 Rechercher à proximité : trouver des établissements ouverts dans un rayon de 5 km.\n\n✨ S'adapter à votre humeur : d'un café chaleureux pour étudier à un endroit pour une grande compagnie.\n\n⚖️ Comparer : vous aider à choisir la meilleure option parmi les variantes sélectionnées.\n\n⭐ Mémoriser : vos lieux favoris sont toujours à portée de main.",
+	"start_intro": "YumMap est votre guide dans l'univers du goût et du confort !\nJe vous aiderai à trouver rapidement les meilleurs lieux selon votre besoin.\n\nCe que je peux faire :\n\n📍 Rechercher à proximité : trouver des établissements ouverts dans un rayon de 5 km.\n\n✨ S'adapter à votre humeur : d'un café chaleureux pour étudier à un endroit pour une grande compagnie.\n\n⚖️ Comparer : vous aider à choisir la meilleure option parmi les variantes sélectionnées.\n\n⭐ Mémoriser : vos lieux favoris sont toujours à portée de main.\n\n⚙️ Vous pouvez modifier les paramètres de recherche à tout moment.",
 	"choose_action": "Choisissez une action:",
 	"send_location": "📍 Envoyer ma position",
 	"find_city": "🏙️ Trouver une ville",
@@ -42,6 +42,7 @@
 	"settings_categories_compact": "📂 Catégories : <code>{categories}</code>",
 	"settings_count_label": "🔢 Nombre maximum: <code>{count}</code>",
 	"settings_rank_label": "🔀 Tri: <code>{rank}</code>",
+	"settings_location_label": "📍 Position: <code>{location}</code>",
 	"rank_popularity": "Popularité",
 	"rank_distance": "Distance",
 	"settings_open_label": "⏰ Seulement ouverts: <code>{status}</code>",

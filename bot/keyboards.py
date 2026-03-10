@@ -20,15 +20,17 @@ def choose_location_type_keyboard(user_id: int = None, lang_code: str = None):
 
 
 def actions_keyboard(user_id: int = None, lang_code: str = None):
-    """Головне меню: локація, пошук, налаштування, додати місце."""
+    """Головне меню: локація, пошук, налаштування."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=i18n.get(
-                user_id or 0, 'send_coordinates', lang_code))],
-            [KeyboardButton(text=i18n.get(
+                user_id or 0, 'send_coordinates', lang_code)),
+             KeyboardButton(text=i18n.get(
                 user_id or 0, 'search_routes', lang_code))],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
+            
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code))],
+            # [KeyboardButton(text=i18n.get(user_id or 0, 'settings', lang_code)),
+            #  KeyboardButton(text=i18n.get(user_id or 0, 'add_place', lang_code))],
         ],
         resize_keyboard=True,
     )
@@ -112,6 +114,15 @@ def cancel_keyboard(user_id: int = None, lang_code: str = None):
     )
     return keyboard
 
+def test_keyboard(user_id: int = None, lang_code: str = None):
+      """Клавіатура коли користувач запускає бота протестити функціонал бота(мінімально (кнопки:за настроєм та передати координати))"""
+      return ReplyKeyboardMarkup(
+          keyboard=[
+              [KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
+               KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
+          ],
+          resize_keyboard=True
+      )
 
 def places_keyboard(places):
 

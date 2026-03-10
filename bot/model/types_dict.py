@@ -15,7 +15,18 @@ class SearchTypes:
         "Need to Work 💻": list((
             "restaurant", "cafe", "coworking_space", "library", "book_store",
             "coffee_shop", "bakery"
+        )),
+        "Breakfast at 2 PM 🥞": list((
+            "cafe", "coffee_shop", "bakery", "breakfast_restaurant",
+            "brunch_restaurant", "sandwich_shop", "dessert_shop"
         ))
+    }
+    
+    mood_code_map: dict = {
+        "company": "Loud Company 🍻",
+        "date": "Date Night 🌙",
+        "work": "Need to Work 💻",
+        "breakfast": "Breakfast at 2 PM 🥞",
     }
     
     category: dict = {
