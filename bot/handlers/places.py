@@ -72,13 +72,13 @@ router = Router()
 _place_name_cache: dict[str, str] = {}
 
 
-@router.message(F.text == "📌 Додати своє місце")
-async def add_place_handler(message: Message, state: FSMContext):
-    logger.info(
-        f"Користувач {message.from_user.username} ({message.from_user.id}) додає своє місце"
-    )
-    await message.answer('Введи назву місця')
-    await state.set_state(AddPlace.wait_for_title)
+# @router.message(F.text == "📌 Додати своє місце")
+# async def add_place_handler(message: Message, state: FSMContext):
+#     logger.info(
+#         f"Користувач {message.from_user.username} ({message.from_user.id}) додає своє місце"
+#     )
+#     await message.answer('Введи назву місця')
+#     await state.set_state(AddPlace.wait_for_title)
 
 
 @router.message(AddPlace.wait_for_title)
@@ -197,7 +197,16 @@ async def choose_location_method(message: Message, state: FSMContext):
 
 
 # Обробка вибору типу локації
-@router.message(BotState.choosing_location_type)
+@router.message(BotState.choosing_location_type, F.text.in_([
+    # send_location — all locales
+    "📍 Передати мою локацію", "📍 Send my location", "📍 Meinen Standort senden",
+    "📍 Envoyer ma position", "📍 Enviar mi ubicación", "📍 Invia la mia posizione",
+    "📍 Wyślij moją lokalizację", "📍 Enviar minha localização", "📍 現在地を送信", "📍 发送我的位置",
+    # find_city — all locales
+    "🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden",
+    "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città",
+    "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市",
+]))
 async def handle_location_type_choice(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
@@ -966,9 +975,16 @@ async def stop_browsing_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
+
+    fsm_data = await state.get_data()
+    first_start = fsm_data.get("first_start", False)
     await state.clear()
-    msg_text = i18n.get(user_id, 'browsing_finished', lang_code)
-    await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
+
+    if first_start:
+        await send_main_menu(message)
+    else:
+        msg_text = i18n.get(user_id, 'browsing_finished', lang_code)
+        await message.answer(msg_text, reply_markup=search_keyboard(user_id, lang_code))
 
 
 @router.message(BotState.browsing_places)

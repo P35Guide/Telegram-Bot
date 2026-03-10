@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard
+from bot.keyboards import actions_keyboard, cancel_keyboard, add_place_redirect_keyboard, choose_location_type_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
@@ -17,20 +17,20 @@ import aiohttp
 router = Router()
 
 
-@router.message(F.text.in_(["🔗 Додати місце", "🔗 Add place", "🔗 Ort hinzufügen", "🔗 Ajouter un lieu", "🔗 Añadir lugar", "🔗 Aggiungi luogo", "🔗 Dodaj miejsce", "🔗 Adicionar local", "🔗 場所を追加", "🔗 添加地点"]))
-async def add_place_redirect_handler(message: Message):
-    """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
-    user_id = message.from_user.id
-    lang_code = message.from_user.language_code
-    username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith("@") else f"@{ADD_PLACE_BOT_USERNAME}"
-    await message.answer(
-        "📌 <b>Додавання власних місць</b>\n\n"
-        "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
-        "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
-        f"👉 {username}",
-        parse_mode="HTML",
-        reply_markup=add_place_redirect_keyboard(user_id, lang_code),
-    )
+# @router.message(F.text.in_(["🔗 Додати місце", "🔗 Add place", "🔗 Ort hinzufügen", "🔗 Ajouter un lieu", "🔗 Añadir lugar", "🔗 Aggiungi luogo", "🔗 Dodaj miejsce", "🔗 Adicionar local", "🔗 場所を追加", "🔗 添加地点"]))
+# async def add_place_redirect_handler(message: Message):
+#     """Пояснює, що додавання місць доступне в іншому боті, і пропонує перейти."""
+#     user_id = message.from_user.id
+#     lang_code = message.from_user.language_code
+#     username = ADD_PLACE_BOT_USERNAME if ADD_PLACE_BOT_USERNAME.startswith("@") else f"@{ADD_PLACE_BOT_USERNAME}"
+#     await message.answer(
+#         "📌 <b>Додавання власних місць</b>\n\n"
+#         "У цьому боті можна лише <b>шукати</b> місця поруч.\n"
+#         "Щоб <b>додати своє місце</b> до карти, скористайтесь окремим ботом:\n\n"
+#         f"👉 {username}",
+#         parse_mode="HTML",
+#         reply_markup=add_place_redirect_keyboard(user_id, lang_code),
+#     )
 
 
 @router.message(F.text.in_(["🌐 Мова", "🌐 Language", "🌐 Sprache", "🌐 Langue", "🌐 Idioma", "🌐 Lingua", "🌐 Język", "🌐 Idioma", "🌐 言語", "🌐 语言"]))
@@ -104,7 +104,7 @@ async def radius_handler(message: Message, state: FSMContext):
 
 
 
-@router.message(F.text.in_(["🎧 Вибрати за настроєм", "🎧 Select by mood", "🎧 Nach Stimmung auswählen", "🎧 Sélectionner par humeur", "🎧 Seleccionar por estado de ánimo", "🎧 Seleziona per umore", "🎧 Wybierz według nastroju", "🎧 Selecionar por humor", "🎧 気分で選択", "🎧 按心情选择"]))
+@router.message(F.text.in_(["🎧 Вибрати за настроєм", "🎧 Select by mood", "🎧 Nach Stimmung wählen", "🎧 Sélectionner par humeur", "🎧 Seleccionar por ánimo", "🎧 Seleziona per umore", "🎧 Wybierz według nastroju", "🎧 Selecionar por humor", "🎧 気分で選択", "🎧 按心情选择"]))
 async def mood_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
@@ -116,7 +116,7 @@ async def mood_handler(message: Message, state: FSMContext):
         ("mood_work", "work"),
         ("mood_date", "date"),
         ("mood_company", "company"),
-        ("mood_breakfast", "breakfast"),
+        ("mood_breakfast", "breakfast")
     ]
     
     for mood_key, mood_code in moods:
@@ -130,8 +130,16 @@ async def mood_handler(message: Message, state: FSMContext):
     
     builder.adjust(1)
     
-    current_mood = settings.get("mood", "")
-    current_line = f"Current: {current_mood}\n\n" if current_mood else ""
+    current_mood = (settings.get("mood", "") or "").strip().lower()
+    mood_key_map = {
+        "work": "mood_work",
+        "date": "mood_date",
+        "company": "mood_company",
+        "breakfast": "mood_breakfast",
+    }
+    mood_key = mood_key_map.get(current_mood)
+    current_mood_label = i18n.get(user_id, mood_key, lang_code) if mood_key else ""
+    current_line = f"{i18n.get(user_id, 'settings_mood', lang_code)}: {current_mood_label}\n\n" if current_mood_label else ""
     
     await message.answer(
         i18n.get(user_id, 'choose_mood', lang_code, current=current_line),
@@ -141,7 +149,7 @@ async def mood_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("set_mood:"))
-async def set_mood_callback(callback: CallbackQuery):
+async def set_mood_callback(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
@@ -149,9 +157,21 @@ async def set_mood_callback(callback: CallbackQuery):
     mood = callback.data.split(":", 1)[1]
     settings_service.update_mood(user_id, mood)
     
+    fsm_data = await state.get_data()
+    first_start = fsm_data.get("first_start", False)
+    
     await callback.answer(i18n.get(user_id, 'category_added', lang_code))
     await callback.message.delete()
-    await send_settings_menu(callback.message, user_id=user_id)
+    
+    if first_start:
+        # Keep first_start=True in FSM data so the location handler can read it
+        await state.set_state(BotState.choosing_location_type)
+        await callback.message.answer(
+            i18n.get(user_id, 'choose_location_type', lang_code),
+            reply_markup=choose_location_type_keyboard(user_id)
+        )
+    else:
+        await send_settings_menu(callback.message, user_id=user_id)
 
 
 @router.callback_query(F.data == "clear_mood")
