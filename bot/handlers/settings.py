@@ -318,19 +318,22 @@ async def clear_included_types_handler(message: Message, state: FSMContext):
     await send_main_menu(message)
 
 
-@router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
-async def max_result_count_handler(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
-    lang_code = settings.get("language", "uk")
-    await state.set_state(BotState.selecting_max_result_count)
-    await message.answer(
-        i18n.get(user_id, 'enter_count_prompt', lang_code),
-        reply_markup=cancel_keyboard()
-    )
+# @router.message(F.text.in_(["🔢 Кількість", "🔢 Count", "🔢 Anzahl", "🔢 Nombre", "🔢 Cantidad", "🔢 Quantità", "🔢 Liczba", "🔢 Quantidade", "🔢 件数", "🔢 数量"]))
+# async def max_result_count_handler(message: Message, state: FSMContext):
+#     user_id = message.from_user.id
+#     settings = get_user_settings(user_id)
+#     lang_code = settings.get("language", "uk")
+#     await state.set_state(BotState.selecting_max_result_count)
+#     await message.answer(
+#         i18n.get(user_id, 'enter_count_prompt', lang_code),
+#         reply_markup=cancel_keyboard()
+#     )
 
 
-@router.message(F.text.in_(["⭐ Сортування", "⭐ Sorting", "⭐ Sortierung", "⭐ Tri", "⭐ Ordenar", "⭐ Ordinamento", "⭐ Sortowanie", "⭐ Ordenação", "⭐ 並び替え", "⭐ 排序"]))
+@router.message(F.text.in_([
+    "🔀 Сортування", "🔀 Sorting", "🔀 Sortierung", "🔀 Tri", "🔀 Ordenar", "🔀 Ordinamento", "🔀 Sortowanie", "🔀 Ordenação", "🔀 並び替え", "🔀 排序",
+    
+]))
 async def rank_preference_handler(message: Message):
     current_settings = get_user_settings(message.from_user.id)
     current_rank = current_settings.get("rankPreference", "POPULARITY")
@@ -427,18 +430,18 @@ async def set_excluded_types_handler(message: Message, state: FSMContext):
     await send_settings_menu(message)
 
 
-@router.message(BotState.selecting_max_result_count)
-async def set_max_result_count_handler(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
-    lang_code = settings.get("language", "uk")
-    text = message.text.strip()
-    if not text.isdigit() or not (1 <= int(text) <= 20):
-        await message.answer(i18n.get(user_id, 'enter_count_range_error', lang_code))
-        return
-
-    update_max_result_count(user_id, int(text))
-    logger.info(
-        f"Користувач {message.from_user.username}({user_id}) змінив кількість результатів на {int(text)}")
-    await state.clear()
-    await send_settings_menu(message, user_id=user_id)
+# @router.message(BotState.selecting_max_result_count)
+# async def set_max_result_count_handler(message: Message, state: FSMContext):
+#     user_id = message.from_user.id
+#     settings = get_user_settings(user_id)
+#     lang_code = settings.get("language", "uk")
+#     text = message.text.strip()
+#     if not text.isdigit() or not (1 <= int(text) <= 20):
+#         await message.answer(i18n.get(user_id, 'enter_count_range_error', lang_code))
+#         return
+#
+#     update_max_result_count(user_id, int(text))
+#     logger.info(
+#         f"Користувач {message.from_user.username}({user_id}) змінив кількість результатів на {int(text)}")
+#     await state.clear()
+#     await send_settings_menu(message, user_id=user_id)

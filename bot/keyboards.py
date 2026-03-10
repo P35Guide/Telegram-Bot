@@ -56,8 +56,8 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
                 KeyboardButton(text=i18n.get(
                     user_id or 0, 'settings_open_now', lang_code)),
             ],
-            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code)),],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'settings_save', lang_code))],
+            # [KeyboardButton(text=i18n.get(user_id or 0, 'settings_count', lang_code))],
             [KeyboardButton(text=i18n.get(
                 user_id or 0, 'menu_back', lang_code))],
         ],
@@ -78,9 +78,10 @@ def search_keyboard(user_id: int = None, lang_code: str = None):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
-             KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
+             KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            # [KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
             # [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code))],
-             [KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            
             [KeyboardButton(text=i18n.get(
                 user_id or 0, 'menu_cancel', lang_code))],
         ],
