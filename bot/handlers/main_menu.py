@@ -155,10 +155,12 @@ async def back_to_main_menu(message: Message):
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: aiohttp.ClientSession):
     user_id = message.from_user.id
-    lang_code = message.from_user.language_code
-    
-    # Автоматично визначаємо мову користувача
-    detected_lang = i18n.get_user_language(user_id, lang_code)
+    telegram_lang_code = (message.from_user.language_code or "").lower()
+    mapped_lang = i18n.LANGUAGE_MAPPING.get(telegram_lang_code, telegram_lang_code)
+    detected_lang = i18n.LANGUAGE_CODES.get(mapped_lang, mapped_lang)
+    if detected_lang not in i18n.get_available_languages():
+        detected_lang = 'en'
+
     logger.info(f"/start: user_id={user_id}, detected_lang={detected_lang}")
 
     # Отримуємо дані користувача з API
@@ -170,16 +172,12 @@ async def cmd_start(message: Message, session: aiohttp.ClientSession):
         if created is not None:
             apply_user_data_from_api(user_id, created)
     
-    # Встановлюємо визначену мову з Telegram, якщо у налаштуваннях ще не встановлена
     settings = get_user_settings(user_id)
     current_language = settings.get("language")
-    
-    # Якщо мова не була збережена на сервері (None, порожній рядок), встановлюємо detected_lang
-    if not current_language:
-        settings["language"] = detected_lang
-        i18n.set_user_language(user_id, detected_lang)
-        
-        # Зберігаємо налаштування на сервер
+    settings["language"] = detected_lang
+    i18n.set_user_language(user_id, detected_lang)
+
+    if current_language != detected_lang:
         payload = get_settings_payload_for_api(user_id)
         await api_save_user_settings(user_id, payload, session)
         logger.info(f"Set user language to detected and saved to server: {detected_lang}")

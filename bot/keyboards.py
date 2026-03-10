@@ -79,6 +79,7 @@ def search_keyboard(user_id: int = None, lang_code: str = None):
         keyboard=[
             [KeyboardButton(text=i18n.get(user_id or 0, 'search_places', lang_code)),
              KeyboardButton(text=i18n.get(user_id or 0, 'search_favorites', lang_code))],
+            [KeyboardButton(text=i18n.get(user_id or 0, 'search_by_name', lang_code))],
             # [KeyboardButton(text=i18n.get(user_id or 0, 'search_list', lang_code))],
             # [KeyboardButton(text=i18n.get(user_id or 0, 'search_random', lang_code))],
             
