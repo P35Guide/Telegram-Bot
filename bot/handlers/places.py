@@ -234,10 +234,9 @@ async def show_user_coordinates(message: Message):
     coords = settings.get("coordinates")
     if coords:
         title = i18n.get(user_id, 'your_coordinates', lang_code)
-        lat_label = i18n.get(user_id, 'latitude_label', lang_code)
-        lon_label = i18n.get(user_id, 'longitude_label', lang_code)
         await message.answer(
-            f"{title}\n{lat_label} {coords['latitude']}\n{lon_label} {coords['longitude']}"
+            f"<b>{title}</b>\nLatitude: {coords['latitude']}\nLongitude: {coords['longitude']}",
+            parse_mode="HTML"
         )
     else:
         msg_text = i18n.get(user_id, 'coordinates_not_set', lang_code)
@@ -759,14 +758,17 @@ async def random_from_favorites_handler(message: Message, state: FSMContext):
     )
 
     chosen = random.choice(favorites)
-    place_for_kb = [{"id": chosen["id"], "displayName": chosen["name"]}]
+    chosen_id = chosen["id"]
+    chosen_name = chosen["name"]
+    place_for_kb = [{"id": chosen_id, "displayName": chosen_name}]
 
     title = i18n.get(user_id, 'random_from_favorites_title', lang_code)
     select_text = i18n.get(user_id, 'select_place', lang_code)
     await loading_msg.edit_text(
         f"{title}\n{select_text}",
         parse_mode="HTML",
-        reply_markup=places_keyboard(place_for_kb),
+        reply_markup=places_keyboard(
+            [{"id": chosen_id, "displayName": chosen_name}]),
     )
 
 
@@ -1038,17 +1040,37 @@ async def fav_toggle_handler(callback: CallbackQuery, session: aiohttp.ClientSes
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
 
-    if is_favorite_place(user_id, place_id):
+    was_favorite = is_favorite_place(user_id, place_id)
+    if was_favorite:
         remove_favorite_place(user_id, place_id)
         await api_remove_favorite(user_id, place_id, session)
         await callback.answer(i18n.get(user_id, 'removed_from_favorites', lang_code))
-        return
+    else:
+        name = _place_name_cache.get(
+            place_id, i18n.get(user_id, 'unnamed', lang_code))
+        add_favorite_place(user_id, place_id, name)
+        await api_add_favorite(user_id, place_id, name, session)
+        await callback.answer(i18n.get(user_id, 'added_to_favorites', lang_code))
 
-    name = _place_name_cache.get(
-        place_id, i18n.get(user_id, 'unnamed', lang_code))
-    add_favorite_place(user_id, place_id, name)
-    await api_add_favorite(user_id, place_id, name, session)
-    await callback.answer(i18n.get(user_id, 'added_to_favorites', lang_code))
+    # Оновлюємо клавіатуру - змінюємо кнопку улюблених
+    try:
+        old_markup = callback.message.reply_markup
+        if old_markup:
+            new_keyboard = []
+            for row in old_markup.inline_keyboard:
+                new_row = []
+                for button in row:
+                    if button.callback_data and button.callback_data.startswith("fav_toggle:"):
+                        # Змінюємо текст кнопки на протилежний
+                        new_text = i18n.get(user_id, 'add_to_favorites', lang_code) if was_favorite else i18n.get(user_id, 'remove_from_favorites', lang_code)
+                        from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+                        new_row.append(InlineKeyboardButton(text=new_text, callback_data=button.callback_data))
+                    else:
+                        new_row.append(button)
+                new_keyboard.append(new_row)
+            await callback.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=new_keyboard))
+    except Exception as e:
+        logger.warning(f"Could not update favorite button: {e}")
 
 
 @router.message(StateFilter(BotState.comparing_favorites), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))

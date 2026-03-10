@@ -99,6 +99,7 @@
 	"open_yes": "yes",
 	"open_no": "no",
 	"language_changed": "✅ Language changed to {language}",
+	"coordinates_prompt": "Coordinates not set. Please choose a city or send your location first.",
 	"select_language": "Select interface language:",
 	"language_prompt": "Choose your interface language:",
 	"continue_with_language": "✅ Continue with {language}",
