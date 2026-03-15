@@ -1,3 +1,10 @@
+def error_action_inline_keyboard(user_id: int = None, lang_code: str = None):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code), callback_data="error_back_to_menu"),
+             InlineKeyboardButton(text="🔄 " + i18n.get(user_id or 0, 'retry', lang_code), callback_data="error_retry")]
+        ]
+    )
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -106,13 +113,16 @@ def random_choice_keyboard(user_id: int = None, lang_code: str = None):
     )
 
 
-def cancel_keyboard(user_id: int = None, lang_code: str = None):
-    keyboard = ReplyKeyboardMarkup(
+
+def error_action_keyboard(user_id: int = None, lang_code: str = None):
+    return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_cancel', lang_code))]],
-        resize_keyboard=True
+            [KeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code)),
+             KeyboardButton(text="🔄 " + i18n.get(user_id or 0, 'retry', lang_code))]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
     )
-    return keyboard
 
 def test_keyboard(user_id: int = None, lang_code: str = None):
       """Клавіатура коли користувач запускає бота протестити функціонал бота(мінімально (кнопки:за настроєм та передати координати))"""

@@ -1,4 +1,6 @@
 {
+	"server_unavailable": "⚠️ Lo siento, el servidor no está disponible temporalmente. Inténtalo de nuevo más tarde o vuelve al menú principal.",
+	"search_cancelled": "❌ Búsqueda cancelada. Has vuelto al menú principal.",
 	"welcome": "👋 <b>YumMap</b>",
 	"start_intro": "YumMap es tu guía en el mundo del sabor y la comodidad.\nTe ayudaré a encontrar rápidamente los mejores lugares según tu solicitud.\n\nLo que puedo hacer:\n\n📍 Buscar cerca: encontrar lugares abiertos en un radio de hasta 5 km.\n\n✨ Ajustarme a tu estado de ánimo: desde una cafetería acogedora para estudiar hasta un lugar para una compañía ruidosa.\n\n⚖️ Comparar: ayudarte a elegir la mejor opción entre las variantes seleccionadas.\n\n⭐ Recordar: tus lugares favoritos siempre están a mano.\n\n⚙️ Puedes cambiar la configuración de búsqueda en cualquier momento.",
 	"choose_action": "Elige una acción:",
@@ -183,7 +185,7 @@
 	"enter_radius_range_error": "⚠️ Por favor ingresa un número del 1 al 5000.",
 	"enter_count_range_error": "⚠️ Por favor ingresa un número del 1 al 20.",
 	"random_from_favorites_title": "🎲 <b>Lugar aleatorio de favoritos:</b>",
-	"favorites_list_title": "✅ Lugares favoritos ({count}):",
+	"favorites_list_title": "Lugares favoritos ({count}):",
 	"favorites_view": "🌟 Ver",
 	"favorites_compare": "⚖️ Comparar",
 	"unnamed": "Sin nombre",

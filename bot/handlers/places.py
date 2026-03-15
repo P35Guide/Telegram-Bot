@@ -1,3 +1,4 @@
+from aiogram.types import CallbackQuery
 import aiohttp
 import random
 import base64
@@ -16,8 +17,8 @@ from bot.keyboards import (
     choose_location_type_keyboard,
     favorites_action_keyboard,
     select_favorites_for_comparison_keyboard,
-    cancel_keyboard,
-    cancel_keyboard,
+    error_action_keyboard,
+    error_action_inline_keyboard,
 )
 from bot.services.api_client import (
     get_photos,
@@ -36,9 +37,11 @@ from bot.services.settings import (
     remove_favorite_place,
 )
 from bot.states import BotState, AddPlace
+import asyncio
 from bot.utils.formatter import format_place_text, format_comparison_text
 from bot.utils.logger import logger
 from bot.utils.localization import i18n
+
 
 # Placeholder class for custom place
 
@@ -71,6 +74,23 @@ def decode_included_types(user_id):
 router = Router()
 _place_name_cache: dict[str, str] = {}
 
+@router.callback_query(F.data == "error_back_to_menu")
+async def error_back_to_menu_callback(callback: CallbackQuery):
+    await callback.answer()
+    await send_main_menu(callback.message)
+
+@router.callback_query(F.data == "error_retry")
+async def error_retry_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    user_id = callback.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    from bot.keyboards import choose_location_type_keyboard
+    await callback.message.answer(
+        i18n.get(user_id, 'choose_location_type', lang_code),
+        reply_markup=choose_location_type_keyboard(user_id, lang_code)
+    )
+    await state.set_state(BotState.choosing_location_type)
 
 # @router.message(F.text == "📌 Додати своє місце")
 # async def add_place_handler(message: Message, state: FSMContext):
@@ -252,6 +272,7 @@ def filter_open_now(places, open_now):
 async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSession, message=None, loading_msg=None):
     """Універсальний запит місць з урахуванням обраного настрою."""
     mood_mode = decode_included_types(user_id)
+    lang_code = settings.get("language", "uk")
     try:
         data = await get_places(settings, session)
         if not data or "places" not in data:
@@ -268,11 +289,10 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
                 await loading_msg.edit_text(
                     "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
                     "Спробуйте збільшити радіус пошуку.",
-                    parse_mode="HTML"
+                    parse_mode="HTML",
+                    reply_markup=error_action_inline_keyboard(user_id, lang_code)
                 )
             if message:
-                user_id = message.from_user.id
-                lang_code = message.from_user.language_code
                 await message.answer("🔙 Повернулись у меню пошуку.", reply_markup=search_keyboard(user_id, lang_code))
             return None
 
@@ -281,19 +301,56 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
-        await loading_msg.edit_text(
-            i18n.get(user_id, 'search_error', lang_code),
-            parse_mode="HTML"
-        )
-        await message.answer(
-            i18n.get(user_id, 'return_to_search', lang_code),
-            reply_markup=search_keyboard(user_id, lang_code)
-        )
+        edit_failed = False
+        if loading_msg:
+            try:
+                kb = error_action_inline_keyboard(user_id, lang_code)
+                logger.info(f"[edit_text DIAG] server_unavailable: reply_markup type: {type(kb)}")
+                await loading_msg.edit_text(
+                    i18n.get(user_id, 'server_unavailable', lang_code),
+                    parse_mode="HTML",
+                    reply_markup=kb
+                )
+            except Exception as edit_error:
+                logger.warning(f"Could not edit loading message: {edit_error}")
+                edit_failed = True
+                # Спробуємо видалити зависле повідомлення
+                try:
+                    await loading_msg.delete()
+                except Exception as del_error:
+                    logger.warning(f"Could not delete loading message: {del_error}")
+        if message:
+            # Якщо не вдалося відредагувати loading_msg, надсилаємо окреме повідомлення про помилку
+            if edit_failed or not loading_msg:
+                try:
+                    await message.answer(
+                        i18n.get(user_id, 'server_unavailable', lang_code),
+                        reply_markup=search_keyboard(user_id, lang_code)
+                    )
+                except Exception as answer_error:
+                    logger.warning(f"Could not send server unavailable message: {answer_error}")
+            # Очищаємо стан і повертаємо у головне меню
+            from aiogram.fsm.context import FSMContext
+            if hasattr(message, 'bot') and hasattr(message, 'chat'):
+                # Отримуємо FSMContext для цього користувача
+                state = FSMContext(message.bot, message.chat.id, message.from_user.id)
+                await state.clear()
+            try:
+                from .main_menu import send_main_menu
+                await send_main_menu(message)
+            except Exception as e:
+                logger.warning(f"Could not send main menu after server error: {e}")
 
 
-@router.message(StateFilter(None), F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
-async def cancel_handler(message: Message, state: FSMContext):
+
+# Universal cancel handler for any state
+@router.message(F.text.in_(["🔙 Скасувати", "🔙 Cancel", "🔙 Abbrechen", "🔙 Annuler", "🔙 Cancelar", "🔙 Annulla", "🔙 Anuluj", "🔙 Cancelar", "🔙 キャンセル", "🔙 取消"]))
+async def cancel_any_state_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
     await state.clear()
+    await message.answer(i18n.get(user_id, 'search_cancelled', lang_code))
     await send_main_menu(message)
 
 
@@ -323,7 +380,7 @@ async def start_text_search(message: Message, state: FSMContext):
     await message.answer(
         i18n.get(user_id, 'enter_search_query', lang_code),
         parse_mode="HTML",
-        reply_markup=cancel_keyboard(user_id, lang_code)
+        reply_markup=search_keyboard(user_id, lang_code)
     )
 
 
@@ -343,7 +400,16 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     query = message.text.strip()
-
+    # Не обробляти службові команди як запит
+    cancel_texts = [
+        i18n.get(user_id, 'menu_cancel', lang_code),
+        '/coordinates',
+        '/menu',
+        '/start'
+    ]
+    if query in cancel_texts:
+        await send_main_menu(message)
+        return
     # Валідація запиту
     if not query or len(query) < 2:
         logger.warning(
@@ -402,14 +468,32 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
 
     except Exception as e:
         logger.error(f"[TextSearch] Error during search for '{query}': {e}")
+        edit_failed = False
         try:
+            kb = error_action_inline_keyboard(user_id, lang_code)
+            logger.info(f"[edit_text DIAG] text_search_error: reply_markup type: {type(kb)}")
             await loading_msg.edit_text(
                 i18n.get(user_id, 'text_search_error', lang_code),
-                parse_mode="HTML"
+                parse_mode="HTML",
+                reply_markup=kb
             )
         except Exception as edit_error:
             logger.warning(
                 f"[TextSearch] Could not edit loading message: {edit_error}")
+            edit_failed = True
+            # Спробуємо видалити зависле повідомлення
+            try:
+                await loading_msg.delete()
+            except Exception as del_error:
+                logger.warning(f"Could not delete loading message: {del_error}")
+        if edit_failed:
+            try:
+                await message.answer(
+                    i18n.get(user_id, 'text_search_error', lang_code),
+                    reply_markup=search_keyboard(user_id, lang_code)
+                )
+            except Exception as answer_error:
+                logger.warning(f"[TextSearch] Could not send error message: {answer_error}")
         await state.clear()
         await send_main_menu(message)
 
@@ -439,7 +523,8 @@ async def show_places_list(loading_msg, places, title: str = None, user_id: int 
         try:
             await loading_msg.edit_text(
                 f"✅ <b>{heading}:</b>\n\n{text}",
-                parse_mode="HTML"
+                parse_mode="HTML",
+                reply_markup=error_action_inline_keyboard(user_id, lang_code)
             )
         except Exception as e:
             logger.warning(f"Could not edit loading message: {e}")
@@ -453,6 +538,14 @@ async def show_places_list(loading_msg, places, title: str = None, user_id: int 
             )
         except Exception as e:
             logger.warning(f"Could not edit loading message: {e}")
+            try:
+                await loading_msg.edit_text(
+                    f"✅ <b>{heading}:</b>\n{select_text}",
+                    parse_mode="HTML",
+                    reply_markup=error_action_inline_keyboard(user_id, lang_code)
+                )
+            except Exception as e2:
+                logger.warning(f"Could not edit loading message with error menu: {e2}")
 
 
 async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True, user_id: int | None = None):
@@ -496,8 +589,9 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         if not data or "places" not in data:
             try:
                 await loading_msg.edit_text(
-                    i18n.get(start_user_id, 'places_error', lang_code),
-                    parse_mode="HTML"
+                    i18n.get(start_user_id, 'server_unavailable', lang_code),
+                    parse_mode="HTML",
+                    reply_markup=error_action_keyboard(start_user_id, lang_code)
                 )
             except Exception as e:
                 logger.warning(f"Could not edit loading message: {e}")
@@ -529,7 +623,7 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         lang_code = settings.get("language", "uk")
         try:
             await loading_msg.edit_text(
-                i18n.get(user_id, 'search_error', lang_code),
+                i18n.get(user_id, 'server_unavailable', lang_code),
                 parse_mode="HTML"
             )
         except Exception as edit_error:

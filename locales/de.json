@@ -1,4 +1,6 @@
 {
+	"server_unavailable": "⚠️ Entschuldigung, der Server ist vorübergehend nicht erreichbar. Bitte versuchen Sie es später erneut oder kehren Sie zum Hauptmenü zurück.",
+	"search_cancelled": "❌ Suche abgebrochen. Sie sind zum Hauptmenü zurückgekehrt.",
 	"welcome": "👋 <b>YumMap</b>",
 	"start_intro": "YumMap ist Ihr Guide fur guten Geschmack und gemutliche Orte!\nIch helfe Ihnen, schnell die besten Orte fur Ihre Anfrage zu finden.\n\nWas ich kann:\n\n📍 In der Nahe suchen: offene Orte im Umkreis von bis zu 5 km finden.\n\n✨ Nach Stimmung auswahlen: vom gemutlichen Cafe zum Lernen bis zum Ort fur eine laute Gruppe.\n\n⚖️ Vergleichen: ich helfe, die beste Option aus den gewahlten Varianten zu finden.\n\n⭐ Merken: Ihre Lieblingsorte sind immer griffbereit.\n\n⚙️ Sie konnen die Sucheinstellungen jederzeit andern.",
 	"choose_action": "Wählen Sie eine Aktion:",
