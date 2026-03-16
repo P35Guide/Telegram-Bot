@@ -77,7 +77,8 @@ _place_name_cache: dict[str, str] = {}
 @router.callback_query(F.data == "error_back_to_menu")
 async def error_back_to_menu_callback(callback: CallbackQuery):
     await callback.answer()
-    await send_main_menu(callback.message)
+    from bot.handlers.main_menu import send_main_menu
+    await send_main_menu(callback.message, force_main_menu_keyboard=True)
 
 @router.callback_query(F.data == "error_retry")
 async def error_retry_callback(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession = None):

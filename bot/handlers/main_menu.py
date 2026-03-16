@@ -145,16 +145,19 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     )
 
 
-async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
+async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None, force_main_menu_keyboard: bool = False):
     target_user_id = user_id or message.from_user.id
     s = get_user_settings(target_user_id)
     lang_code = s.get('language', 'uk')
     coords = s.get("coordinates")
 
-    if coords:
+    if force_main_menu_keyboard:
         reply_kb = actions_keyboard(target_user_id, lang_code)
     else:
-        reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
+        if coords:
+            reply_kb = actions_keyboard(target_user_id, lang_code)
+        else:
+            reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
 
     text = (
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
