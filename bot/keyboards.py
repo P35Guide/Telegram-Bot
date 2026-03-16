@@ -1,8 +1,7 @@
 def error_action_inline_keyboard(user_id: int = None, lang_code: str = None):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code), callback_data="error_back_to_menu"),
-             InlineKeyboardButton(text="🔄 " + i18n.get(user_id or 0, 'retry', lang_code), callback_data="error_retry")]
+            [InlineKeyboardButton(text=i18n.get(user_id or 0, 'menu_back', lang_code), callback_data="error_back_to_menu")]
         ]
     )
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton

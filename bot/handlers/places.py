@@ -80,17 +80,36 @@ async def error_back_to_menu_callback(callback: CallbackQuery):
     await send_main_menu(callback.message)
 
 @router.callback_query(F.data == "error_retry")
-async def error_retry_callback(callback: CallbackQuery, state: FSMContext):
+async def error_retry_callback(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession = None):
     await callback.answer()
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    from bot.keyboards import choose_location_type_keyboard
-    await callback.message.answer(
-        i18n.get(user_id, 'choose_location_type', lang_code),
-        reply_markup=choose_location_type_keyboard(user_id, lang_code)
-    )
-    await state.set_state(BotState.choosing_location_type)
+    data = await state.get_data()
+    last_error_type = data.get("last_error_type")
+    user_settings = get_user_settings(user_id)
+    has_coordinates = user_settings and user_settings.get("coordinates")
+    # Only retry place search if last error was server_unavailable and coordinates exist
+    if last_error_type == "server_unavailable" and has_coordinates:
+        from bot.handlers.places import perform_search, show_place_card
+        loading_msg, places = await perform_search(callback.message, session, show_list=False, state=state)
+        if not places:
+            return
+        await state.set_state(BotState.browsing_places)
+        await state.update_data(places=places, current_index=0)
+        try:
+            await loading_msg.delete()
+        except Exception as e:
+            logger.warning(f"Could not delete loading message: {e}")
+        await show_place_card(callback.message, state, session)
+    else:
+        # Fallback: ask for location type
+        from bot.keyboards import choose_location_type_keyboard
+        await callback.message.answer(
+            i18n.get(user_id, 'choose_location_type', lang_code),
+            reply_markup=choose_location_type_keyboard(user_id, lang_code)
+        )
+        await state.set_state(BotState.choosing_location_type)
 
 # @router.message(F.text == "📌 Додати своє місце")
 # async def add_place_handler(message: Message, state: FSMContext):
@@ -548,7 +567,7 @@ async def show_places_list(loading_msg, places, title: str = None, user_id: int 
                 logger.warning(f"Could not edit loading message with error menu: {e2}")
 
 
-async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True, user_id: int | None = None):
+async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True, user_id: int | None = None, state: FSMContext = None):
     """
     Логіка пошуку місць поруч.
     Повертає (loading_msg, places) кортеж.
@@ -568,7 +587,6 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
     )
 
     at_night = decode_included_types(start_user_id)
-
     settings = get_user_settings(start_user_id)
 
     if not settings or not settings.get("coordinates"):
@@ -581,6 +599,8 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             parse_mode="HTML",
             reply_markup=choose_location_type_keyboard(start_user_id, lang_code)
         )
+        if state:
+            await state.update_data(last_error_type="no_coordinates")
         return loading_msg, None
 
     try:
@@ -588,14 +608,17 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
 
         if not data or "places" not in data:
             try:
-                await loading_msg.edit_text(
-                    i18n.get(start_user_id, 'server_unavailable', lang_code),
-                    parse_mode="HTML",
-                    reply_markup=error_action_keyboard(start_user_id, lang_code)
-                )
+                await loading_msg.delete()
             except Exception as e:
-                logger.warning(f"Could not edit loading message: {e}")
-            return loading_msg, None
+                logger.warning(f"Could not delete loading message: {e}")
+            await message.answer(
+                i18n.get(start_user_id, 'server_unavailable', lang_code),
+                parse_mode="HTML",
+                reply_markup=error_action_inline_keyboard(start_user_id, lang_code)
+            )
+            if state:
+                await state.update_data(last_error_type="server_unavailable")
+            return None, None
 
         places = data["places"]
 
@@ -619,16 +642,18 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
 
     except Exception as e:
         logger.error(f"Error in find_places_handler: {e}")
-        user_id = start_user_id
-        lang_code = settings.get("language", "uk")
         try:
-            await loading_msg.edit_text(
-                i18n.get(user_id, 'server_unavailable', lang_code),
-                parse_mode="HTML"
-            )
-        except Exception as edit_error:
-            logger.warning(f"Could not edit loading message: {edit_error}")
-        return loading_msg, None
+            await loading_msg.delete()
+        except Exception as del_error:
+            logger.warning(f"Could not delete loading message: {del_error}")
+        await message.answer(
+            i18n.get(start_user_id, 'server_unavailable', lang_code),
+            parse_mode="HTML",
+            reply_markup=error_action_inline_keyboard(start_user_id, lang_code)
+        )
+        if state:
+            await state.update_data(last_error_type="server_unavailable")
+        return None, None
 
 
 async def send_place_info(
