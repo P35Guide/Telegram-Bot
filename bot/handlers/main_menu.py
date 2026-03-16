@@ -92,7 +92,8 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     lang_code = s.get('language', 'uk')
     language_display = _format_language_display(lang_code)
     rank_code = (s.get("rankPreference") or "POPULARITY").upper()
-    rank_display = i18n.get(user_id, 'rank_distance', lang_code) if rank_code == "DISTANCE" else i18n.get(user_id, 'rank_popularity', lang_code)
+    rank_display = i18n.get(user_id, 'rank_distance', lang_code) if rank_code == "DISTANCE" else i18n.get(
+        user_id, 'rank_popularity', lang_code)
 
     mood_code = (s.get("mood") or "").strip().lower()
     mood_key_map = {
@@ -105,7 +106,8 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     mood_key = mood_key_map.get(mood_code)
     if not mood_key and included_types:
         included_set = set(included_types)
-        reverse_mood_code_map = {v: k for k, v in SearchTypes.mood_code_map.items()}
+        reverse_mood_code_map = {v: k for k,
+                                 v in SearchTypes.mood_code_map.items()}
         for mood_label, mood_types in SearchTypes.mood_types.items():
             if included_set == set(mood_types):
                 inferred_mood_code = reverse_mood_code_map.get(mood_label)
@@ -122,7 +124,8 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
         categories = i18n.get(user_id, 'all', lang_code)
 
     open_now = s.get("openNow", False)
-    open_status = i18n.get(user_id, 'open_yes', lang_code) if open_now else i18n.get(user_id, 'open_no', lang_code)
+    open_status = i18n.get(user_id, 'open_yes', lang_code) if open_now else i18n.get(
+        user_id, 'open_no', lang_code)
     location_city = (s.get("location_city") or "").strip()
     if location_city:
         location_value = location_city
@@ -146,12 +149,26 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
     target_user_id = user_id or message.from_user.id
     s = get_user_settings(target_user_id)
     lang_code = s.get('language', 'uk')
-    await message.answer(
+    coords = s.get("coordinates")
+
+    if coords:
+        reply_kb = actions_keyboard(target_user_id, lang_code)
+    else:
+        reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
+
+    text = (
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
-        f"{settings_text(target_user_id, lang_code)}",
-        parse_mode="HTML",
-        reply_markup=actions_keyboard(target_user_id, lang_code),
+        f"{settings_text(target_user_id, lang_code)}"
     )
+    lat = coords.get("latitude") if coords else None
+    lon = coords.get("longitude") if coords else None
+    if lat is not None and lon is not None:
+        text += "\n\n" + i18n.get(
+            target_user_id, "coordinates_label", lang_code,
+            latitude=lat, longitude=lon,
+        )
+
+    await message.answer(text, parse_mode="HTML", reply_markup=reply_kb)
 
 
 async def send_settings_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
@@ -195,7 +212,8 @@ async def back_to_main_menu(message: Message):
 async def cmd_start(message: Message, state: FSMContext, session: aiohttp.ClientSession):
     user_id = message.from_user.id
     telegram_lang_code = (message.from_user.language_code or "").lower()
-    mapped_lang = i18n.LANGUAGE_MAPPING.get(telegram_lang_code, telegram_lang_code)
+    mapped_lang = i18n.LANGUAGE_MAPPING.get(
+        telegram_lang_code, telegram_lang_code)
     detected_lang = i18n.LANGUAGE_CODES.get(mapped_lang, mapped_lang)
     if detected_lang not in i18n.get_available_languages():
         detected_lang = 'en'
@@ -210,7 +228,7 @@ async def cmd_start(message: Message, state: FSMContext, session: aiohttp.Client
         created = await api_save_user(user_id, session)
         if created is not None:
             apply_user_data_from_api(user_id, created)
-    
+
     settings = get_user_settings(user_id)
     current_language = settings.get("language")
     settings["language"] = detected_lang
@@ -219,7 +237,8 @@ async def cmd_start(message: Message, state: FSMContext, session: aiohttp.Client
     if current_language != detected_lang:
         payload = get_settings_payload_for_api(user_id)
         await api_save_user_settings(user_id, payload, session)
-        logger.info(f"Set user language from Telegram and saved to server: {detected_lang}")
+        logger.info(
+            f"Set user language from Telegram and saved to server: {detected_lang}")
 
     await state.update_data(first_start=True)
     await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
@@ -257,7 +276,8 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     lat, lon = message.location.latitude, message.location.longitude
-    logger.info(f"Користувач {message.from_user.username}({user_id}) надіслав локацію: {lat}, {lon}")
+    logger.info(
+        f"Користувач {message.from_user.username}({user_id}) надіслав локацію: {lat}, {lon}")
     await _save_coordinates_and_sync(user_id, lat, lon, session)
 
     # Перевірка доступності сервера (get_places)
@@ -315,7 +335,7 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         i18n.get(user_id, 'location_received', lang_code),
         reply_markup=actions_keyboard(user_id, lang_code),
     )
-    
+
     # Показуємо координати у форматі поточної мови інтерфейсу
     title = i18n.get(user_id, 'your_coordinates', lang_code)
     lat_label = i18n.get(user_id, 'latitude_label', lang_code)
@@ -343,49 +363,7 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    # Якщо користувач натиснув "Повернутися до головного меню" — повертаємо меню
-    menu_back_text = i18n.get(user_id, 'menu_back', lang_code)
-    retry_text = "🔄 " + i18n.get(user_id, 'retry', lang_code)
-    menu_actions_texts = [
-        i18n.get(user_id, 'search_routes', lang_code),
-        i18n.get(user_id, 'settings', lang_code),
-        i18n.get(user_id, 'send_coordinates', lang_code),
-        i18n.get(user_id, 'find_city', lang_code),
-        menu_back_text,
-        "🚀 Пошук маршрутів",
-        "🔍 Пошук маршрутів",
-        "🔍 Search routes",
-        "🔍 Suche nach Routen",
-        "🔍 Recherche d'itinéraires",
-        "🔍 Buscar rutas",
-        "🔍 Cerca percorsi",
-        "🔍 Szukaj tras",
-        "🔍 Pesquisar rotas",
-        "🔍 検索ルート",
-        "🔍 搜索路线"
-    ]
-    if text == menu_back_text:
-        await state.clear()
-        await send_main_menu(message, telegram_lang_code=lang_code)
-        return
-    if text == retry_text:
-        await state.clear()
-        await message.answer(
-            i18n.get(user_id, 'choose_location_type', lang_code),
-            reply_markup=choose_location_type_keyboard(user_id, lang_code)
-        )
-        return
-    if text in menu_actions_texts:
-        await state.clear()
-        await message.answer(
-            i18n.get(user_id, 'coordinates_prompt', lang_code),
-            reply_markup=choose_location_type_keyboard(user_id, lang_code)
-        )
-        return
-    user_id = message.from_user.id
-    settings = get_user_settings(user_id)
-    lang_code = settings.get("language", "uk")
-    
+
     await message.answer(i18n.get(user_id, 'searching_city', lang_code, city=text))
     coords = await get_city_coordinates(text, session, lang_code)
     if coords and coords.get("latitude") is not None and coords.get("longitude") is not None:
