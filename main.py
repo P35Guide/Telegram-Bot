@@ -7,21 +7,20 @@ from aiogram.types import BotCommand
 from bot.config import BOT_TOKEN
 from bot.handlers import main_menu, places, settings
 from bot.utils.logger import logger
-import os
 
-# Простий HTTP сервер щоб Render не вбивав процес через таймаут
+# Простий HTTP сервер, щоб Hugging Face бачив, що процес живий
 async def health(request):
-    return web.Response(text="OK")
+    return web.Response(text="Бот працює нормально!")
 
 async def start_health_server():
-    port = int(os.environ.get("PORT", 8080))
+    port = 7860 # Hugging Face шукає життя саме на порту 7860!
     app = web.Application()
     app.router.add_get("/", health)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logger.info(f"Health server запущено на порту {port}")
+    logger.info(f"Health server для Hugging Face запущено на порту {port}")
 
 COMMANDS = [
     BotCommand(command="start", description="Запустити бота"),
@@ -30,7 +29,6 @@ COMMANDS = [
     BotCommand(command="place_list", description="Список місць"),
     BotCommand(command="rand_place", description="Випадкове місце"),
 ]
-
 
 async def main():
     bot = Bot(token=BOT_TOKEN)
@@ -43,9 +41,10 @@ async def main():
     await bot.set_my_commands(COMMANDS)
     logger.info("Бот запущено!")
 
-    # Запускаємо health server і polling паралельно
+    # Запускаємо health server для Hugging Face
     await start_health_server()
 
+    # Запускаємо самого бота (polling)
     async with aiohttp.ClientSession() as session:
         await dp.start_polling(bot, session=session)
 
