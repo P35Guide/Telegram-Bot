@@ -118,8 +118,7 @@ def test_keyboard(user_id: int = None, lang_code: str = None):
       """Клавіатура коли користувач запускає бота протестити функціонал бота(мінімально (кнопки:за настроєм та передати координати))"""
       return ReplyKeyboardMarkup(
           keyboard=[
-              [KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
-               KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
+              [KeyboardButton(text=i18n.get(user_id or 0, 'start_on_location', lang_code))],
           ],
           resize_keyboard=True
       )

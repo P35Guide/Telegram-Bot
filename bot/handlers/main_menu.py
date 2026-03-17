@@ -59,6 +59,19 @@ async def cmd_menu(message: Message):
     await send_main_menu(message)
 
 
+@router.message(F.text.in_(["📱 Перейти до пошуку"]))
+async def show_location_choice_menu(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    # Keep FSM data (e.g., first_start flag) and only switch state.
+    await state.set_state(BotState.choosing_location_type)
+    await message.answer(
+        i18n.get(user_id, 'choose_location_type', lang_code),
+        reply_markup=choose_location_type_keyboard(user_id, lang_code)
+    )
+    
+
 @router.message(F.text.in_(["📍 Передати координати", "📍 Надіслати геолокацію", "📍 Send coordinates", "📍 Envoyer les coordonnées", "📍 Koordinaten senden", "📍 Enviar coordenadas", "📍 Invia coordinate", "📍 Wyślij współrzędne", "📍 Enviar coordenadas", "📍 座標を送信", "📍 发送坐标"]))
 async def show_location_choice_menu(message: Message, state: FSMContext):
     user_id = message.from_user.id
@@ -221,11 +234,13 @@ async def cmd_start(message: Message, state: FSMContext, session: aiohttp.Client
         logger.info(f"Set user language from Telegram and saved to server: {detected_lang}")
 
     await state.update_data(first_start=True)
-    await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
     await message.answer(
-        i18n.get(user_id, 'choose_action', detected_lang),
-        reply_markup=test_keyboard(user_id, detected_lang),
-    )
+        i18n.get(user_id, 'start_intro', detected_lang),
+        reply_markup=test_keyboard(user_id, detected_lang),)
+    # await message.answer(
+    #     i18n.get(user_id, 'choose_action', detected_lang),
+    #     reply_markup=test_keyboard(user_id, detected_lang),
+    # )
 
 
 @router.callback_query(F.data == "start_continue")
@@ -263,9 +278,43 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     first_start = fsm_data.get("first_start", False)
     await state.clear()
 
-    if first_start:
-        # First start flow: coordinates -> mood -> search.
-        await state.update_data(first_start=True)
+    await message.answer(
+        i18n.get(user_id, 'location_received', lang_code),
+        reply_markup=actions_keyboard(user_id, lang_code),
+    )
+
+    # if first_start:
+    #     # First start flow: coordinates -> mood -> search.
+    #     await state.update_data(first_start=True)
+    #     builder = InlineKeyboardBuilder()
+    #     moods = [
+    #         ("mood_work", "work"),
+    #         ("mood_date", "date"),
+    #         ("mood_company", "company"),
+    #         ("mood_breakfast", "breakfast"),
+    #     ]
+    #     for mood_key, mood_code in moods:
+    #         builder.button(
+    #             text=i18n.get(user_id, mood_key, lang_code),
+    #             callback_data=f"set_mood:{mood_code}"
+    #         )
+    #     builder.adjust(1)
+    #     await message.answer(
+    #         i18n.get(user_id, 'dope_choose', lang_code, current=""),
+    #         parse_mode="HTML",
+    #         reply_markup=builder.as_markup()
+    #     )
+    #     return
+    
+    # Показуємо координати у форматі поточної мови інтерфейсу
+    # title = i18n.get(user_id, 'your_coordinates', lang_code)
+    # lat_label = i18n.get(user_id, 'latitude_label', lang_code)
+    # lon_label = i18n.get(user_id, 'longitude_label', lang_code)
+    # await message.answer(
+    #     f"{title}\n{lat_label} {lat}\n{lon_label} {lon}",
+    #     parse_mode="HTML",
+    # )
+    if(settings.get("includedTypes")==None or len(settings.get("includedTypes"))==0):
         builder = InlineKeyboardBuilder()
         moods = [
             ("mood_work", "work"),
@@ -284,21 +333,6 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
             parse_mode="HTML",
             reply_markup=builder.as_markup()
         )
-        return
-
-    await message.answer(
-        i18n.get(user_id, 'location_received', lang_code),
-        reply_markup=actions_keyboard(user_id, lang_code),
-    )
-    
-    # Показуємо координати у форматі поточної мови інтерфейсу
-    title = i18n.get(user_id, 'your_coordinates', lang_code)
-    lat_label = i18n.get(user_id, 'latitude_label', lang_code)
-    lon_label = i18n.get(user_id, 'longitude_label', lang_code)
-    await message.answer(
-        f"{title}\n{lat_label} {lat}\n{lon_label} {lon}",
-        parse_mode="HTML",
-    )
 
 
 @router.message(F.text.in_(["🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden", "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città", "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市"]))
@@ -334,28 +368,28 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
             i18n.get(user_id, 'city_found', lang_code, city=text)
         )
 
-        if first_start:
+        #if first_start:
             # First start flow: coordinates -> mood -> search.
-            await state.update_data(first_start=True)
-            builder = InlineKeyboardBuilder()
-            moods = [
-                ("mood_work", "work"),
-                ("mood_date", "date"),
-                ("mood_company", "company"),
-                ("mood_breakfast", "breakfast"),
-            ]
-            for mood_key, mood_code in moods:
-                builder.button(
-                    text=i18n.get(user_id, mood_key, lang_code),
-                    callback_data=f"set_mood:{mood_code}"
-                )
-            builder.adjust(1)
-            await message.answer(
-                i18n.get(user_id, 'choose_mood', lang_code, current=""),
-                parse_mode="HTML",
-                reply_markup=builder.as_markup()
+        await state.update_data(first_start=True)
+        builder = InlineKeyboardBuilder()
+        moods = [
+            ("mood_work", "work"),
+            ("mood_date", "date"),
+            ("mood_company", "company"),
+            ("mood_breakfast", "breakfast"),
+        ]
+        for mood_key, mood_code in moods:
+            builder.button(
+                text=i18n.get(user_id, mood_key, lang_code),
+                callback_data=f"set_mood:{mood_code}"
             )
-            return
+        builder.adjust(1)
+        await message.answer(
+            i18n.get(user_id, 'choose_mood', lang_code, current=""),
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
+        return
 
         await send_main_menu(message, telegram_lang_code=lang_code)
     else:

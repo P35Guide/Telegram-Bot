@@ -178,6 +178,8 @@ async def set_mood_callback(callback: CallbackQuery, state: FSMContext, session:
                 except Exception:
                     pass
                 await show_place_card(callback.message, state, session, user_id=user_id)
+                await send_main_menu(callback.message, user_id=user_id)
+                return
         else:
             await state.set_state(BotState.choosing_location_type)
             await callback.message.answer(

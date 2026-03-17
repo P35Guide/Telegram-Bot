@@ -203,7 +203,7 @@ async def choose_location_method(message: Message, state: FSMContext):
     "📍 Envoyer ma position", "📍 Enviar mi ubicación", "📍 Invia la mia posizione",
     "📍 Wyślij moją lokalizację", "📍 Enviar minha localização", "📍 現在地を送信", "📍 发送我的位置",
     # find_city — all locales
-    "🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden",
+    "🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden","🏙️ Передати місто",
     "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città",
     "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市",
 ]))
