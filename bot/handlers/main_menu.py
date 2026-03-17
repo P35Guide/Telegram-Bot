@@ -1,3 +1,4 @@
+
 import aiohttp
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
@@ -10,6 +11,7 @@ from bot.keyboards import (
     choose_location_type_keyboard,
     settings_keyboard,
     test_keyboard,
+    error_action_inline_keyboard,
 )
 from bot.services.settings import (
     save_coordinates,
@@ -29,6 +31,18 @@ from bot.model.types_dict import SearchTypes
 
 router = Router()
 
+@router.message(F.text.in_(["🔍 Пошук маршрутів", "🔍 Search routes", "🔍 Suche nach Routen", "🔍 Recherche d'itinéraires", "🔍 Buscar rutas", "🔍 Cerca percorsi", "🔍 Szukaj tras", "🔍 Pesquisar rotas", "🔍 検索ルート", "🔍 搜索路线"]))
+async def search_routes_menu(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    if not settings.get("coordinates"):
+        await message.answer(
+            i18n.get(user_id, 'how_to_use_bot', lang_code),
+            parse_mode="HTML",
+            reply_markup=choose_location_type_keyboard(user_id, lang_code)
+        )
+        return
 
 def _format_language_display(lang_code: str) -> str:
     """Повертає назву мови з прапорцем у форматі: Українська 🇺🇦."""
@@ -131,17 +145,19 @@ def settings_text(user_id: int, telegram_lang_code: str = None) -> str:
     )
 
 
-async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
+async def send_main_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None, force_main_menu_keyboard: bool = False):
     target_user_id = user_id or message.from_user.id
     s = get_user_settings(target_user_id)
-    # Використовуємо мову з налаштувань користувача
     lang_code = s.get('language', 'uk')
     coords = s.get("coordinates")
 
-    if coords:
+    if force_main_menu_keyboard:
         reply_kb = actions_keyboard(target_user_id, lang_code)
     else:
-        reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
+        if coords:
+            reply_kb = actions_keyboard(target_user_id, lang_code)
+        else:
+            reply_kb = choose_location_type_keyboard(target_user_id, lang_code)
 
     text = (
         f"{i18n.get(target_user_id, 'welcome', lang_code)}\n\n"
@@ -246,14 +262,15 @@ async def start_continue_callback(callback: CallbackQuery):
     # Одразу показуємо головне меню (вибір мови лише в налаштуваннях)
     # Якщо координат немає - спочатку просимо їх надати
     settings = get_user_settings(user_id)
+    detected_lang = settings.get("language", "uk")
     if not settings.get("coordinates"):
-        await message.answer(
+        await callback.message.answer(
             i18n.get(user_id, 'how_to_use_bot', detected_lang),
             parse_mode="HTML",
             reply_markup=choose_location_type_keyboard(user_id, detected_lang),
         )
     else:
-        await send_main_menu(message, user_id=user_id, telegram_lang_code=detected_lang)
+        await send_main_menu(callback.message, user_id=user_id, telegram_lang_code=detected_lang)
 
 
 @router.message(F.location)
@@ -265,6 +282,30 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     logger.info(
         f"Користувач {message.from_user.username}({user_id}) надіслав локацію: {lat}, {lon}")
     await _save_coordinates_and_sync(user_id, lat, lon, session)
+
+    # Перевірка доступності сервера (get_places)
+    from bot.services.api_client import get_places
+    try:
+        settings_check = get_user_settings(user_id)
+        data = await get_places(settings_check, session)
+        if data is None:
+            raise Exception("Server unavailable")
+    except Exception:
+        from aiogram.types import ReplyKeyboardRemove
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text=i18n.get(user_id, 'menu_back', lang_code))],
+                [KeyboardButton(text="🔄 " + i18n.get(user_id, 'retry', lang_code))]
+            ],
+            resize_keyboard=True,
+        )
+        await message.answer(
+            i18n.get(user_id, 'server_unavailable', lang_code),
+            parse_mode="HTML",
+            reply_markup=reply_markup
+        )
+        return
 
     fsm_data = await state.get_data()
     first_start = fsm_data.get("first_start", False)
@@ -366,6 +407,30 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
 
         await send_main_menu(message, telegram_lang_code=lang_code)
     else:
-        await message.answer(
-            i18n.get(user_id, 'city_not_found', lang_code, city=text)
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text=i18n.get(user_id, 'menu_back', lang_code))],
+                [KeyboardButton(text="🔄 " + i18n.get(user_id, 'retry', lang_code))]
+            ],
+            resize_keyboard=True,
         )
+        await message.answer(
+            i18n.get(user_id, 'city_not_found', lang_code, city=text),
+            reply_markup=reply_markup
+        )
+
+@router.message(F.text == i18n.get(0, 'menu_back', 'uk'))
+async def back_to_main_menu_action(message: Message):
+    await send_main_menu(message)
+
+@router.message(F.text == "🔄 " + i18n.get(0, 'retry', 'uk'))
+async def retry_city_search(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    settings = get_user_settings(user_id)
+    lang_code = settings.get("language", "uk")
+    await state.set_state(BotState.choosing_location_type)
+    await message.answer(
+        i18n.get(user_id, 'choose_location_type', lang_code),
+        reply_markup=choose_location_type_keyboard(user_id, lang_code)
+    )
