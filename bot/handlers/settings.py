@@ -177,9 +177,7 @@ async def set_mood_callback(callback: CallbackQuery, state: FSMContext, session:
                     await loading_msg.delete()
                 except Exception:
                     pass
-                await show_place_card(callback.message, state, session, user_id=user_id)
-                await send_main_menu(callback.message, user_id=user_id)
-                return
+                await show_place_card(callback.message, state, session, user_id=user_id)  
         else:
             await state.set_state(BotState.choosing_location_type)
             await callback.message.answer(
@@ -391,6 +389,7 @@ async def rank_preference_handler(message: Message):
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
     await send_settings_menu(message, user_id=message.from_user.id)
+
 
 
 @router.message(F.text.in_(["⏰ Відкрите зараз", "⏰ Open now", "⏰ Jetzt geöffnet", "⏰ Ouvert maintenant", "⏰ Abierto ahora", "⏰ Aperto ora", "⏰ Otwarte teraz", "⏰ Aberto agora", "⏰ 営業中", "⏰ 现在营业"]))

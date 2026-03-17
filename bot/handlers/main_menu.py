@@ -165,6 +165,26 @@ async def send_main_menu(message: Message, user_id: int | None = None, telegram_
         reply_markup=reply_kb,
     )
 
+    if(s.get("includedTypes")==None or len(s.get("includedTypes"))==0):
+        builder = InlineKeyboardBuilder()
+        moods = [
+            ("mood_work", "work"),
+            ("mood_date", "date"),
+            ("mood_company", "company"),
+            ("mood_breakfast", "breakfast"),
+        ]
+        for mood_key, mood_code in moods:
+            builder.button(
+                text=i18n.get(user_id, mood_key, lang_code),
+                callback_data=f"set_mood:{mood_code}"
+            )
+        builder.adjust(1)
+        await message.answer(
+            i18n.get(user_id, 'choose_mood', lang_code, current=""),
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
+
 
 async def send_settings_menu(message: Message, user_id: int | None = None, telegram_lang_code: str = None):
     """Показує екран налаштувань і клавіатуру (включно з кнопкою «Зберегти на сервер»)."""
@@ -282,6 +302,7 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         i18n.get(user_id, 'location_received', lang_code),
         reply_markup=actions_keyboard(user_id, lang_code),
     )
+    
 
     # if first_start:
     #     # First start flow: coordinates -> mood -> search.
@@ -335,14 +356,14 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
         )
 
 
-@router.message(F.text.in_(["🏙️ Знайти потрібне місто", "🏙️ Find a city", "🏙️ Stadt finden", "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città", "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市"]))
+@router.message(F.text.in_(["🏙️ Передати місто", "🏙️ Find a city", "🏙️ Stadt finden", "🏙️ Trouver une ville", "🏙️ Encontrar ciudad", "🏙️ Trova città", "🏙️ Znajdź miasto", "🏙️ Encontrar cidade", "🏙️ 都市を検索", "🏙️ 查找城市"]))
 async def ask_for_city_name_main_menu(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     await state.set_state(BotState.entering_coordinates)
     await message.answer(
-        i18n.get(user_id, 'enter_city_name', lang_code)
+        i18n.get(user_id, 'enter_city_name', lang_code),
     )
 
 
@@ -365,7 +386,8 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         await state.clear()
 
         await message.answer(
-            i18n.get(user_id, 'city_found', lang_code, city=text)
+            i18n.get(user_id, 'city_found', lang_code, city=text),
+            reply_markup=actions_keyboard(user_id, lang_code)
         )
 
         #if first_start:
