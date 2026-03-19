@@ -12,6 +12,7 @@ from bot.keyboards import (
     settings_keyboard,
     test_keyboard,
     error_action_inline_keyboard,
+    build_mood_inline_keyboard,
 )
 from bot.services.settings import (
     save_coordinates,
@@ -66,6 +67,35 @@ async def _save_coordinates_and_sync(
     settings = get_user_settings(user_id)
     settings["location_city"] = city_name.strip() if city_name else None
     await api_save_user_settings(user_id, get_settings_payload_for_api(user_id), session)
+
+
+def _build_mood_keyboard(user_id: int, lang_code: str):
+    """Inline-клавіатура вибору настрою для швидкого старту (без галочки, без кнопки «Скинути»)."""
+    return build_mood_inline_keyboard(user_id, lang_code, current_mood=None, add_clear=False)
+
+
+async def _run_first_start_search(
+    message: Message,
+    state: FSMContext,
+    session: aiohttp.ClientSession,
+    user_id: int,
+):
+    """Після першого онбордингу одразу запускає пошук і показує першу картку."""
+    from bot.handlers.places import perform_search, show_place_card
+
+    loading_msg, places = await perform_search(
+        message, session, show_list=False, user_id=user_id
+    )
+    if not places:
+        return
+
+    await state.set_state(BotState.browsing_places)
+    await state.update_data(places=places, current_index=0, first_start=True)
+    try:
+        await loading_msg.delete()
+    except Exception:
+        pass
+    await show_place_card(message, state, session, user_id=user_id)
 
 
 @router.message(Command("menu"))
@@ -244,9 +274,14 @@ async def cmd_start(message: Message, state: FSMContext, session: aiohttp.Client
             f"Set user language from Telegram and saved to server: {detected_lang}")
 
     await state.update_data(first_start=True)
-    await message.answer(i18n.get(user_id, 'start_intro', detected_lang))
     await message.answer(
-        i18n.get(user_id, 'choose_action', detected_lang),
+        f"{i18n.get(user_id, 'start_intro', detected_lang)}\n\n"
+        f"{i18n.get(user_id, 'choose_mood', detected_lang, current='')}",
+        parse_mode="HTML",
+        reply_markup=_build_mood_keyboard(user_id, detected_lang),
+    )
+    await message.answer(
+        i18n.get(user_id, 'choose_location_type', detected_lang),
         reply_markup=test_keyboard(user_id, detected_lang),
     )
 
@@ -312,26 +347,7 @@ async def handle_location_main_menu(message: Message, state: FSMContext, session
     await state.clear()
 
     if first_start:
-        # First start flow: coordinates -> mood -> search.
-        await state.update_data(first_start=True)
-        builder = InlineKeyboardBuilder()
-        moods = [
-            ("mood_work", "work"),
-            ("mood_date", "date"),
-            ("mood_company", "company"),
-            ("mood_breakfast", "breakfast"),
-        ]
-        for mood_key, mood_code in moods:
-            builder.button(
-                text=i18n.get(user_id, mood_key, lang_code),
-                callback_data=f"set_mood:{mood_code}"
-            )
-        builder.adjust(1)
-        await message.answer(
-            i18n.get(user_id, 'choose_mood', lang_code, current=""),
-            parse_mode="HTML",
-            reply_markup=builder.as_markup()
-        )
+        await _run_first_start_search(message, state, session, user_id)
         return
 
     await message.answer(
@@ -383,26 +399,7 @@ async def handle_city_input_main_menu(message: Message, state: FSMContext, sessi
         )
 
         if first_start:
-            # First start flow: coordinates -> mood -> search.
-            await state.update_data(first_start=True)
-            builder = InlineKeyboardBuilder()
-            moods = [
-                ("mood_work", "work"),
-                ("mood_date", "date"),
-                ("mood_company", "company"),
-                ("mood_breakfast", "breakfast"),
-            ]
-            for mood_key, mood_code in moods:
-                builder.button(
-                    text=i18n.get(user_id, mood_key, lang_code),
-                    callback_data=f"set_mood:{mood_code}"
-                )
-            builder.adjust(1)
-            await message.answer(
-                i18n.get(user_id, 'choose_mood', lang_code, current=""),
-                parse_mode="HTML",
-                reply_markup=builder.as_markup()
-            )
+            await _run_first_start_search(message, state, session, user_id)
             return
 
         await send_main_menu(message, telegram_lang_code=lang_code)
