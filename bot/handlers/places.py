@@ -74,11 +74,13 @@ def decode_included_types(user_id):
 router = Router()
 _place_name_cache: dict[str, str] = {}
 
+
 @router.callback_query(F.data == "error_back_to_menu")
 async def error_back_to_menu_callback(callback: CallbackQuery):
     await callback.answer()
     from bot.handlers.main_menu import send_main_menu
     await send_main_menu(callback.message, force_main_menu_keyboard=True)
+
 
 @router.callback_query(F.data == "error_retry")
 async def error_retry_callback(callback: CallbackQuery, state: FSMContext, session: aiohttp.ClientSession = None):
@@ -310,7 +312,8 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
                     "📭 <b>На жаль, місць поруч не знайдено.</b>\n"
                     "Спробуйте збільшити радіус пошуку.",
                     parse_mode="HTML",
-                    reply_markup=error_action_inline_keyboard(user_id, lang_code)
+                    reply_markup=error_action_inline_keyboard(
+                        user_id, lang_code)
                 )
             if message:
                 await message.answer("🔙 Повернулись у меню пошуку.", reply_markup=search_keyboard(user_id, lang_code))
@@ -325,7 +328,8 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
         if loading_msg:
             try:
                 kb = error_action_inline_keyboard(user_id, lang_code)
-                logger.info(f"[edit_text DIAG] server_unavailable: reply_markup type: {type(kb)}")
+                logger.info(
+                    f"[edit_text DIAG] server_unavailable: reply_markup type: {type(kb)}")
                 await loading_msg.edit_text(
                     i18n.get(user_id, 'server_unavailable', lang_code),
                     parse_mode="HTML",
@@ -338,7 +342,8 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
                 try:
                     await loading_msg.delete()
                 except Exception as del_error:
-                    logger.warning(f"Could not delete loading message: {del_error}")
+                    logger.warning(
+                        f"Could not delete loading message: {del_error}")
         if message:
             # Якщо не вдалося відредагувати loading_msg, надсилаємо окреме повідомлення про помилку
             if edit_failed or not loading_msg:
@@ -348,19 +353,21 @@ async def get_places_with_mood(settings, user_id: int, session: aiohttp.ClientSe
                         reply_markup=search_keyboard(user_id, lang_code)
                     )
                 except Exception as answer_error:
-                    logger.warning(f"Could not send server unavailable message: {answer_error}")
+                    logger.warning(
+                        f"Could not send server unavailable message: {answer_error}")
             # Очищаємо стан і повертаємо у головне меню
             from aiogram.fsm.context import FSMContext
             if hasattr(message, 'bot') and hasattr(message, 'chat'):
                 # Отримуємо FSMContext для цього користувача
-                state = FSMContext(message.bot, message.chat.id, message.from_user.id)
+                state = FSMContext(
+                    message.bot, message.chat.id, message.from_user.id)
                 await state.clear()
             try:
                 from .main_menu import send_main_menu
                 await send_main_menu(message)
             except Exception as e:
-                logger.warning(f"Could not send main menu after server error: {e}")
-
+                logger.warning(
+                    f"Could not send main menu after server error: {e}")
 
 
 # Universal cancel handler for any state
@@ -491,7 +498,8 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
         edit_failed = False
         try:
             kb = error_action_inline_keyboard(user_id, lang_code)
-            logger.info(f"[edit_text DIAG] text_search_error: reply_markup type: {type(kb)}")
+            logger.info(
+                f"[edit_text DIAG] text_search_error: reply_markup type: {type(kb)}")
             await loading_msg.edit_text(
                 i18n.get(user_id, 'text_search_error', lang_code),
                 parse_mode="HTML",
@@ -505,7 +513,8 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
             try:
                 await loading_msg.delete()
             except Exception as del_error:
-                logger.warning(f"Could not delete loading message: {del_error}")
+                logger.warning(
+                    f"Could not delete loading message: {del_error}")
         if edit_failed:
             try:
                 await message.answer(
@@ -513,7 +522,8 @@ async def process_text_search(message: Message, state: FSMContext, session: aioh
                     reply_markup=search_keyboard(user_id, lang_code)
                 )
             except Exception as answer_error:
-                logger.warning(f"[TextSearch] Could not send error message: {answer_error}")
+                logger.warning(
+                    f"[TextSearch] Could not send error message: {answer_error}")
         await state.clear()
         await send_main_menu(message)
 
@@ -562,10 +572,12 @@ async def show_places_list(loading_msg, places, title: str = None, user_id: int 
                 await loading_msg.edit_text(
                     f"✅ <b>{heading}:</b>\n{select_text}",
                     parse_mode="HTML",
-                    reply_markup=error_action_inline_keyboard(user_id, lang_code)
+                    reply_markup=error_action_inline_keyboard(
+                        user_id, lang_code)
                 )
             except Exception as e2:
-                logger.warning(f"Could not edit loading message with error menu: {e2}")
+                logger.warning(
+                    f"Could not edit loading message with error menu: {e2}")
 
 
 async def perform_search(message: Message, session: aiohttp.ClientSession, show_list: bool = True, user_id: int | None = None, state: FSMContext = None):
@@ -598,7 +610,8 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
         await message.answer(
             i18n.get(start_user_id, 'no_location_set', lang_code),
             parse_mode="HTML",
-            reply_markup=choose_location_type_keyboard(start_user_id, lang_code)
+            reply_markup=choose_location_type_keyboard(
+                start_user_id, lang_code)
         )
         if state:
             await state.update_data(last_error_type="no_coordinates")
@@ -615,7 +628,8 @@ async def perform_search(message: Message, session: aiohttp.ClientSession, show_
             await message.answer(
                 i18n.get(start_user_id, 'server_unavailable', lang_code),
                 parse_mode="HTML",
-                reply_markup=error_action_inline_keyboard(start_user_id, lang_code)
+                reply_markup=error_action_inline_keyboard(
+                    start_user_id, lang_code)
             )
             if state:
                 await state.update_data(last_error_type="server_unavailable")
@@ -757,13 +771,13 @@ async def list_places_handler(message: Message, session: aiohttp.ClientSession):
     loading_msg, places = result
 
 
-@router.message(F.text.in_(["🚀 Пошук маршрутів", "🚀 Search routes", "🚀 Routen suchen", "🚀 Rechercher des itinéraires", "🚀 Buscar rutas", "🚀 Cercare percorsi", "🚀 Szukaj tras", "🚀 Pesquisar rotas", "🚀 ルート検索", "🚀 搜索路线"]))
+@router.message(F.text.in_(["🚀 Місця поблизу", "🚀 Nearby places", "🚀 Orte in der Nähe", "🚀 Lieux à proximité", "🚀 Lugares cercanos", "🚀 Luoghi vicini", "🚀 Miejsca w pobliżu", "🚀 Locais próximos", "🚀 近くの場所", "🚀 附近地点"]))
 async def search_menu_handler(message: Message, session: aiohttp.ClientSession):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
     logger.info(
-        f"Користувач {message.from_user.username}({user_id}) запускає пошук маршрутів")
+        f"Користувач {message.from_user.username}({user_id}) запускає пошук місць поблизу")
 
     # Telegram rejects empty/invisible-only text, so use a minimal visible marker.
     msg_text = "🔎"
@@ -1198,9 +1212,11 @@ async def fav_toggle_handler(callback: CallbackQuery, session: aiohttp.ClientSes
                 for button in row:
                     if button.callback_data and button.callback_data.startswith("fav_toggle:"):
                         # Змінюємо текст кнопки на протилежний
-                        new_text = i18n.get(user_id, 'add_to_favorites', lang_code) if was_favorite else i18n.get(user_id, 'remove_from_favorites', lang_code)
+                        new_text = i18n.get(user_id, 'add_to_favorites', lang_code) if was_favorite else i18n.get(
+                            user_id, 'remove_from_favorites', lang_code)
                         from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-                        new_row.append(InlineKeyboardButton(text=new_text, callback_data=button.callback_data))
+                        new_row.append(InlineKeyboardButton(
+                            text=new_text, callback_data=button.callback_data))
                     else:
                         new_row.append(button)
                 new_keyboard.append(new_row)

@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
-from bot.keyboards import actions_keyboard, add_place_redirect_keyboard, choose_location_type_keyboard
+from bot.keyboards import actions_keyboard, add_place_redirect_keyboard, choose_location_type_keyboard, build_mood_inline_keyboard
 from aiogram.filters import StateFilter
 from bot.services.settings import update_language, update_radius, update_included_types, update_excluded_types, update_max_result_count, update_rank_preference, get_user_settings, get_settings_payload_for_api
 from bot.states import BotState
@@ -109,42 +109,11 @@ async def mood_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    
-    builder = InlineKeyboardBuilder()
-    
-    moods = [
-        ("mood_work", "work"),
-        ("mood_date", "date"),
-        ("mood_company", "company"),
-        ("mood_breakfast", "breakfast")
-    ]
-    
-    for mood_key, mood_code in moods:
-        builder.button(
-            text=i18n.get(user_id, mood_key, lang_code),
-            callback_data=f"set_mood:{mood_code}"
-        )
-    
-    builder.button(text=i18n.get(user_id, 'category_reset', lang_code),
-                   callback_data="clear_mood")
-    
-    builder.adjust(1)
-    
-    current_mood = (settings.get("mood", "") or "").strip().lower()
-    mood_key_map = {
-        "work": "mood_work",
-        "date": "mood_date",
-        "company": "mood_company",
-        "breakfast": "mood_breakfast",
-    }
-    mood_key = mood_key_map.get(current_mood)
-    current_mood_label = i18n.get(user_id, mood_key, lang_code) if mood_key else ""
-    current_line = f"{i18n.get(user_id, 'settings_mood', lang_code)}: {current_mood_label}\n\n" if current_mood_label else ""
-    
+    current_mood = (settings.get("mood") or "").strip().lower() or None
     await message.answer(
-        i18n.get(user_id, 'choose_mood', lang_code, current=current_line),
+        i18n.get(user_id, "choose_mood", lang_code, current=""),
         parse_mode="HTML",
-        reply_markup=builder.as_markup()
+        reply_markup=build_mood_inline_keyboard(user_id, lang_code, current_mood=current_mood, add_clear=True),
     )
 
 
@@ -153,39 +122,25 @@ async def set_mood_callback(callback: CallbackQuery, state: FSMContext, session:
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    
+
     mood = callback.data.split(":", 1)[1]
-    settings_service.update_mood(user_id, mood)
-    
+    current = (settings.get("mood") or "").strip().lower()
+    # Перемикач: натиснули ту саму кнопку — знімаємо галочку
+    if current == mood:
+        settings_service.update_mood(user_id, "")
+        new_current = None
+        await callback.answer(i18n.get(user_id, "categories_reset", lang_code))
+    else:
+        settings_service.update_mood(user_id, mood)
+        new_current = mood
+        await callback.answer(i18n.get(user_id, "category_added", lang_code))
+
     fsm_data = await state.get_data()
     first_start = fsm_data.get("first_start", False)
-    
-    await callback.answer(i18n.get(user_id, 'category_added', lang_code))
-    await callback.message.delete()
-    
-    if first_start:
-        # First start flow:
-        # - if coords already exist, go straight to search;
-        # - otherwise ask for coordinates.
-        if settings.get("coordinates"):
-            from bot.handlers.places import perform_search, show_place_card
-            loading_msg, places = await perform_search(callback.message, session, show_list=False, user_id=user_id)
-            if places:
-                await state.set_state(BotState.browsing_places)
-                await state.update_data(places=places, current_index=0, first_start=True)
-                try:
-                    await loading_msg.delete()
-                except Exception:
-                    pass
-                await show_place_card(callback.message, state, session, user_id=user_id)
-        else:
-            await state.set_state(BotState.choosing_location_type)
-            await callback.message.answer(
-                i18n.get(user_id, 'choose_location_type', lang_code),
-                reply_markup=choose_location_type_keyboard(user_id)
-            )
-    else:
-        await send_settings_menu(callback.message, user_id=user_id)
+    reply_markup = build_mood_inline_keyboard(
+        user_id, lang_code, current_mood=new_current, add_clear=not first_start
+    )
+    await callback.message.edit_reply_markup(reply_markup=reply_markup)
 
 
 @router.callback_query(F.data == "clear_mood")
@@ -193,12 +148,12 @@ async def clear_mood_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
     settings = get_user_settings(user_id)
     lang_code = settings.get("language", "uk")
-    
+
     settings_service.update_mood(user_id, "")
-    
-    await callback.answer(i18n.get(user_id, 'categories_reset', lang_code))
-    await callback.message.delete()
-    await send_settings_menu(callback.message, user_id=user_id)
+
+    await callback.answer(i18n.get(user_id, "categories_reset", lang_code))
+    reply_markup = build_mood_inline_keyboard(user_id, lang_code, current_mood=None, add_clear=True)
+    await callback.message.edit_reply_markup(reply_markup=reply_markup)
 
 
 @router.message(F.text.in_(["🍴 Вибрати категорії", "🍴 Select categories", "🍴 Kategorien auswählen", "🍴 Sélectionner les catégories", "🍴 Seleccionar categorías", "🍴 Seleziona categorie", "🍴 Wybierz kategorie", "🍴 Selecionar categorias", "🍴 カテゴリーを選択", "🍴 选择类别"]))

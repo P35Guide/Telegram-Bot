@@ -73,6 +73,32 @@ def settings_keyboard(user_id: int = None, lang_code: str = None):
     )
 
 
+def build_mood_inline_keyboard(user_id: int = None, lang_code: str = None, current_mood: str | None = None, add_clear: bool = False):
+    """Інлайн-клавіатура настрою. current_mood — код обраного (work/date/...) для галочки ✅. add_clear — додати кнопку «Скинути»."""
+    builder = InlineKeyboardBuilder()
+    moods = [
+        ("mood_work", "work"),
+        ("mood_date", "date"),
+        ("mood_company", "company"),
+        ("mood_breakfast", "breakfast"),
+    ]
+    cur = (current_mood or "").strip().lower()
+    for mood_key, mood_code in moods:
+        label = i18n.get(user_id or 0, mood_key, lang_code)
+        if cur == mood_code:
+            label = "✅ " + label
+        builder.button(text=label, callback_data=f"set_mood:{mood_code}")
+    builder.adjust(2)
+    if add_clear:
+        builder.row(
+            InlineKeyboardButton(
+                text=i18n.get(user_id or 0, "category_reset", lang_code),
+                callback_data="clear_mood",
+            )
+        )
+    return builder.as_markup()
+
+
 def add_place_redirect_keyboard(user_id: int = None, lang_code: str = None):
     """Інлайн-клавіатура з посиланням на бота для додавання місць."""
     username = ADD_PLACE_BOT_USERNAME.lstrip("@")
@@ -124,14 +150,19 @@ def error_action_keyboard(user_id: int = None, lang_code: str = None):
     )
 
 def test_keyboard(user_id: int = None, lang_code: str = None):
-      """Клавіатура коли користувач запускає бота протестити функціонал бота(мінімально (кнопки:за настроєм та передати координати))"""
-      return ReplyKeyboardMarkup(
-          keyboard=[
-              [KeyboardButton(text=i18n.get(user_id or 0, 'settings_mood', lang_code)),
-               KeyboardButton(text=i18n.get(user_id or 0, 'send_coordinates', lang_code))],
-          ],
-          resize_keyboard=True
-      )
+    """Стартова клавіатура онбордингу: локація та місто в один ряд."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(
+                    text=i18n.get(user_id or 0, 'send_location', lang_code),
+                    request_location=True,
+                ),
+                KeyboardButton(text=i18n.get(user_id or 0, 'find_city', lang_code)),
+            ],
+        ],
+        resize_keyboard=True,
+    )
 
 def places_keyboard(places):
 
